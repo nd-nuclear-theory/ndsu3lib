@@ -1,4 +1,4 @@
-MODULE binomial_coefficients_and_factorials
+MODULE binomial_coeff_factorials
 !-------------------------------------------------------------------
 ! BINOMIAL COEFFICIENTS AND FACTORIALS ***** SEE COMMENT BELOW *****
 !-------------------------------------------------------------------
@@ -97,4 +97,4 @@ CONTAINS
   END DO
 
  END SUBROUTINE calculate_binomial_coefficients_and_factorials
-END MODULE binomial_coefficients_and_factorials
+END MODULE binomial_coeff_factorials

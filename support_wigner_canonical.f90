@@ -1,4 +1,4 @@
-SUBROUTINE support_routine_for_extremal_SU3_SU2xU1_Wigner_coefficients&
+SUBROUTINE support_wigner_canonical&
  (INC,su3irrep1,su3irrep2,NEC,NNC,KR0A,KR0B,DEWU3P,J1TA,IAB,ICD,INDMAX,DEWU3,KR0MAX)
 !---------------------------------------------------------------------------------
 ! SUPPORT ROUTINE FOR SUBROUTINE calculate_extremal_SU3_SU2xU1_Wigner_coefficients
@@ -21,7 +21,7 @@ SUBROUTINE support_routine_for_extremal_SU3_SU2xU1_Wigner_coefficients&
 ! INPUT ARGUMENTS: INC,su3irrep1,su3irrep2,NEC,NNC,KR0A,KR0B,DEWU3P,J1TA,IAB,ICD,INDMAX,KR0MAX
 ! OUTPUT ARGUMENT: DEWU3
 !---------------------------------------------------------------------------------
-USE derived_data_types_and_operators
+USE derived_types
 IMPLICIT NONE
 REAL(KIND=8), DIMENSION(1) :: DEWU3,DEWU3P
 INTEGER, DIMENSION(1)      :: J1TA,IAB,ICD
@@ -199,4 +199,4 @@ CONTAINS
   INTEGER :: IINDEX
   IINDEX=1+J2TD*(J2TD+1)*(3*J1TD+J2TD+5)/6+(J1TD+1)*(LAM2+J2TD-J2T)/2+(LAM1+J1TD-J1T)/2
  END FUNCTION INDEX
-END SUBROUTINE support_routine_for_extremal_SU3_SU2xU1_Wigner_coefficients
+END SUBROUTINE support_wigner_canonical

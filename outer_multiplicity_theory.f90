@@ -4,7 +4,7 @@ FUNCTION outer_multiplicity_theory(su3irrep1,su3irrep2,su3irrep3) RESULT(rhomax)
 ! lambda1=su3irrep1%lambda, mu1=su3irrep1%mu etc.
 ! This is a new version of MULTHY
 !-----------------------------------------------------------------------------------------
-USE derived_data_types_and_operators ! This module contains definitions of derived data types and operators
+USE derived_types ! This module contains definitions of derived data types and operators
 IMPLICIT NONE
 TYPE(su3irrep), INTENT(IN) :: su3irrep1,su3irrep2,su3irrep3
 INTEGER                    :: rhomax,IXMIN,I,IXDB3

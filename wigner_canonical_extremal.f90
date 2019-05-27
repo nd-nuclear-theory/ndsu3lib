@@ -1,4 +1,4 @@
-SUBROUTINE calculate_extremal_SU3_SU2xU1_Wigner_coefficients&
+SUBROUTINE wigner_canonical_extremal&
  (su3irrep1x,su3irrep2x,su3irrep3x,I3,NEC,KR0MAX,INDMAX,DEWU3,J1TA,J2TA,IEA,N1,N2,KIMAX1)                          
 !-----------------------------------------------------------------------
 ! CALCULATES EXTREMAL SU(3)-SU(2)xU(1) WIGNER COEFFICIENTS
@@ -11,7 +11,7 @@ SUBROUTINE calculate_extremal_SU3_SU2xU1_Wigner_coefficients&
 !                 (UoT,04-97)  C.BAHRI            NX=82
 !                 (ND,2019)    J.HERKO            REWRITTEN IN MODERN FORTRAN, MODULE INSTEAD OF COMMON BLOCKS, EXPLICIT DECLARATIONS,
 !                                                 STATEMENT FUNCTION "INDEX" REPLACED BY INTERNAL SUBPROGRAM, DERIVED DATA TYPE su3irrep
-!                                                 INSTEAD OF LAMBDA AND MU
+!                                                 INSTEAD OF LAMBDA AND MU, ALLOCATABLE ARRAYS
 !                                                                       
 !     REFERENCES--J.P.DRAAYER AND Y.AKIYAMA, J.MATH.PHYS.14(1973)1904   
 !                 K.T.HECHT, NUCL.PHYS.62(1965)1                        
@@ -36,18 +36,24 @@ SUBROUTINE calculate_extremal_SU3_SU2xU1_Wigner_coefficients&
 ! INPUT ARGUMENTS: su3irrep1x,su3irrep2x,su3irrep3x,I3,N1,N2,KIMAX1
 ! OUTPUT ARGUMENTS: NEC,KR0MAX,INDMAX,DEWU3,J1TA,J2TA,IEA
 !-----------------------------------------------------------------------
-USE derived_data_types_and_operators
-USE binomial_coefficients_and_factorials
+USE derived_types
+USE binomial_coeff_factorials
 IMPLICIT NONE
 INTEGER, EXTERNAL :: outer_multiplicity,outer_multiplicity_theory
 REAL(KIND=8), DIMENSION(1)      :: DEWU3
 INTEGER, DIMENSION(1)           :: J1TA,J2TA,IEA
-REAL(KIND=8), DIMENSION(738)    :: DEWU3P
-REAL(KIND=8), DIMENSION(82)     :: DZ
-INTEGER, DIMENSION(82)          :: J1TAP,IAB,ICD
+
+!!REAL(KIND=8), DIMENSION(738)    :: DEWU3P
+!!REAL(KIND=8), DIMENSION(82)     :: DZ
+!!INTEGER, DIMENSION(82)          :: J1TAP,IAB,ICD
+
+REAL(KIND=8), ALLOCATABLE,DIMENSION(:)    :: DEWU3P,DZ
+INTEGER, ALLOCATABLE,DIMENSION(:)          :: J1TAP,IAB,ICD
+
 !B REAL(KIND=8), DIMENSION(378) :: DEWU3P
 !B REAL(KIND=8), DIMENSION(42)  :: DZ
 !B INTEGER, DIMENSION(42)       :: J1TAP,IAB,ICD
+
 INTEGER                         :: I3,NEC,KR0MAX,INDMAX,N1,N2,KIMAX1,J1TD,J1T,J2TD,J2T,NX,IAH,IBH,ICH,&
                                    IDH,I,NCDMAX,NCDMIN,NNCMAX,KITEST,LL1,MM1,LL2,MM2,IA1,IB1,IC1,IA2,&
                                    IB2,IC2,IS1,IS2,ISS,IE3,IEH,KR0CNT,NCD,NNC,LN1,LN2,INN,IND,IE2,IIE,&
@@ -56,12 +62,23 @@ INTEGER                         :: I3,NEC,KR0MAX,INDMAX,N1,N2,KIMAX1,J1TD,J1T,J2
                                    KR0A,KR0B,INC,KR0PA,KR0P,IPH
 REAL(KIND=8)                    :: DC,DN,DD,DS,DMIN
 TYPE(su3irrep)                  :: su3irrep1x,su3irrep2x,su3irrep3x,su3irrep1,su3irrep2,su3irrep3
+
+!*************************************************************************** BEGINNING OF A BLOCK ADDED BY J.H.
+NX=su3irrep2x%lambda+su3irrep2x%mu+1
+ALLOCATE(DEWU3P(N1*NX),DZ(NX),J1TAP(NX),IAB(NX),ICD(NX))
+DO I=1,N2
+ J1TA(I)=0
+ J2TA(I)=0
+ IEA(I)=0
+END DO
+!*************************************************************************** END OF THE BLOCK ADDED BY J.H.
+
 ! DIMENSION CHECKS (LSU,6-81)-START                                 
 IF(N1>9)THEN
  WRITE(*,FMT='(36H ***** XEWU3 DIMENSION OVERFLOW: N1=,I10)')N1                                                    
  STOP
 END IF
-NX=su3irrep2x%lambda+su3irrep2x%mu+1
+!!NX=su3irrep2x%lambda+su3irrep2x%mu+1 !************************************ THIS HAS BEEN COMMENTED OUT BY J.H.
 !B IF(NX>42)THEN
 IF(NX>82)THEN
  WRITE(*,FMT='(36H ***** XEWU3 DIMENSION OVERFLOW: NX=,I10)')NX                                                    
@@ -93,7 +110,7 @@ DO I=1,NEC
 END DO
 NCDMAX=outer_multiplicity_theory(su3irrep1,su3irrep2,su3irrep3)
 NEC=NEC-NCDMAX
-su3irrep2=su3irrep2+(-NCDMAX) ! Operator + (defined in module derived_data_types_and_operators) adds an integer to lambda and mu
+su3irrep2=su3irrep2+(-NCDMAX) ! Operator + (defined in module derived_types) adds an integer to lambda and mu
 NCDMIN=1
 DO WHILE ((NCDMIN/=NCDMAX).AND.(outer_multiplicity(su3irrep1,su3irrep2+1,su3irrep3)<=0))
  NEC=NEC+1
@@ -108,7 +125,8 @@ IF(KITEST>KIMAX1)THEN !DIMENSION CHECKS (LSU,6-81)
  STOP
 END IF
 ! DIMENSION MODIFICATION (LSU,6-81)--STOP
-DO I=1,KITEST
+!! DO I=1,KITEST !********************************************************** THIS HAS BEEN COMMENTED OUT BY J.H.
+DO I=1,KIMAX1 !************************************************************* THIS HAS BEEN ADDED BY J.H.
  DEWU3(I)=0.D0
 ENDDO
 LL1=su3irrep1%lambda+1
@@ -143,7 +161,8 @@ DO NCD=NCDMIN,NCDMAX
  LN2=su3irrep2%lambda+NEC
  INN=NEC*NNC/2
  IF(NCD/=NCDMIN)THEN
-  DO I=1,KITEST
+!!  DO I=1,KITEST !********************************************************** THIS HAS BEEN COMMENTED OUT BY J.H.
+  DO I=1,KIMAX1 !************************************************************ THIS HAS BEEN ADDED BY J.H.
    DEWU3(I)=0.D0
   END DO
  END IF
@@ -365,7 +384,7 @@ DO NCD=NCDMIN,NCDMAX
 !     GENERATE <(LAM1,MU1)????;(LAM2,MU2)????::KR0(LAM3,MU3)HIGH>
 !     FROM <(LAM1,MU1)HIGH;(LAM2,MU2)????::KR0(LAM3,MU3)HIGH>
 
-   CALL support_routine_for_extremal_SU3_SU2xU1_Wigner_coefficients&
+   CALL support_wigner_canonical&
     (1,su3irrep1,su3irrep2,NEC,NNC,KR0A,KR0B,DEWU3P,J1TA,IAB,ICD,INDMAX,DEWU3,KR0MAX)
    INC=1
 
@@ -399,7 +418,7 @@ IF(KR0B/=0)THEN
 !     GENERATE <(LAM1,MU1)????;(LAM2,MU2)????::KR0(LAM3,MU3)HIGH>
 !     FROM <(LAM1,MU1)????;(LAM2,MU2)HIGH::KR0(LAM3,MU3)HIGH>
 
- CALL support_routine_for_extremal_SU3_SU2xU1_Wigner_coefficients&
+ CALL support_wigner_canonical&
   (0,su3irrep1,su3irrep2,NEC,NNC,KR0A,KR0B,DEWU3P,J1TA,IAB,ICD,INDMAX,DEWU3,KR0MAX)
 END IF
 
@@ -493,6 +512,7 @@ DO IND=1,INDMAX
   IF(4*(I/4)==I)DEWU3(KI)=-DEWU3(KI)
  END DO
 END DO
+DEALLOCATE(DEWU3P,DZ,J1TAP,IAB,ICD)
 RETURN
 
 CONTAINS
@@ -502,4 +522,4 @@ CONTAINS
   INTEGER :: IINDEX
   IINDEX=1+J2TD*(J2TD+1)*(3*J1TD+J2TD+5)/6+(J1TD+1)*(LAM2+J2TD-J2T)/2+(LAM1+J1TD-J1T)/2
  END FUNCTION INDEX
-END SUBROUTINE calculate_extremal_SU3_SU2xU1_Wigner_coefficients
+END SUBROUTINE wigner_canonical_extremal
