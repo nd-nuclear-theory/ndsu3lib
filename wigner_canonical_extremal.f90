@@ -55,36 +55,38 @@ INTEGER, ALLOCATABLE,DIMENSION(:)          :: J1TAP,IAB,ICD
 !B INTEGER, DIMENSION(42)       :: J1TAP,IAB,ICD
 
 INTEGER                         :: I3,NEC,KR0MAX,INDMAX,N1,N2,KIMAX1,J1TD,J1T,J2TD,J2T,NX,IAH,IBH,ICH,&
-                                   IDH,I,NCDMAX,NCDMIN,NNCMAX,KITEST,LL1,MM1,LL2,MM2,IA1,IB1,IC1,IA2,&
+                                   IDH,I,NCDMAX,NCDMIN,LL1,MM1,LL2,MM2,IA1,IB1,IC1,IA2,&
                                    IB2,IC2,IS1,IS2,ISS,IE3,IEH,KR0CNT,NCD,NNC,LN1,LN2,INN,IND,IE2,IIE,&
                                    IE1,JJ2TA,JJ2TB,JJ1TA,JJ1TB,J,JJ2T,L,M,JJ1T,INDQ,IQ1,J1TP,INDP,INDPQ,&
                                    KR0,KI,KIP,IP1,IIQ2,IIQ2B,IIQ2A,IQ2B,IZ,IHELP,IX,IY,IN,ID,IP2,IIP2,&
-                                   KR0A,KR0B,INC,KR0PA,KR0P,IPH
+                                   KR0A,KR0B,INC,KR0PA,KR0P,IPH!,NNCMAX,KITEST
 REAL(KIND=8)                    :: DC,DN,DD,DS,DMIN
 TYPE(su3irrep)                  :: su3irrep1x,su3irrep2x,su3irrep3x,su3irrep1,su3irrep2,su3irrep3
 
-!*************************************************************************** BEGINNING OF A BLOCK ADDED BY J.H.
-NX=su3irrep2x%lambda+su3irrep2x%mu+1
-ALLOCATE(DEWU3P(N1*NX),DZ(NX),J1TAP(NX),IAB(NX),ICD(NX))
+!************************************************************************** BEGINNING OF A BLOCK ADDED BY J.H.
 DO I=1,N2
  J1TA(I)=0
  J2TA(I)=0
  IEA(I)=0
 END DO
-!*************************************************************************** END OF THE BLOCK ADDED BY J.H.
+NX=su3irrep2x%lambda+su3irrep2x%mu+1
+ALLOCATE(DEWU3P(N1*NX),DZ(NX),J1TAP(NX),IAB(NX),ICD(NX))
+!************************************************************************** END OF THE BLOCK ADDED BY J.H.
 
+!************************************************************************** BEGINNING OF A BLOCK COMMENTED OUT BY J.H. BECAUSE OF ITS IRRELEVANCE FOR ALLOCATABLE ARRAYS
 ! DIMENSION CHECKS (LSU,6-81)-START                                 
-IF(N1>9)THEN
- WRITE(*,FMT='(36H ***** XEWU3 DIMENSION OVERFLOW: N1=,I10)')N1                                                    
- STOP
-END IF
-!!NX=su3irrep2x%lambda+su3irrep2x%mu+1 !************************************ THIS HAS BEEN COMMENTED OUT BY J.H.
+!IF(N1>9)THEN
+! WRITE(*,FMT='(36H ***** XEWU3 DIMENSION OVERFLOW: N1=,I10)')N1                                                    
+! STOP
+!END IF
+!NX=su3irrep2x%lambda+su3irrep2x%mu+1
 !B IF(NX>42)THEN
-IF(NX>82)THEN
- WRITE(*,FMT='(36H ***** XEWU3 DIMENSION OVERFLOW: NX=,I10)')NX                                                    
- STOP
-END IF
-! DIMENSION CHECKS (LSU,6-81)-START                                 
+!IF(NX>82)THEN
+! WRITE(*,FMT='(36H ***** XEWU3 DIMENSION OVERFLOW: NX=,I10)')NX                                                    
+! STOP
+!END IF
+! DIMENSION CHECKS (LSU,6-81)-START
+!************************************************************************** END OF THE BLOCK COMMENTED OUT BY J.H.
 KR0MAX=outer_multiplicity(su3irrep1x,su3irrep2x,su3irrep3x)                   
 IF(KR0MAX==0)RETURN
 IF(I3.EQ.1)THEN
@@ -108,7 +110,7 @@ DO I=1,NEC
  IAB(I)=(IAH+I)*(IBH-I)
  ICD(I)=(ICH+I)*(IDH+I)
 END DO
-NCDMAX=outer_multiplicity_theory(su3irrep1,su3irrep2,su3irrep3)
+NCDMAX=outer_multiplicity_theory(su3irrep1,su3irrep2,su3irrep3) ! outer_multiplicity_theory >= outer_multiplicity
 NEC=NEC-NCDMAX
 su3irrep2=su3irrep2+(-NCDMAX) ! Operator + (defined in module derived_types) adds an integer to lambda and mu
 NCDMIN=1
@@ -117,15 +119,17 @@ DO WHILE ((NCDMIN/=NCDMAX).AND.(outer_multiplicity(su3irrep1,su3irrep2+1,su3irre
  su3irrep2=su3irrep2+1
  NCDMIN=NCDMIN+1
 END DO
+!!************************************************************************** BEGINNING OF A BLOCK COMMENTED OUT BY J.H. BECAUSE OF ITS IRRELEVANCE FOR ALLOCATABLE ARRAYS
 ! DIMENSION MODIFICATION (LSU,6-81)-START
-NNCMAX=NEC+NCDMAX-NCDMIN+2
-KITEST=KR0MAX*(NNCMAX)*(NNCMAX+1)*(NNCMAX+2)/6
-IF(KITEST>KIMAX1)THEN !DIMENSION CHECKS (LSU,6-81)
- WRITE(*,FMT='(40H ***** XEWU3 DIMENSION OVERFLOW: KITEST=,I10,5X,7HKIMAX1=,I10)')KITEST,KIMAX1
- STOP
-END IF
+!NNCMAX=NEC+NCDMAX-NCDMIN+2
+!KITEST=KR0MAX*(NNCMAX)*(NNCMAX+1)*(NNCMAX+2)/6
+!IF(KITEST>KIMAX1)THEN !DIMENSION CHECKS (LSU,6-81)
+! WRITE(*,FMT='(40H ***** XEWU3 DIMENSION OVERFLOW: KITEST=,I10,5X,7HKIMAX1=,I10)')KITEST,KIMAX1
+! STOP
+!END IF
 ! DIMENSION MODIFICATION (LSU,6-81)--STOP
-!! DO I=1,KITEST !********************************************************** THIS HAS BEEN COMMENTED OUT BY J.H.
+!*************************************************************************** END OF THE BLOCK COMMENTED OUT BY J.H.
+!DO I=1,KITEST !************************************************************ THIS HAS BEEN COMMENTED OUT BY J.H.
 DO I=1,KIMAX1 !************************************************************* THIS HAS BEEN ADDED BY J.H.
  DEWU3(I)=0.D0
 ENDDO
