@@ -32,7 +32,7 @@ MODULE binomial_coeff_factorials
 ! This is a new version of BLOCKS
 !-------------------------------------------------------------------
 IMPLICIT NONE
-INTEGER :: II,MM,N,JJ,LL,K
+INTEGER :: II,MM,N,JJ,LL,KK
 REAL(KIND=8), DIMENSION(8385) :: DBINO,DBINV
 REAL(KIND=8), DIMENSION(-128:128) :: DTWOS
 REAL(KIND=8), DIMENSION(0:2000) :: DLOGF
@@ -63,13 +63,13 @@ CONTAINS
     LL=MIN(JJ,II-JJ)
     QGEN=1.0
     IF (LL/=0) THEN
-     DO K=1,LL
+     DO KK=1,LL
 #if defined(SU3DBL)
-      QGEN=DFLOAT(II+1-K)/DFLOAT(K)*QGEN
+      QGEN=DFLOAT(II+1-KK)/DFLOAT(KK)*QGEN
 #elif defined(SU3QUAD)
-      QGEN=QFLOAT(II+1-K)/QFLOAT(K)*QGEN
+      QGEN=QFLOAT(II+1-KK)/QFLOAT(KK)*QGEN
 #elif defined(SU3QUAD_GNU)
-      QGEN=REAL(II+1-K,16)/REAL(K,16)*QGEN
+      QGEN=REAL(II+1-KK,16)/REAL(KK,16)*QGEN
 #endif
      END DO
     END IF
