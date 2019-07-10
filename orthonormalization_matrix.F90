@@ -23,13 +23,13 @@ SUBROUTINE orthonormalization_matrix(I,J,su3irrepx,KAPMAX,L,DONMAT)
 !-----------------------------------------------------------------------
 USE derived_types
 IMPLICIT NONE
-REAL(KIND=8), EXTERNAL :: DTU3R3
+REAL(KIND=8), EXTERNAL :: transformation_coeff
 #if defined(SU3DBL)
-REAL(KIND=8), EXTERNAL :: QTU3R3
+REAL(KIND=8), EXTERNAL :: transformation_coeff_quad
 REAL(KIND=8), ALLOCATABLE,DIMENSION(:) :: QONMAT
 REAL(KIND=8) :: QHOLD
 #elif (defined(SU3QUAD) || defined(SU3QUAD_GNU))
-REAL(KIND=16), EXTERNAL :: QTU3R3
+REAL(KIND=16), EXTERNAL :: transformation_coeff_quad
 REAL(KIND=16), ALLOCATABLE,DIMENSION(:) :: QONMAT
 REAL(KIND=16) :: QHOLD
 #endif
@@ -74,7 +74,7 @@ DO KKA=1,KAPMAX
     DHOLD=DHOLD+DONMAT(KKCKKB)*DONMAT(KKCKKA)
    END DO
   END IF
-  DHOLD=DTU3R3(I,J,su3irrepx%lambda,su3irrepx%mu,IEE,JET,MET,K,L,M)-DHOLD
+  DHOLD=transformation_coeff(I,J,su3irrepx,IEE,JET,MET,K,L,M)-DHOLD
   IF(KKB==KKA)EXIT
   KKBKKA=KKB+KKAQ
   KKBKKB=KKB+KKBQ
@@ -129,7 +129,7 @@ ELSE
      QHOLD=QHOLD+QONMAT(KKCKKB)*QONMAT(KKCKKA)
     END DO
    END IF
-   QHOLD=QTU3R3(I,J,su3irrepx%lambda,su3irrepx%mu,IEE,JET,MET,K,L,M)-QHOLD
+   QHOLD=transformation_coeff_quad(I,J,su3irrepx,IEE,JET,MET,K,L,M)-QHOLD
    IF(KKB==KKA)EXIT
    KKBKKA=KKB+KKAQ
    KKBKKB=KKB+KKBQ

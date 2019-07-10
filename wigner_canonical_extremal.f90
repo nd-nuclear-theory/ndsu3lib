@@ -1,5 +1,5 @@
 SUBROUTINE wigner_canonical_extremal&
- (su3irrep1x,su3irrep2x,su3irrep3x,I3,NEC,KR0MAX,INDMAX,DEWU3,J1TA,J2TA,IEA,N1,N2,KIMAX1)                          
+ (su3irrep1x,su3irrep2x,su3irrep3x,I3,NEC,KR0MAX,INDMAX,DEWU3,J1TA,J2TA,IEA)                          
 !-----------------------------------------------------------------------
 ! CALCULATES EXTREMAL SU(3)-SU(2)xU(1) WIGNER COEFFICIENTS
 !-----------------------------------------------------------------------
@@ -47,30 +47,34 @@ INTEGER, DIMENSION(1)           :: J1TA,J2TA,IEA
 !!REAL(KIND=8), DIMENSION(82)     :: DZ
 !!INTEGER, DIMENSION(82)          :: J1TAP,IAB,ICD
 
-REAL(KIND=8), ALLOCATABLE,DIMENSION(:)    :: DEWU3P,DZ
-INTEGER, ALLOCATABLE,DIMENSION(:)          :: J1TAP,IAB,ICD
+REAL(KIND=8), ALLOCATABLE,DIMENSION(:) :: DEWU3P,DZ
+INTEGER, ALLOCATABLE,DIMENSION(:)      :: J1TAP,IAB,ICD
 
 !B REAL(KIND=8), DIMENSION(378) :: DEWU3P
 !B REAL(KIND=8), DIMENSION(42)  :: DZ
 !B INTEGER, DIMENSION(42)       :: J1TAP,IAB,ICD
 
-INTEGER                         :: I3,NEC,KR0MAX,INDMAX,N1,N2,KIMAX1,J1TD,J1T,J2TD,J2T,NX,IAH,IBH,ICH,&
+INTEGER                         :: I3,NEC,KR0MAX,INDMAX,N2,KIMAX1,J1TD,J1T,J2TD,J2T,NX,IAH,IBH,ICH,&
                                    IDH,I,NCDMAX,NCDMIN,LL1,MM1,LL2,MM2,IA1,IB1,IC1,IA2,&
                                    IB2,IC2,IS1,IS2,ISS,IE3,IEH,KR0CNT,NCD,NNC,LN1,LN2,INN,IND,IE2,IIE,&
                                    IE1,JJ2TA,JJ2TB,JJ1TA,JJ1TB,J,JJ2T,L,M,JJ1T,INDQ,IQ1,J1TP,INDP,INDPQ,&
                                    KR0,KI,KIP,IP1,IIQ2,IIQ2B,IIQ2A,IQ2B,IZ,IHELP,IX,IY,IN,ID,IP2,IIP2,&
-                                   KR0A,KR0B,INC,KR0PA,KR0P,IPH!,NNCMAX,KITEST
+                                   KR0A,KR0B,INC,KR0PA,KR0P,IPH,K!,NNCMAX,KITEST
 REAL(KIND=8)                    :: DC,DN,DD,DS,DMIN
 TYPE(su3irrep)                  :: su3irrep1x,su3irrep2x,su3irrep3x,su3irrep1,su3irrep2,su3irrep3
 
+KR0MAX=outer_multiplicity(su3irrep1x,su3irrep2x,su3irrep3x)                   
+IF(KR0MAX==0)RETURN
 !************************************************************************** BEGINNING OF A BLOCK ADDED BY J.H.
+NX=su3irrep2x%lambda+su3irrep2x%mu+1
+N2=NX*(NX+1)*(NX+2)/6
+KIMAX1=KR0MAX*N2
 DO I=1,N2
  J1TA(I)=0
  J2TA(I)=0
  IEA(I)=0
 END DO
-NX=su3irrep2x%lambda+su3irrep2x%mu+1
-ALLOCATE(DEWU3P(N1*NX),DZ(NX),J1TAP(NX),IAB(NX),ICD(NX))
+ALLOCATE(DEWU3P(KR0MAX*NX),DZ(NX),J1TAP(NX),IAB(NX),ICD(NX))
 !************************************************************************** END OF THE BLOCK ADDED BY J.H.
 
 !************************************************************************** BEGINNING OF A BLOCK COMMENTED OUT BY J.H. BECAUSE OF ITS IRRELEVANCE FOR ALLOCATABLE ARRAYS
@@ -87,8 +91,6 @@ ALLOCATE(DEWU3P(N1*NX),DZ(NX),J1TAP(NX),IAB(NX),ICD(NX))
 !END IF
 ! DIMENSION CHECKS (LSU,6-81)-START
 !************************************************************************** END OF THE BLOCK COMMENTED OUT BY J.H.
-KR0MAX=outer_multiplicity(su3irrep1x,su3irrep2x,su3irrep3x)                   
-IF(KR0MAX==0)RETURN
 IF(I3.EQ.1)THEN
  su3irrep1=su3irrep1x
  su3irrep2=su3irrep2x
@@ -130,7 +132,7 @@ END DO
 ! DIMENSION MODIFICATION (LSU,6-81)--STOP
 !*************************************************************************** END OF THE BLOCK COMMENTED OUT BY J.H.
 !DO I=1,KITEST !************************************************************ THIS HAS BEEN COMMENTED OUT BY J.H.
-DO I=1,KIMAX1 !************************************************************* THIS HAS BEEN ADDED BY J.H.
+DO I=1,KIMAX1 !************************************************************* THIS HAS BEEN ADDED BY J.H. !!!!!!!!!!!!!!!!!!!!!! Asi tam staci cyklovat do KITEST
  DEWU3(I)=0.D0
 ENDDO
 LL1=su3irrep1%lambda+1
@@ -166,7 +168,7 @@ DO NCD=NCDMIN,NCDMAX
  INN=NEC*NNC/2
  IF(NCD/=NCDMIN)THEN
 !!  DO I=1,KITEST !********************************************************** THIS HAS BEEN COMMENTED OUT BY J.H.
-  DO I=1,KIMAX1 !************************************************************ THIS HAS BEEN ADDED BY J.H.
+  DO I=1,KIMAX1 !************************************************************ THIS HAS BEEN ADDED BY J.H.  !!!!!!!!!!!!!!!!!!!!!! Asi tam staci cyklovat do KITEST
    DEWU3(I)=0.D0
   END DO
  END IF
