@@ -1,13 +1,15 @@
 SUBROUTINE wigner_canonical(su3irrep1,su3irrep2,su3irrep3,IE,JT,NEC,DEWU3,KR0MAX,&
  INDMAX,DWU3,J1SMAX,J1TMAX,J2SMAX,J2TMAX,IESMAX,IE2MAX,INDMAT,N2,KIMAX2)                                           
 !-----------------------------------------------------------------------
-! CALCULATES SU(3)-SU(2)xU(1) WIGNER COEFFICIENTS            
+! CALCULATES SU(3)-SU(2)xU(1) REDUCED WIGNER COEFFICIENTS
+! <(lam1,mu1)eps1,Lam1;(lam2,mu2)eps2,Lam2||(lam3,mu3)eps3,Lam3>_rho
+! FOR GIVEN lam1,mu1,lam2,mu2,lam3,mu3,eps3,Lam3
 !-----------------------------------------------------------------------
 !     UPDATE/MOD: (LSU,06-81)  J.P.DRAAYER        INDEXING OF DEWU3     
 !                 (LSU,11-89)  J.P.DRAAYER        DWU3 ZERO-OUT RANGE
 !                 (ND,2019)    J.HERKO            REWRITTEN IN MODERN FORTRAN, EXPLICIT DECLARATIONS,
 !                                                 STATEMENT FUNCTIONS "INDEX" AND "IDM" REPLACED BY INTERNAL SUBPROGRAMS,
-!                                                 DERIVED DATA TYPE su3irrep INSTEAD OF LAMBDA AND MU, ALLOCATABLE ARRAYS
+!                                                 DERIVED DATA TYPE su3irrep INSTEAD OF LAMBDA AND MU, AUTOMATIC ARRAYS
 !                                                                       
 !     REFERENCES--J.P.DRAAYER AND Y.AKIYAMA, J.MATH.PHYS.14(1973)1904   
 !                 K.T.HECHT, NUCL.PHYS.62(1965)1                        
@@ -30,11 +32,35 @@ SUBROUTINE wigner_canonical(su3irrep1,su3irrep2,su3irrep3,IE,JT,NEC,DEWU3,KR0MAX
 !*      COMMENTS--USE N1*NA->KIMAX1,N1*N3->KIMAX2                       
 !                 ASSUME MAX N1=9,N2=42,N3=9030                         
 !                        SET X1=27090,X2=42,X3=1764 (X1=3*N3,FIXED)
-!
+!-----------------------------------------------------------------------
 ! This is a new version of XWU3
 !
-! INPUT ARGUMENTS: su3irrep1,su3irrep2,su3irrep3,IE,JT,NEC,DEWU3,KR0MAX,N1,N2,N3,KIMAX2
+! INPUT ARGUMENTS: su3irrep1,su3irrep2,su3irrep3,IE,JT,NEC,DEWU3,KR0MAX,N2,KIMAX2
 ! OUTPUT ARGUMENTS: INDMAX,DWU3,J1SMAX,J1TMAX,J2SMAX,J2TMAX,IESMAX,IE2MAX,INDMAT
+!
+! su3irrep1%lambda=lam1
+! su3irrep1%mu=mu1
+! su3irrep2%lambda=lam2
+! su3irrep2%mu=mu2
+! su3irrep3%lambda=lam3
+! su3irrep3%mu=mu3
+! IE=eps3
+! JT=2*Lam3
+! NEC=n=(lam1+lam2-lam3+2*(mu1+mu2-mu3))/3
+! DEWU3 IS THE ARRAY CONTAINING THE EXTREMAL REDUCED WIGNER COEFFICIENTS CALCULATED BY SUBROUTINE wigner_canonical_extremal
+! KR0MAX=MULTIPLICITY OF COUPLING (lam1,mu1)x(lam2,mu2)->(lam3,mu3)
+! N2=lam2+mu2+1
+! KIMAX2=KR0MAX*DIM(lam2,mu2)
+! IE2MAX IS THE MAXIMAL VALUE OF eps2
+! eps2=IE2MAX-3*(IESMAX-IES) WHERE 1<=IES<=IESMAX
+! eps1=eps3-eps2
+! 2*Lam2=J2TMAX(IES)-2*(J2S-1) WHERE 1<=J2S<=J2SMAX(IES)
+! 2*Lam1=J1TMAX(IESJ2S)-2*(J1S-1) WHERE IESJ2S=IES+N2*(J2S-1) AND 1<=J1S<=J1SMAX(IESJ2S)
+! FOR GIVEN eps1,Lam1,eps2,Lam2 THE REDUCED WIGNER COEFFICIENTS ARE THE ELEMENTS OF ARRAY DWU3
+!  WITH INDECES FROM MINNUM TO MAXNUM (CORRESPONDING TO DIFFERENT VALUES OF rho) WHERE:
+!   MINNUM=KR0MAX*(IND-1)+1
+!   MAXNUM=MINNUM+KR0MAX-1
+!   WHERE IND=(INDMAT(IESJ2S)-2*Lam1)/2
 !-----------------------------------------------------------------------
 USE derived_types
 IMPLICIT NONE
@@ -45,36 +71,22 @@ INTEGER, DIMENSION(1)          :: J1SMAX,J1TMAX,J2SMAX,J2TMAX,INDMAT
 !INTEGER, DIMENSION(42)         :: J2TMAP
 !INTEGER, DIMENSION(1764)       :: INDMAP
 
-REAL(KIND=8), ALLOCATABLE,DIMENSION(:) :: DWU3P
-INTEGER, ALLOCATABLE,DIMENSION(:)      :: J2TMAP,INDMAP
+REAL(KIND=8), DIMENSION(KIMAX2) :: DWU3P
+INTEGER, DIMENSION(N2)         :: J2TMAP
+INTEGER, DIMENSION(N2*N2)       :: INDMAP
+
+!REAL(KIND=8), ALLOCATABLE,DIMENSION(:) :: DWU3P
+!INTEGER, ALLOCATABLE,DIMENSION(:)      :: J2TMAP,INDMAP
 INTEGER                        :: IE,JT,NEC,KR0MAX,INDMAX,IESMAX,IE2MAX,N2,KIMAX2,LL1,MM1,LL2,&
                                   MM2,LL3,MM3,LM1,LM2,LLMM1,LLMM2,LLMM3,JJTD,IP,NCC,INC,IQ3,IP3,J3T,JJ3TD,N,&
-								  NM,JJ2TDA,JJ2TDB,JJ2TDC,IND,IES,JJ2TD,J2TD,J1TD,IIQ2A,IIQ2B,IIQ1A,IIQ1B,J2S,&
-								  IIQ2,IQ2,IP2,J2T,J23S,J23D,J23H,J1S,IIQ1,IQ1,IP1,J1T,J1TS,J2TS,INDQ,JA,JJA,&
-								  JB,JJB,JC,JJC,JD,JJD,IESP,I,J2TP,J1TP,M,J12TP,IAB,ICD,IPH,J2SP,INDP,INDPQ,&
-								  KR0,KI,KIP,IESJ2S,J3TP,JJ2TDP,J2SB,J2SQ,J1SB!,N1,N3,IDTEST
+                                  NM,JJ2TDA,JJ2TDB,JJ2TDC,IND,IES,JJ2TD,J2TD,J1TD,IIQ2A,IIQ2B,IIQ1A,IIQ1B,J2S,&
+                                  IIQ2,IQ2,IP2,J2T,J23S,J23D,J23H,J1S,IIQ1,IQ1,IP1,J1T,J1TS,J2TS,INDQ,JA,JJA,&
+                                  JB,JJB,JC,JJC,JD,JJD,IESP,I,J2TP,J1TP,M,J12TP,IAB,ICD,IPH,J2SP,INDP,INDPQ,&
+                                  KR0,KI,KIP,IESJ2S,J3TP,JJ2TDP,J2SB,J2SQ,J1SB!,N1,N3!,IDTEST
 REAL(KIND=8)                   :: DC
 TYPE(su3irrep)                 :: su3irrep1,su3irrep2,su3irrep3
 
-!************************************************************************** BEGINNING OF A BLOCK ADDED BY J.H.
-ALLOCATE(DWU3P(KIMAX2),J2TMAP(N2),INDMAP(N2*N2))
-!***************************************** ZACIATOK BLOKU, KTORY ASI NIE JE NUTNY
-DO I=1,KIMAX2
- DWU3(I)=0.D0
-END DO
-DO I=1,N2*N2
- J1SMAX(I)=0
- J1TMAX(I)=0
- INDMAT(I)=0
-END DO
-DO I=1,N2
- J2SMAX(I)=0
- J2TMAX(I)=0
-END DO
-!***************************************** KONIEC BLOKU, KTORY ASI NIE JE NUTNY
-!************************************************************************** END OF THE BLOCK ADDED BY J.H.
-
-!************************************************************************** BEGINNING OF A BLOCK COMMENTED OUT BY J.H. BECAUSE OF ITS IRRELEVANCE FOR ALLOCATABLE ARRAYS
+!************************************************************************** BEGINNING OF A BLOCK IRRELEVANT FOR AUTOMATIC ARRAYS
 !     DIMENSION CHECKS (LSU,6-81)-START                                 
 !IF(N1>9)THEN
 ! WRITE(*,FMT='(35H *****XWU3 DIMENSION OVERFLOW:  N1=,I10)')N1
@@ -94,7 +106,7 @@ END DO
 ! STOP
 !END IF
 !     DIMENSION CHECKS (LSU,6-81)--STOP
-!************************************************************************** END OF THE BLOCK COMMENTED OUT BY J.H.
+!************************************************************************** END OF THE BLOCK IRRELEVANT FOR AUTOMATIC ARRAYS
 LL1=su3irrep1%lambda+1
 MM1=su3irrep1%mu+1
 LL2=su3irrep2%lambda+1
@@ -336,7 +348,6 @@ DO JJ3TD=1,JJTD
 END DO
 INDMAX=IND
 IE2MAX=-(su3irrep2%lambda+2*su3irrep2%mu)+3*(JJ2TDC-1)+3*(IES-1)
-DEALLOCATE(DWU3P,J2TMAP,INDMAP)
 RETURN
 
 CONTAINS

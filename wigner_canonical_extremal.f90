@@ -1,7 +1,9 @@
 SUBROUTINE wigner_canonical_extremal&
- (su3irrep1x,su3irrep2x,su3irrep3x,I3,NEC,KR0MAX,INDMAX,DEWU3,J1TA,J2TA,IEA)                          
+ (su3irrep1x,su3irrep2x,su3irrep3x,I3,NEC,KR0MAX,INDMAX,DEWU3,J1TA,J2TA,IEA,NX)                          
 !-----------------------------------------------------------------------
-! CALCULATES EXTREMAL SU(3)-SU(2)xU(1) WIGNER COEFFICIENTS
+! CALCULATES EXTREMAL SU(3)-SU(2)xU(1) REDUCED WIGNER COEFFICIENTS
+! <(lam1,mu1)eps1,Lam1;(lam2,mu2)eps2,Lam2||(lam3,mu3)E>_rho
+! FOR GIVEN lam1,mu1,lam2,mu2,lam3,mu3
 !-----------------------------------------------------------------------
 !     UPDATE/MOD: (LSU,05-80)  J.P.DRAAYER        LOG BINOMIALS         
 !                 (LSU,06-81)  J.P.DRAAYER        INDEXING DEWU3        
@@ -11,7 +13,7 @@ SUBROUTINE wigner_canonical_extremal&
 !                 (UoT,04-97)  C.BAHRI            NX=82
 !                 (ND,2019)    J.HERKO            REWRITTEN IN MODERN FORTRAN, MODULE INSTEAD OF COMMON BLOCKS, EXPLICIT DECLARATIONS,
 !                                                 STATEMENT FUNCTION "INDEX" REPLACED BY INTERNAL SUBPROGRAM, DERIVED DATA TYPE su3irrep
-!                                                 INSTEAD OF LAMBDA AND MU, ALLOCATABLE ARRAYS
+!                                                 INSTEAD OF LAMBDA AND MU, AUTOMATIC ARRAYS
 !                                                                       
 !     REFERENCES--J.P.DRAAYER AND Y.AKIYAMA, J.MATH.PHYS.14(1973)1904   
 !                 K.T.HECHT, NUCL.PHYS.62(1965)1                        
@@ -30,11 +32,30 @@ SUBROUTINE wigner_canonical_extremal&
 !-                           N1=9,NX=82,N2=95284
 !-                           X1=738,X2=82
 !                 DZ ARRAY ADDED FOR CORRECTING THE OVERFLOW PROBLEM    
-!
+!-----------------------------------------------------------------------
 ! This is a new version of XEWU3
 !
-! INPUT ARGUMENTS: su3irrep1x,su3irrep2x,su3irrep3x,I3,N1,N2,KIMAX1
-! OUTPUT ARGUMENTS: NEC,KR0MAX,INDMAX,DEWU3,J1TA,J2TA,IEA
+! INPUT ARGUMENTS: su3irrep1x,su3irrep2x,su3irrep3x,I3,KR0MAX,NX
+! OUTPUT ARGUMENTS: NEC,INDMAX,DEWU3,J1TA,J2TA,IEA
+!
+! su3irrep1x%lambda=lam1
+! su3irrep1x%mu=mu1
+! su3irrep2x%lambda=lam2
+! su3irrep2x%mu=mu2
+! su3irrep3x%lambda=lam3
+! su3irrep3x%mu=mu3
+! I3=1 FOR E=HW, I3=0 FOR E=LW
+! NX=lam2+mu2+1
+! NEC=n=(lam1+lam2-lam3+2*(mu1+mu2-mu3))/3
+! KR0MAX=MULTIPLICITY OF COUPLING (lam1,mu1)x(lam2,mu2)->(lam3,mu3)
+! J1TA(IND)=2*Lam1 WHERE 1<=IND<=INDMAX
+! J2TA(IND)=2*Lam2 WHERE 1<=IND<=INDMAX
+! IEA(IND)=eps2 WHERE 1<=IND<=INDMAX
+! eps1=eps3E-eps2
+! FOR GIVEN eps1,Lam1,eps2,Lam2 THE EXTREMAL REDUCED WIGNER COEFFICIENTS ARE THE ELEMENTS OF ARRAY
+!  DEWU3 WITH INDECES FROM MINNUM TO MAXNUM (CORRESPONDING TO DIFFERENT VALUES OF rho) WHERE:
+!   MINNUM=1+KR0MAX*(IND-1)
+!   MAXNUM=KR0MAX+KR0MAX*(IND-1)=KR0MAX+MINNUM-1
 !-----------------------------------------------------------------------
 USE derived_types
 USE binomial_coeff_factorials
@@ -43,41 +64,31 @@ INTEGER, EXTERNAL :: outer_multiplicity,outer_multiplicity_theory
 REAL(KIND=8), DIMENSION(1)      :: DEWU3
 INTEGER, DIMENSION(1)           :: J1TA,J2TA,IEA
 
-!!REAL(KIND=8), DIMENSION(738)    :: DEWU3P
-!!REAL(KIND=8), DIMENSION(82)     :: DZ
-!!INTEGER, DIMENSION(82)          :: J1TAP,IAB,ICD
+!REAL(KIND=8), DIMENSION(738)    :: DEWU3P
+!REAL(KIND=8), DIMENSION(82)     :: DZ
+!INTEGER, DIMENSION(82)          :: J1TAP,IAB,ICD
 
-REAL(KIND=8), ALLOCATABLE,DIMENSION(:) :: DEWU3P,DZ
-INTEGER, ALLOCATABLE,DIMENSION(:)      :: J1TAP,IAB,ICD
+REAL(KIND=8), DIMENSION(KR0MAX*NX)    :: DEWU3P
+REAL(KIND=8), DIMENSION(NX)     :: DZ
+INTEGER, DIMENSION(NX)          :: J1TAP,IAB,ICD
 
 !B REAL(KIND=8), DIMENSION(378) :: DEWU3P
 !B REAL(KIND=8), DIMENSION(42)  :: DZ
 !B INTEGER, DIMENSION(42)       :: J1TAP,IAB,ICD
 
-INTEGER                         :: I3,NEC,KR0MAX,INDMAX,N2,KIMAX1,J1TD,J1T,J2TD,J2T,NX,IAH,IBH,ICH,&
+INTEGER                         :: I3,NEC,KR0MAX,INDMAX,J1TD,J1T,J2TD,J2T,NX,IAH,IBH,ICH,&
                                    IDH,I,NCDMAX,NCDMIN,LL1,MM1,LL2,MM2,IA1,IB1,IC1,IA2,&
                                    IB2,IC2,IS1,IS2,ISS,IE3,IEH,KR0CNT,NCD,NNC,LN1,LN2,INN,IND,IE2,IIE,&
                                    IE1,JJ2TA,JJ2TB,JJ1TA,JJ1TB,J,JJ2T,L,M,JJ1T,INDQ,IQ1,J1TP,INDP,INDPQ,&
                                    KR0,KI,KIP,IP1,IIQ2,IIQ2B,IIQ2A,IQ2B,IZ,IHELP,IX,IY,IN,ID,IP2,IIP2,&
-                                   KR0A,KR0B,INC,KR0PA,KR0P,IPH,K!,NNCMAX,KITEST
+                                   KR0A,KR0B,INC,KR0PA,KR0P,IPH,K,NNCMAX,KITEST!,N2,N1,KIMAX1
 REAL(KIND=8)                    :: DC,DN,DD,DS,DMIN
 TYPE(su3irrep)                  :: su3irrep1x,su3irrep2x,su3irrep3x,su3irrep1,su3irrep2,su3irrep3
 
-KR0MAX=outer_multiplicity(su3irrep1x,su3irrep2x,su3irrep3x)                   
+!KR0MAX=outer_multiplicity(su3irrep1x,su3irrep2x,su3irrep3x)                   
 IF(KR0MAX==0)RETURN
-!************************************************************************** BEGINNING OF A BLOCK ADDED BY J.H.
-NX=su3irrep2x%lambda+su3irrep2x%mu+1
-N2=NX*(NX+1)*(NX+2)/6
-KIMAX1=KR0MAX*N2
-DO I=1,N2
- J1TA(I)=0
- J2TA(I)=0
- IEA(I)=0
-END DO
-ALLOCATE(DEWU3P(KR0MAX*NX),DZ(NX),J1TAP(NX),IAB(NX),ICD(NX))
-!************************************************************************** END OF THE BLOCK ADDED BY J.H.
 
-!************************************************************************** BEGINNING OF A BLOCK COMMENTED OUT BY J.H. BECAUSE OF ITS IRRELEVANCE FOR ALLOCATABLE ARRAYS
+!************************************************************************** BEGINNING OF A BLOCK IRRELEVANT FOR AUTOMATIC ARRAYS
 ! DIMENSION CHECKS (LSU,6-81)-START                                 
 !IF(N1>9)THEN
 ! WRITE(*,FMT='(36H ***** XEWU3 DIMENSION OVERFLOW: N1=,I10)')N1                                                    
@@ -90,7 +101,7 @@ ALLOCATE(DEWU3P(KR0MAX*NX),DZ(NX),J1TAP(NX),IAB(NX),ICD(NX))
 ! STOP
 !END IF
 ! DIMENSION CHECKS (LSU,6-81)-START
-!************************************************************************** END OF THE BLOCK COMMENTED OUT BY J.H.
+!************************************************************************** END OF THE BLOCK IRRELEVANT FOR AUTOMATIC ARRAYS
 IF(I3.EQ.1)THEN
  su3irrep1=su3irrep1x
  su3irrep2=su3irrep2x
@@ -121,18 +132,17 @@ DO WHILE ((NCDMIN/=NCDMAX).AND.(outer_multiplicity(su3irrep1,su3irrep2+1,su3irre
  su3irrep2=su3irrep2+1
  NCDMIN=NCDMIN+1
 END DO
-!!************************************************************************** BEGINNING OF A BLOCK COMMENTED OUT BY J.H. BECAUSE OF ITS IRRELEVANCE FOR ALLOCATABLE ARRAYS
 ! DIMENSION MODIFICATION (LSU,6-81)-START
-!NNCMAX=NEC+NCDMAX-NCDMIN+2
-!KITEST=KR0MAX*(NNCMAX)*(NNCMAX+1)*(NNCMAX+2)/6
+NNCMAX=NEC+NCDMAX-NCDMIN+2
+KITEST=KR0MAX*(NNCMAX)*(NNCMAX+1)*(NNCMAX+2)/6
+!*************************************************************************** BEGINNING OF A BLOCK IRRELEVANT FOR AUTOMATIC DEWU3
 !IF(KITEST>KIMAX1)THEN !DIMENSION CHECKS (LSU,6-81)
 ! WRITE(*,FMT='(40H ***** XEWU3 DIMENSION OVERFLOW: KITEST=,I10,5X,7HKIMAX1=,I10)')KITEST,KIMAX1
 ! STOP
 !END IF
 ! DIMENSION MODIFICATION (LSU,6-81)--STOP
-!*************************************************************************** END OF THE BLOCK COMMENTED OUT BY J.H.
-!DO I=1,KITEST !************************************************************ THIS HAS BEEN COMMENTED OUT BY J.H.
-DO I=1,KIMAX1 !************************************************************* THIS HAS BEEN ADDED BY J.H. !!!!!!!!!!!!!!!!!!!!!! Asi tam staci cyklovat do KITEST
+!*************************************************************************** END OF THE BLOCK IRRELEVANT FOR AUTOMATIC DEWU3
+DO I=1,KITEST
  DEWU3(I)=0.D0
 ENDDO
 LL1=su3irrep1%lambda+1
@@ -167,8 +177,7 @@ DO NCD=NCDMIN,NCDMAX
  LN2=su3irrep2%lambda+NEC
  INN=NEC*NNC/2
  IF(NCD/=NCDMIN)THEN
-!!  DO I=1,KITEST !********************************************************** THIS HAS BEEN COMMENTED OUT BY J.H.
-  DO I=1,KIMAX1 !************************************************************ THIS HAS BEEN ADDED BY J.H.  !!!!!!!!!!!!!!!!!!!!!! Asi tam staci cyklovat do KITEST
+  DO I=1,KITEST
    DEWU3(I)=0.D0
   END DO
  END IF
@@ -515,10 +524,9 @@ DO IND=1,INDMAX
  DO KR0=1,KR0MAX
   I=I-2
   KI=KR0+INDQ
-  IF(4*(I/4)==I)DEWU3(KI)=-DEWU3(KI)
+  IF(4*(I/4)/=I)DEWU3(KI)=-DEWU3(KI)
  END DO
 END DO
-DEALLOCATE(DEWU3P,DZ,J1TAP,IAB,ICD)
 RETURN
 
 CONTAINS
