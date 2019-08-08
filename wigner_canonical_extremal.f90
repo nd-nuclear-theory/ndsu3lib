@@ -53,9 +53,7 @@ SUBROUTINE wigner_canonical_extremal&
 ! IEA(IND)=eps2 WHERE 1<=IND<=INDMAX
 ! eps1=eps3E-eps2
 ! FOR GIVEN eps1,Lam1,eps2,Lam2 THE EXTREMAL REDUCED WIGNER COEFFICIENTS ARE THE ELEMENTS OF ARRAY
-!  DEWU3 WITH INDECES FROM MINNUM TO MAXNUM (CORRESPONDING TO DIFFERENT VALUES OF rho) WHERE:
-!   MINNUM=1+KR0MAX*(IND-1)
-!   MAXNUM=KR0MAX+KR0MAX*(IND-1)=KR0MAX+MINNUM-1
+!  DEWU3 WITH INDECES rho+KR0MAX*(IND-1)
 !-----------------------------------------------------------------------
 USE derived_types
 USE binomial_coeff_factorials

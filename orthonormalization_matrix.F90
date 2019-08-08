@@ -8,7 +8,7 @@ SUBROUTINE orthonormalization_matrix(I,J,su3irrepx,KAPMAX,L,DONMAT)
 !                 (ND,2019)    J.HERKO            REWRITTEN IN MODERN FORTRAN, EXPLICIT DECLARATIONS,
 !                                                 STATEMENT FUNCTION "KSTART" REPLACED BY INTERNAL SUBPROGRAM,
 !                                                 DERIVED DATA TYPE su3irrep INSTEAD OF LAMBDA AND MU,
-!                                                 ALLOCATABLE ARRAY
+!                                                 AUTOMATIC ARRAY
 !                                                                       
 !     REFERENCES--J.P.DRAAYER AND Y.AKIYAMA, J.MATH.PHYS.14(1973)1904   
 !                 J.P.DRAAYER, NUCL.PHYS.A129(1969)647-665              
@@ -26,11 +26,11 @@ IMPLICIT NONE
 REAL(KIND=8), EXTERNAL :: transformation_coeff
 #if defined(SU3DBL)
 REAL(KIND=8), EXTERNAL :: transformation_coeff_quad
-REAL(KIND=8), ALLOCATABLE,DIMENSION(:) :: QONMAT
+REAL(KIND=8), DIMENSION(KAPMAX*KAPMAX) :: QONMAT
 REAL(KIND=8) :: QHOLD
 #elif (defined(SU3QUAD) || defined(SU3QUAD_GNU))
 REAL(KIND=16), EXTERNAL :: transformation_coeff_quad
-REAL(KIND=16), ALLOCATABLE,DIMENSION(:) :: QONMAT
+REAL(KIND=16), DIMENSION(KAPMAX*KAPMAX) :: QONMAT
 REAL(KIND=16) :: QHOLD
 #endif
 REAL(KIND=8), DIMENSION(1) :: DONMAT
@@ -40,7 +40,6 @@ REAL(KIND=8) :: DHOLD
 TYPE(su3irrep) :: su3irrepx
 
 IHELP=1
-ALLOCATE(QONMAT(KAPMAX*KAPMAX))
 
 IF(I==1)THEN
  KM=KSTART(su3irrepx%lambda,su3irrepx%mu,L)-2
@@ -167,7 +166,6 @@ ELSE
   END DO
  END DO
 END IF
-DEALLOCATE(QONMAT)
 RETURN
 	  
 CONTAINS

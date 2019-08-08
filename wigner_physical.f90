@@ -1,14 +1,14 @@
 SUBROUTINE wigner_physical(I1,J1,su3irrep1,KA1MAX,L1,DON1,I2,J2,su3irrep2,KA2MAX,L2,&
- DON2,I3,J3,su3irrep3,KA3MAX,L3,DON3,KR0MAX,INDMAX,DEWU3,J1TA,J2TA,IEA,DWU3R3)                                    
+ DON2,I3,J3,su3irrep3,KA3MAX,L3,DON3,KR0MAX,INDMAX,DEWU3,J1TA,J2TA,IEA,DWU3R3,N01,N012,N0123,N12,N123)                                    
 !-----------------------------------------------------------------------
-! Calculates reduced SU(3)-SO(3) Wigner coefficients <(lambda1,mu1)kappa1,L1;(lambda2,mu2)kappa2,L2||(lambda3,mu3)kappa3,L3>_rho
-! for fixed lambda1,mu1,L1,lambda2,mu2,L2,lambda3,mu3,L3
+! Calculates reduced SU(3)-SO(3) Wigner coefficients <(lam1,mu1)kap1,L1;(lam2,mu2)kap2,L2||(lam3,mu3)kap3,L3>_rho
+! for fixed lam1,mu1,L1,lam2,mu2,L2,lam3,mu3,L3
 !-----------------------------------------------------------------------
 !     UPDATE/MOD: (LSU,06-81)  J.P.DRAAYER        INDEXING DEWU3
 !                 (ND,2019)    J.HERKO            REWRITTEN IN MODERN FORTRAN, EXPLICIT DECLARATIONS,
 !                                                 STATEMENT FUNCTION "KSTART" REPLACED BY INTERNAL SUBPROGRAM,
 !                                                 DERIVED DATA TYPE su3irrep INSTEAD OF LAMBDA AND MU,
-!                                                 ALLOCATABLE ARRAYS
+!                                                 AUTOMATIC ARRAYS
 !                                                                       
 !     REFERENCES--J.P.DRAAYER AND Y.AKIYAMA, J.MATH.PHYS.14(1973)1904   
 !                 J.P.DRAAYER, NUCL.PHYS.A129(1969)647-665              
@@ -33,11 +33,31 @@ SUBROUTINE wigner_physical(I1,J1,su3irrep1,KA1MAX,L1,DON1,I2,J2,su3irrep2,KA2MAX
 ! This is a new version of XWU3R3
 !
 ! INPUT ARGUMENTS: I1,J1,su3irrep1,KA1MAX,L1,DON1,I2,J2,su3irrep2,KA2MAX,L2,DON2,
-!                  I3,J3,su3irrep3,KA3MAX,L3,DON3,KR0MAX,INDMAX,DEWU3,J1TA,J2TA,IEA
-!                  
-!                  where su3irrep1%lambda=lambda1,su3irrep1%mu=mu1 etc.
+!                  I3,J3,su3irrep3,KA3MAX,L3,DON3,KR0MAX,INDMAX,DEWU3,J1TA,J2TA,IEA,N12,N123
 !
 ! OUTPUT ARGUMENT: DWU3R3
+!
+! su3irrep1%lambda=lam1
+! su3irrep1%mu=mu1
+! su3irrep2%lambda=lam2
+! su3irrep2%mu=mu2
+! su3irrep3%lambda=lam3
+! su3irrep3%mu=mu3
+! (I,J)=(0,1) FOR lam>=mu, (I,J)=(1,0) FOR lam<mu
+! KA1MAX IS THE NUMBER OF OCCURENCES OF L1 IN SU(3) IRREP (lam1,mu1), i.e. THE MAXIMAL VALUE OF kap1
+!  (SIMILARLY FOR K2MAX AND K3MAX)
+! DON IS AN ARRAY PROVIDED BY SUBROUTINE orthonormalization_matrix FOR GIVEN lam,mu,L
+! KR0MAX IS THE MULTIPLICITY OF COUPLING (lam1,mu1)x(lam2,mu2)->(lam3,mu3)
+! INDMAX IS PROVIDED BY SUBROUTINE wigner_canonical_extremal
+! DEWU3 IS AN ARRAY PROVIDED BY SUBROUTINE wigner_canonical_extremal CONTAINING THE EXTREMAL SU(3)-SU(2)xU(1) REDUCED WIGNER COEFFICIENTS
+! J1TA,J2TA,IEA ARE ARRAYS PROVIDED BY SUBROUTINE wigner_canonical_extremal - SEE THE COMMENTS THEREIN
+! DWU3R3(N)=<(lam1,mu1)kap1,L1;(lam2,mu2)kap2,L2||(lam3,mu3)kap3,L3>_rho WHERE:
+!  N=rho+KR0MAX*(kap1-1)+KR0MAX*KA1MAX*(kap2-1)+KR0MAX*KA1MAX*KA2MAX*(kap3-1)
+! N01=KR0MAX*KA1MAX
+! N012=N01*KA2MAX
+! N0123=N012*KA3MAX
+! N12=KA1MAX*KA2MAX
+! N123=N12*KA3MAX
 !-----------------------------------------------------------------------
 USE derived_types
 IMPLICIT NONE
@@ -45,7 +65,10 @@ REAL(KIND=8), EXTERNAL :: transformation_coeff,clebsch_gordan
 REAL(KIND=8), DIMENSION(1) :: DON1,DON2,DON3,DEWU3,DWU3R3
 INTEGER, DIMENSION(1) :: J1TA,J2TA,IEA
 
-REAL(KIND=8), ALLOCATABLE,DIMENSION(:) :: DT1A,DT2A,DS1A,DS2A
+REAL(KIND=8), DIMENSION(KA1MAX) :: DT1A
+REAL(KIND=8), DIMENSION(KA2MAX) :: DT2A
+REAL(KIND=8), DIMENSION(N123) :: DS1A
+REAL(KIND=8), DIMENSION(N12) :: DS2A
 
 !REAL(KIND=8), DIMENSION(9) :: DT1A,DT2A
 !REAL(KIND=8), DIMENSION(729) :: DS1A
@@ -59,7 +82,7 @@ INTEGER :: I1,J1,KA1MAX,L1,I2,J2,KA2MAX,L2,I3,J3,KA3MAX,L3,KR0MAX,INDMAX,N01,N01
 REAL(KIND=8) ::	DS,DC
 TYPE(su3irrep) :: su3irrep1,su3irrep2,su3irrep3
 
-!************************************************************************** BEGINNING OF A BLOCK COMMENTED OUT BY J.H. BECAUSE OF ITS IRRELEVANCE FOR ALLOCATABLE ARRAYS
+!************************************************************************** BEGINNING OF A BLOCK COMMENTED OUT BY J.H. BECAUSE OF ITS IRRELEVANCE FOR AUTOMATIC ARRAYS
 ! DIMENSION CHECKS (LSU,6-81)-START
 ! icount = 0
 !IF(N1>9)THEN
@@ -76,13 +99,11 @@ TYPE(su3irrep) :: su3irrep1,su3irrep2,su3irrep3
 !END IF
 ! DIMENSION CHECKS (LSU,6-81)--STOP
 !************************************************************************** END OF THE BLOCK COMMENTED OUT BY J.H.
-N01=KR0MAX*KA1MAX ! N0,N1 used to be here instead of KR0MAX,KA1MAX
-N012=N01*KA2MAX ! N2 used to be here instead of KA2MAX
-N0123=N012*KA3MAX ! N3 used to be here instead of KA3MAX
-N12=KA1MAX*KA2MAX ! N2 used to be here instead of KA2MAX
-N123=N12*KA3MAX ! N3 used to be here instead of KA3MAX
-
-ALLOCATE(DT1A(KA1MAX),DT2A(KA2MAX),DS1A(N123),DS2A(N12))
+!N01=KR0MAX*KA1MAX ! N0,N1 used to be here instead of KR0MAX,KA1MAX
+!N012=N01*KA2MAX ! N2 used to be here instead of KA2MAX
+!N0123=N012*KA3MAX ! N3 used to be here instead of KA3MAX
+!N12=KA1MAX*KA2MAX ! N2 used to be here instead of KA2MAX
+!N123=N12*KA3MAX ! N3 used to be here instead of KA3MAX
 
 DO N=1,N0123
  DWU3R3(N)=0.D0
@@ -307,8 +328,6 @@ DO KA3=1,KA3MAX
  END DO
 END DO
 !     write(6,*) ' icount ', icount
-
-DEALLOCATE(DT1A,DT2A,DS1A,DS2A)
 
 RETURN
 
