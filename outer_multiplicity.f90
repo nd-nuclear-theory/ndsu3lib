@@ -1,38 +1,21 @@
-FUNCTION outer_multiplicity(su3irrep1,su3irrep2,su3irrep3) RESULT(rhomax)
-!-----------------------------------------------------------------------------------------
-! Calculates the multiplicity of SU(3) coupling (lambda1,mu1)x(lambda2,mu2)->(lambda3,mu3)
-! lambda1=su3irrep1%lambda, mu1=su3irrep1%mu etc.
-! This is a new version of MULTU3
-!-----------------------------------------------------------------------------------------
-USE derived_types  ! This module contains definitions of derived data types and operators
+FUNCTION outer_multiplicity(lambda1,mu1,lambda2,mu2,lambda3,mu3) RESULT(rhomax)
+!-------------------------------------------------------------------------------------
+! Calculates multiplicity of SU(3) coupling (lambda1,mu1)x(lambda2,mu2)->(lambda3,mu3)
+! Reference: M.F.O'Reilly, J.Math.Phys. 23 (1982) 2022: Section 5, Proposition 7(a)
+!-------------------------------------------------------------------------------------
 IMPLICIT NONE
-TYPE(su3irrep), INTENT(IN) :: su3irrep1,su3irrep2,su3irrep3
-INTEGER                    :: rhomax,NX,MX,L1,L2,L3,M1,M2,M3,MU,NU,MY,NY
-rhomax=0                                                          
-NX=su3irrep1%lambda+su3irrep2%lambda-su3irrep3%lambda-su3irrep1%mu-su3irrep2%mu+su3irrep3%mu
-MX=NX/3            ! If NX is not a multiple of 3, MX is not equal to NX/3
-IF(3*MX/=NX)RETURN ! If NX is not a multiple of 3, rhomax=0
-IF(MX>=0)THEN
- L1=su3irrep1%lambda
- L2=su3irrep2%lambda
- L3=su3irrep3%lambda
- M1=su3irrep1%mu
- M2=su3irrep2%mu
- M3=su3irrep3%mu
+INTEGER,INTENT(IN) :: lambda1,mu1,lambda2,mu2,lambda3,mu3
+INTEGER :: rhomax,C3,D3,C,D
+C3=lambda1-mu1+lambda2-mu2-lambda3+mu3 ! C3 equals 3 times the C in the reference
+D3=lambda1+lambda2-lambda3+2*(mu1+mu2-mu3) ! D3 equals 3 times the D in the reference
+C=C3/3 ! C equals the C in the reference if 3 divides C3
+D=D3/3 ! D equals the D in the reference if 3 divides D3
+IF((3*C==C3).AND.(3*D==D3)& ! Condition (i) in the reference
+   .AND.(D>=0).AND.(D<=MIN(mu1+mu2,lambda2+mu2,lambda1+mu1)).AND.(C>=-MIN(mu2,mu1)).AND.(C<=MIN(lambda1,lambda2))&
+   .AND.(D+C>=0).AND.(D+C<=MIN(lambda1+mu1,lambda2+lambda1,lambda2+mu2)))THEN ! Condition (ii) in the reference
+  rhomax=1+MIN(mu2,lambda1+mu1,D,lambda1-C)-MAX(0,D-mu1,D-lambda2,-C,D-C-mu1,D+C-lambda2)
 ELSE
- L1=su3irrep1%mu
- L2=su3irrep2%mu
- L3=su3irrep3%mu
- M1=su3irrep1%lambda
- M2=su3irrep2%lambda
- M3=su3irrep3%lambda
- MX=-MX
+  rhomax=0
 END IF
-NX=MX+M1+M2-M3                                                    
-MU=MIN(L1-MX,M2)                                                          
-IF(MU<0)RETURN                                                 
-NU=MIN(L2-MX,M1)
-IF(NU<0)RETURN                                                 
-rhomax=MAX(MIN(NX,NU)-MAX(NX-MU,0)+1,0)
 RETURN                                                            
 END FUNCTION outer_multiplicity

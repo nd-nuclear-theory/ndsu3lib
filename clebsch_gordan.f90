@@ -1,43 +1,25 @@
-FUNCTION clebsch_gordan(J1T,J2T,J3T,M1T,M2T,M3T) RESULT(DWR3)
-!-------------------------------------------------------------------------
-! CALCULATES THE R3 WIGNER (CLEBSCH-GORDAN) COEFFICIENT <j1,m1;j2,m2|j3,m3>
-! TRIANGLE RELATIONS CHECKED IN delta
-! REFERENCES--ELEMENTARY THEORY OF ANGULAR MOMENTUM, M.E.ROSE, WILEY
-!
-! ARGUMENTS: J1T=2*j1, J2T=2*j2, J3T=2*j3, M1T=2*m1, M2T=2*m2, M3T=2*m3
-!-------------------------------------------------------------------------
-USE binomial_coeff_factorials
+FUNCTION clebsch_gordan(j1,m1,j2,m2,j3,m3) RESULT(cg)
+!----------------------------------------------------------------------------
+! Calculates SU(2) Clebsch-Gordan coefficient <j1/2,m1/2,j2/2,m2/2|j3/2,m3/2>
+! using GSL function gsl_sf_coupling_3j calculating 3j symbol.
+!----------------------------------------------------------------------------
+USE iso_c_binding
 IMPLICIT NONE
-REAL(KIND=8), EXTERNAL :: delta
-INTEGER, INTENT(IN) :: J1T,J2T,J3T,M1T,M2T,M3T
-REAL(KIND=8) :: DWR3,DC,DTOP,DBOT,DSUM
-INTEGER :: I1,I2,I3,I4,I5,ITMIN,ITMAX,IT
-DWR3=0.D0
-IF(M1T+M2T-M3T/=0)RETURN
-DC=delta(J1T,J2T,J3T)
-IF(DC==12345.D0)RETURN
-I1=J3T-J2T+M1T
-I2=J3T-J1T-M2T
-I3=J1T+J2T-J3T
-I4=J1T-M1T
-IF(BTEST(I4,0))RETURN
-I5=J2T+M2T
-IF(BTEST(I5,0))RETURN
-ITMIN=MAX(0,-I1,-I2)
-ITMAX=MIN(I3,I4,I5)
-IF(ITMIN>ITMAX)RETURN
-DTOP=(DLOG(DFLOAT(J3T+1))+DC+DLOGF(J1T+M1T)+DLOGF(J1T-M1T)+&
-     DLOGF(J2T+M2T)+DLOGF(J2T-M2T)+DLOGF(J3T+M3T)+&
-     DLOGF(J3T-M3T))/DFLOAT(2)
-DO IT=ITMIN,ITMAX,2
- DBOT=DLOGF(I3-IT)+DLOGF(I4-IT)+DLOGF(I5-IT)+&
-      DLOGF(IT)+DLOGF(I1+IT)+DLOGF(I2+IT)
- DSUM=DEXP(DTOP-DBOT)
- IF(BTEST(IT,1))THEN
-  DWR3=DWR3-DSUM
- ELSE
-  DWR3=DWR3+DSUM
- END IF
-END DO
+
+INTERFACE
+REAL(C_DOUBLE) FUNCTION gsl_sf_coupling_3j(l1,n1,l2,n2,l3,n3) BIND(C)
+USE iso_c_binding
+INTEGER(C_INT), VALUE :: l1,n1,l2,n2,l3,n3
+END FUNCTION gsl_sf_coupling_3j
+END INTERFACE
+
+INTEGER(C_INT),INTENT(IN) :: j1,m1,j2,m2,j3,m3
+REAL(C_DOUBLE) :: cg
+INTEGER :: a
+
+cg=gsl_sf_coupling_3j(j1,j2,j3,m1,m2,-m3)*DSQRT(DFLOAT(j3+1))
+a=j1-j2+m3
+IF((a/4)*4/=a)cg=-cg
+
 RETURN
 END FUNCTION clebsch_gordan

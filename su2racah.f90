@@ -1,46 +1,25 @@
-FUNCTION su2racah(J1T,J2T,L2T,L1T,J3T,L3T) RESULT(DRR3)
-!------------------------------------------------------------------
-! RACAH COEFFICIENTS FOR R3--TRIANGLE RELATION CHECKED IN DELTA     
-! REFERENCES--THE 3-J AND 6-J SYMBOLS, M.ROTENBERG, R.BIVINS,       
-!             N.METROPOLIS AND J.K.WOOTEN, MIT PRESS                
-!------------------------------------------------------------------
-USE binomial_coeff_factorials
+FUNCTION su2racah(j1,j2,j,j3,j12,j23) RESULT(w)
+!---------------------------------------------------------------------
+! Calculates SU(2) Racah coefficient W(j1/2,j2/2,j/2,j3/2,j12/2,j23/2)
+! using GSL function gsl_sf_coupling_6j calculating 6j symbol.
+!---------------------------------------------------------------------
+USE iso_c_binding
 IMPLICIT NONE
-REAL(KIND=8),EXTERNAL :: DELTA
-INTEGER, INTENT(IN) :: J1T,J2T,L2T,L1T,J3T,L3T
-REAL(KIND=8) :: DRR3,DX,DC,DSUM
-INTEGER :: I1,I2,I3,I4,I5,I6,I7,ITMIN,ITMAX,IT
-DRR3=0.D0
-DX=DELTA(J1T,J2T,J3T)
-IF(DX==12345D0)RETURN
-DC=DX
-DX=DELTA(L1T,L2T,J3T)
-IF(DX==12345D0)RETURN
-DC=DX+DC
-DX=DELTA(L1T,J2T,L3T)
-IF(DX==12345D0)RETURN
-DC=DX+DC
-DX=DELTA(J1T,L2T,L3T)
-IF(DX==12345D0)RETURN
-DC=(DX+DC)/2.D0
-I1=J3T+L3T-J1T-L1T
-I2=J3T+L3T-J2T-L2T
-I3=J1T+J2T+L1T+L2T+2
-I4=J1T+J2T-J3T
-I5=L1T+L2T-J3T
-I6=J1T+L2T-L3T
-I7=L1T+J2T-L3T
-ITMIN=MAX(0,-I1,-I2)
-ITMAX=MIN(I3,I4,I5,I6,I7)
-IF(ITMIN>ITMAX)RETURN
-DO IT=ITMIN,ITMAX,2
- DSUM=DEXP(DC+DLOGF(I3-IT)-(DLOGF(I4-IT)+DLOGF(I5-IT)+&
-      DLOGF(I6-IT)+DLOGF(I7-IT)+DLOGF(IT)+DLOGF(I1+IT)+DLOGF(I2+IT)))   
- IF(BTEST(IT,1))THEN
-  DRR3=DRR3-DSUM
- ELSE
-  DRR3=DRR3+DSUM
- ENDIF
-END DO
+
+INTERFACE
+REAL(C_DOUBLE) FUNCTION gsl_sf_coupling_6j(l1,l2,l12,l3,l,l23) BIND(C)
+USE iso_c_binding
+INTEGER(C_INT), VALUE :: l1,l2,l12,l3,l,l23
+END FUNCTION gsl_sf_coupling_6j
+END INTERFACE
+
+INTEGER(C_INT),INTENT(IN) :: j1,j2,j,j3,j12,j23
+REAL(C_DOUBLE) :: w
+INTEGER :: a
+
+w=gsl_sf_coupling_6j(j1,j2,j12,j3,j,j23)
+a=j1+j2+j3+j
+IF((a/4)*4/=a)w=-w
+
 RETURN
 END FUNCTION su2racah

@@ -1,206 +1,105 @@
-SUBROUTINE racah(su3irrep1,su3irrep2,su3irrepx,su3irrep3,su3irrep12,&
-                 su3irrep23,KR0A,KR0B,KR0C,KR0D,RHS,INFO,KIMAX2,&
-                 X1,X2,X3,NCE2A,NCE2B,NCE2D,NABC)
-!--------------------------------------------------------------------------------------
-! SUBROUTINE TO CALCULATE SU(3) RACAH COEFFICIENTS
-! U((LAM1,MU1)(LAM2,MU2)(LAM,MU)(LAM3,MU3);(LAM12,MU12)RHOA,RHOB(LAM23,MU23)RHOC,RHOD)
-! BY SOLVING THE SET OF EQUATIONS (22) USING MKL LAPACK SUBROUTINE dgesv
-!
-! REFERENCE: DRAAYER, AKIYAMA, J. MATH. PHYS., VOL. 14, NO. 12, 1973
-!
-! INPUT ARGUMENTS: su3irrep1,su3irrep2,su3irrepx,su3irrep3,su3irrep12,su3irrep23,KR0A,
-!                  KR0B,KR0C,KR0D,KIMAX2,X1,X2,X3,NCE2A,NCE2B,NCE2D,NABC
-! OUTPUT ARGUMENTS: RHS,INFO
-!
-! su3irrep1%lambda=LAM1
-! su3irrep1%mu=MU1
-! su3irrep2%lambda=LAM2
-! su3irrep2%mu=MU2
-! su3irrepx%lambda=LAM
-! su3irrepx%mu=MU
-! su3irrep3%lambda=LAM3
-! su3irrep3%mu=MU3
-! su3irrep12%lambda=LAM12
-! su3irrep12%mu=MU12
-! su3irrep23%lambda=LAM23
-! su3irrep23%mu=MU23
-! KR0A=MULTIPLICITY OF COUPLING (LAM1,MU1)x(LAM2,MU2)->(LAM12,MU12)
-! KR0B=MULTIPLICITY OF COUPLING (LAM12,MU12)x(LAM3,MU3)->(LAM,MU)
-! KR0C=MULTIPLICITY OF COUPLING (LAM2,MU2)x(LAM3,MU3)->(LAM23,MU23)
-! KR0D=MULTIPLICITY OF COUPLING (LAM1,MU1)x(LAM23,MU23)->(LAM,MU)
-! KIMAX2=KR0C*DIM(LAM3,MU3)
-! X1=LAM3+MU3+1
-! X2=LAM2+MU2+1
-! X3=LAM23+MU23+1
-! NCE2A=X2*(X2+1)*(X2+2)/6
-! NCE2B=X1*(X1+1)*(X1+2)/6
-! NCE2D=X3*(X3+1)*(X3+2)/6
-! NABC=KR0A*KR0B*KR0C
-! RHS(RHOD,N)=U((LAM1,MU1)(LAM2,MU2)(LAM,MU)(LAM3,MU3);(LAM12,MU12)RHOA,RHOB(LAM23,MU23)RHOC,RHOD)
-!  WHERE N=RHOA+KR0A*(RHOB-1)+KR0A*KR0B*(RHOC-1)
-! INFO=0 IFF dgesv RAN WITHOUT ERRORS
-!--------------------------------------------------------------------------------------
-USE derived_types
+SUBROUTINE racah(lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,lambda23,mu23,&
+                 rhomaxa,rhomaxb,rhomaxc,rhomaxd,rac,info)
+!---------------------------------------------------------------------------------------------------------------------
+! Input arguments: lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,lambda23,mu23,rhomaxa,rhomaxb,rhomaxc,rhomaxd
+! Output arguments: rac,info
+! 
+! rac(rhod,n)=U((lambda1,mu1)(lambda2,mu2)(lambda,mu)(lambda3,mu3);(lambda12,mu12)rhoa,rhob(lambda23,mu23)rhoc,rhod)
+!   where n=rhoa+rhomaxa*(rhob-1)+rhomaxa*rhomaxb*(rhoc-1)
+! info=0 if dgesv ran without errors
+!---------------------------------------------------------------------------------------------------------------------
 IMPLICIT NONE
-REAL(KIND=8), EXTERNAL :: su2racah
-INTEGER :: KR0A,KR0B,KR0C,KR0D,INFO,NABC,NECA,NECB,NECC,NECD,INDMAX,I1,I2,I3,I4,I5,I6,&
-           JTDMIN,JTDMAX,IE12,IE23,KA,KB,KC,KD,IND,IES,J,N,KR0IND,MINNUM,MAXNUM,J23T,&
-           IESMAX,IE3MAX,J12TD,JJ12TA,JJ12TB,IS,J2TD,J2T,J3TD,J3T,J3S,J3SB,J3SQ,IESJ3S,&
-           INDA,INDB,INDC,J2S,J2SB,IAQ,IBQ,ICQ,J12T,JJ12T,KAIA,KBIB,KCIC,KIMAX2,&
-           X1,X2,X3,NCE2A,NCE2B,NCE2D
-REAL(KIND=8) :: D1,D2,DC
-TYPE(su3irrep) :: su3irrep1,su3irrep2,su3irrepx,su3irrep3,su3irrep12,su3irrep23,su3irrep2s
+INTEGER,EXTERNAL :: outer_multiplicity
+REAL(KIND=8),EXTERNAL :: su2racah
+INTEGER :: lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,lambda23,mu23,info,epsilon23,&
+           rhomaxa,rhomaxb,rhomaxc,rhomaxd,rhomaxabc,numba,numbb,numbc,numbd,i1,i2,inda,indd,i,&
+           epsilon23ind,Lambda122,epsilon2,Lambda22,epsilon3ind,p3,q3,n,rhoa,rhob,rhoc,epsilon2ind,&
+           Lambda232,Lambda32,p3min,p3max!,j
+REAL(KIND=8) :: factor1,factor2,factor3
+REAL(KIND=8),DIMENSION(9,729) :: rac
+REAL(KIND=8),DIMENSION(9,9) :: matrix
+REAL(KIND=8),DIMENSION(0:20,0:20,0:20,1:9) :: wignera,wignerb,wignerc,wignerd,wigner
+INTEGER,DIMENSION(9261) :: Lambda12aa,Lambda22aa,epsilon2aa,Lambda12ac,Lambda22ac,epsilon2ac,Lambda22ad!,Lambda12ad,Lambda12ac,Lambda22ac,epsilon2ac
 
-!REAL(KIND=8), DIMENSION(27090) :: DWU3
-!REAL(KIND=8), DIMENSION(39732) :: DEWU3A,DEWU3B,DEWU3C,DEWU3D
-!REAL(KIND=8), DIMENSION(9,9) :: MATRIX
-!REAL(KIND=8), DIMENSION(9,729) :: RHS
-!INTEGER, DIMENSION(13244) :: JXTA,JYTD,IE,JXTB,JXTD
-!INTEGER, DIMENSION(1764) :: J2SMAX,J2TMAX,INDMAT
-!INTEGER, DIMENSION(42) :: J3SMAX,J3TMAX
-!INTEGER, DIMENSION(9) :: IPIV
+!rhomaxa=outer_multiplicity(lambda1,mu1,lambda2,mu2,lambda12,mu12)
+!rhomaxb=outer_multiplicity(lambda12,mu12,lambda3,mu3,lambda,mu)
+!rhomaxc=outer_multiplicity(lambda2,mu2,lambda3,mu3,lambda23,mu23)
+!rhomaxd=outer_multiplicity(lambda1,mu1,lambda23,mu23,lambda,mu)
+rhomaxabc=rhomaxa*rhomaxb*rhomaxc
+epsilon23=-lambda-2*mu+lambda1+2*mu1
+epsilon23ind=(epsilon23+lambda23+2*mu23)/3
+i1=3*lambda1+8*lambda2-6*lambda12+6*mu1+4*mu2-6*mu12
+factor1=DFLOAT((lambda1+1)*dimen(lambda12,mu12))/DFLOAT(dimen(lambda1,mu1))
 
-REAL(KIND=8), DIMENSION(KIMAX2) :: DWU3
-REAL(KIND=8), DIMENSION(KR0A*NCE2A) :: DEWU3A
-REAL(KIND=8), DIMENSION(KR0B*NCE2B) :: DEWU3B
-REAL(KIND=8), DIMENSION(KR0C*NCE2B) :: DEWU3C
-REAL(KIND=8), DIMENSION(KR0D*NCE2D) :: DEWU3D
-REAL(KIND=8), DIMENSION(KR0D,KR0D) :: MATRIX
-REAL(KIND=8), DIMENSION(KR0D,NABC) :: RHS
-INTEGER, DIMENSION(NCE2A) :: JXTA
-INTEGER, DIMENSION(MAX(NCE2A,NCE2B,NCE2D)) :: JYTD,IE
-INTEGER, DIMENSION(NCE2B) :: JXTB
-INTEGER, DIMENSION(NCE2D) :: JXTD
-INTEGER, DIMENSION(X1*X1) :: J2SMAX,J2TMAX,INDMAT
-INTEGER, DIMENSION(X1) :: J3SMAX,J3TMAX
-INTEGER, DIMENSION(KR0D) :: IPIV
+rac(1:rhomaxd,1:rhomaxabc)=0.D0
 
-!      EQUIVALENCE(JXTB(1),JXTC(1),JXTD(1))                              
-!      EQUIVALENCE(JYTB(1),JYTC(1),JYTD(1))                              
-!      EQUIVALENCE(IEB(1),IEC(1),IED(1))                                 
-                                       
-!      COMMON/BKSAVE/DEWU3A,DEWU3B,DEWU3C,DEWU3D
-!!$omp threadprivate(/BKSAVE/)
-!$omp threadprivate(DEWU3A,DEWU3B,DEWU3C,DEWU3D)                       
-                                                
-su3irrep2s%lambda=su3irrep2%mu
-su3irrep2s%mu=su3irrep2%lambda
+CALL wigner_canonical_extremal(lambda1,mu1,lambda23,mu23,lambda,mu,1,rhomaxd,numbd,wignerd,Lambda12aa,Lambda22ad,epsilon2aa)
+CALL wigner_canonical_extremal(lambda2,mu2,lambda3,mu3,lambda23,mu23,1,rhomaxc,numbc,wignerc,Lambda12aa,Lambda22aa,epsilon2aa)
+CALL wigner_canonical_extremal(lambda12,mu12,lambda3,mu3,lambda,mu,1,rhomaxb,numbb,wignerb,Lambda12aa,Lambda22aa,epsilon2aa)
+CALL wigner_canonical_extremal(lambda12,mu12,mu2,lambda2,lambda1,mu1,1,rhomaxa,numba,wignera,Lambda12aa,Lambda22aa,epsilon2aa)
 
-CALL wigner_canonical_extremal(su3irrep2,su3irrep3,su3irrep23,1,NECC,KR0C,INDMAX,DEWU3C,JXTB,JYTD,IE,X1)
-CALL wigner_canonical_extremal(su3irrep12,su3irrep3,su3irrepx,1,NECB,KR0B,INDMAX,DEWU3B,JXTB,JYTD,IE,X1)
-CALL wigner_canonical_extremal(su3irrep12,su3irrep2s,su3irrep1,1,NECA,KR0A,INDMAX,DEWU3A,JXTA,JYTD,IE,X2)
-CALL wigner_canonical_extremal(su3irrep1,su3irrep23,su3irrepx,1,NECD,KR0D,INDMAX,DEWU3D,JXTD,JYTD,IE,X3)
+i=0
+!j=rhomaxd+1
+DO indd=numbd,numbd-rhomaxd+1,-1 ! This is a loop over Lambda23
+  Lambda232=Lambda22ad(indd)
+!  j=j-1
+  i=i+1
+  matrix(i,1:rhomaxd)=wignerd(lambda1,epsilon23ind,Lambda232,1:rhomaxd)
+  factor2=DSQRT(factor1*DFLOAT(Lambda232+1))
 
-I1=su3irrepx%lambda+2*su3irrepx%mu                                                       
-I2=su3irrep12%lambda+2*su3irrep12%mu                                                   
-I3=4*su3irrep12%lambda+2*su3irrep12%mu                                                 
-I4=2*I2                                                           
-I5=2*(su3irrep12%lambda-su3irrep12%mu)                                                 
-JTDMIN=MAX(0,NECA-su3irrep2%lambda-su3irrep2%mu,NECB-su3irrep3%lambda-su3irrep3%mu)                        
-JTDMAX=MIN(NECA,NECB,su3irrep12%lambda+su3irrep12%mu)                                 
-D1=DFLOAT((su3irrep1%lambda+1)*IDM(su3irrep12))/DFLOAT(IDM(su3irrep1))         
-IE23=su3irrep1%lambda+2*su3irrep1%mu-I1                                                
+  CALL wigner_canonical(lambda2,mu2,lambda3,mu3,lambda23,mu23,epsilon23,Lambda232,&
+                        rhomaxc,numbc,wignerc,wigner,Lambda12ac,Lambda22ac,epsilon2ac)
 
-KD=0
-DO IND=INDMAX,1,-1
- IF(JXTD(IND)<0)CYCLE
- MINNUM=1+KR0D*(IND-1)
- MAXNUM=KR0D+MINNUM-1
- KD=KD+1
- J=0
- DO KR0IND=MINNUM,MAXNUM
-  J=J+1
-  MATRIX(KD,J)=DEWU3D(KR0IND)
- END DO
+  DO inda=1,numba ! sum over epsilon2,Lambda2,Lambda12
+    Lambda122=Lambda12aa(inda)
+    epsilon2=epsilon2aa(inda) ! WARNING: epsilon2 is -epsilon2 in the formula!
+    epsilon2ind=(epsilon2+mu2+2*lambda2)/3
+    Lambda22=Lambda22aa(inda)
+    epsilon3ind=(-lambda-2*mu+lambda1+2*mu1+epsilon2+lambda3+2*mu3)/3
+    i2=i1+epsilon2+3*Lambda122
+    p3min=MAX(0,lambda3-epsilon3ind)
+    p3max=MIN(lambda3,lambda3+mu3-epsilon3ind)
+    IF(p3min<=p3max)THEN
+      DO p3=p3min,p3max ! sum over Lambda3
+!        q3=lambda3+mu3-epsilon3ind-p3
+!        Lambda32=mu3+p3-q3
+        Lambda32=2*p3-lambda3+epsilon3ind
+        factor3=factor2*su2racah(lambda1,Lambda22,lambda,Lambda32,Lambda122,Lambda232)
+        IF(12*(i2/12)/=i2)factor3=-factor3
 
- J23T=JYTD(IND)
- D2=DSQRT(D1*DFLOAT(J23T+1))                                       
- CALL wigner_canonical(su3irrep2,su3irrep3,su3irrep23,IE23,J23T,NECC,DEWU3C,KR0C,INDMAX,DWU3,&
-                       J2SMAX,J2TMAX,J3SMAX,J3TMAX,IESMAX,IE3MAX,INDMAT,X1,KIMAX2)
- IE12=3*IESMAX-IE3MAX-I1                                           
- J12TD=(IE12+I2)/3                                                 
- DO IES=1,IESMAX                                                
-  IE12=IE12-3                                                       
-  J12TD=J12TD-1                                                     
-  IF(J12TD<JTDMIN)CYCLE                                       
-  IF(J12TD>JTDMAX)CYCLE                                     
-  JJ12TA=I3+IE12                                                    
-  IS=I4-IE12                                                        
-  IF(IS<JJ12TA)JJ12TA=IS                                         
-  JJ12TA=JJ12TA/3+1                                                 
-  IS=(I5-IE12)/3                                                    
-  JJ12TB=JJ12TA-ABS(IS)                                            
-  I6=2*su3irrep1%lambda+IS                                                      
-  J2TD=NECA-J12TD                                                   
-  J3TD=NECB-J12TD                                                   
-  J3T=J3TMAX(IES)+2                                                 
-  J3SB=J3SMAX(IES)                                                  
-  J3SQ=-X1                                                         
-  DO J3S=1,J3SB                                                  
-   J3SQ=J3SQ+X1                                                    
-   IESJ3S=IES+J3SQ                                                   
-   J3T=J3T-2                                                         
-   J2T=J2TMAX(IESJ3S)+2                                              
-   INDC=(INDMAT(IESJ3S)-J2T)/2                                       
-   J2SB=J2SMAX(IESJ3S)                                               
-   DO J2S=1,J2SB                                                  
-    J2T=J2T-2                                                         
-    ICQ=INDC*KR0C                                                     
-    INDC=INDC+1 
-    DO JJ12T=1,JJ12TB,2                                            
-     J12T=JJ12TA-JJ12T                                                 
-     INDA=INDEX(J12TD,su3irrep12%lambda,J12T,J2TD,su3irrep2%mu,J2T)                         
-     IF(JXTA(INDA)<0)CYCLE                                      
-     INDB=INDEX(J12TD,su3irrep12%lambda,J12T,J3TD,su3irrep3%lambda,J3T)                        
-     IF(JXTB(INDB)<0)CYCLE                                        
-     DC=D2*su2racah(su3irrep1%lambda,J2T,su3irrepx%lambda,J3T,J12T,J23T)                            
-     IS=J12T+I6                                                        
-     IF(4*(IS/4)/=IS)DC=-DC                                          
-     IAQ=(INDA-1)*KR0A                                                 
-     IBQ=(INDB-1)*KR0B                                                 
+        n=0
+        DO rhoc=1,rhomaxc
+          DO rhob=1,rhomaxb
+            DO rhoa=1,rhomaxa
+!              n=rhoa+rhomaxa*(rhob-1)+rhomaxa*rhomaxb*(rhoc-1)
+              n=n+1
+              rac(i,n)=rac(i,n)+factor3*wignera(Lambda122,epsilon2ind,Lambda22,rhoa)&
+                       *wignerb(Lambda122,epsilon3ind,Lambda32,rhob)*wigner(Lambda22,epsilon3ind,Lambda32,rhoc)
 
-     N=0
-     DO KC=1,KR0C                                                                  
-      KCIC=KC+ICQ                                                       
-      DO KB=1,KR0B                                                                 
-       KBIB=KB+IBQ                                                       
-       DO KA=1,KR0A                                                    
-        KAIA=KA+IAQ                                                       
-        N=N+1
-        RHS(KD,N)=RHS(KD,N)+DC*DEWU3A(KAIA)*DEWU3B(KBIB)*DWU3(KCIC)
-       END DO
+            END DO
+          END DO
+        END DO
+
       END DO
-     END DO
-
-    END DO
-   END DO
+    END IF
   END DO
- END DO
- IF(KD==KR0D)EXIT      
 END DO
 
-IF(KR0D>1)THEN
- CALL dgesv(KR0D,NABC,MATRIX,KR0D,IPIV,RHS,KR0D,INFO)
+!print*,matrix(1,1),matrix(1,2),rac(1,1)
+!print*,matrix(2,1),matrix(2,2),rac(2,1)
+
+IF(rhomaxd>1)THEN
+  CALL dgesv(rhomaxd,rhomaxabc,matrix,9,epsilon2aa,rac,9,info)
 ELSE
- DO N=1,NABC
-  RHS(1,N)=RHS(1,N)/MATRIX(1,1)
- END DO
+  rac(1,1:rhomaxabc)=rac(1,1:rhomaxabc)/matrix(1,1)
 END IF
 
 RETURN
-
 CONTAINS
- FUNCTION IDM(su3irrepx) RESULT(IIDM)
-  IMPLICIT NONE
-  TYPE(su3irrep),INTENT (IN) :: su3irrepx
-  INTEGER :: IIDM
-  IIDM=(su3irrepx%lambda+1)*(su3irrepx%mu+1)*(su3irrepx%lambda+su3irrepx%mu+2)/2
- END FUNCTION IDM
-
- FUNCTION INDEX(J1TD,LAM1,J1T,J2TD,LAM2,J2T) RESULT(IINDEX)
-  IMPLICIT NONE
-  INTEGER,INTENT (IN) :: J1TD,LAM1,J1T,J2TD,LAM2,J2T
-  INTEGER :: IINDEX
-  IINDEX=1+J2TD*(J2TD+1)*(3*J1TD+J2TD+5)/6+(J1TD+1)*(LAM2+J2TD-J2T)/2+(LAM1+J1TD-J1T)/2
- END FUNCTION INDEX     
+  FUNCTION dimen(lambdax,mux) RESULT(dm) ! Function dimen(lambdax,mux) calculates the dimension of the SU(3) irrep (lambdax,mux).
+    IMPLICIT NONE
+    INTEGER,INTENT (IN) :: lambdax,mux
+    INTEGER :: dm
+    dm=(lambdax+1)*(mux+1)*(lambdax+mux+2)/2
+  END FUNCTION dimen
 END SUBROUTINE racah
