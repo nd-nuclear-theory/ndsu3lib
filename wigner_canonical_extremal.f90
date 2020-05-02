@@ -32,16 +32,17 @@ INTEGER,EXTERNAL :: outer_multiplicity
 INTEGER :: lambda1,mu1,lambda2,mu2,lambda3,mu3,p2,q2,Lambda22,i1,j2,j1,p2tilde,q2tilde,i,j,n,a,b,c,d,i2,&
            epsilon2,steps21,eps2,Lambda12,epsilon1,Sq2,Rp2,eta,p1,q1,rho,rhomax,i4,Lambda22max,ABCD,&
            lambda1x,mu1x,lambda2x,mu2x,lambda3x,mu3x,I3,phiprhomax
-INTEGER(KIND=8) :: F,G,H,prod
+INTEGER(KIND=8) :: prod!,F,G,H
+REAL(KIND=8) :: F,G,H
 INTEGER,DIMENSION(1) :: Lambda12a,Lambda22a,epsilon2a ! Dimension is (lambda1+mu1+1)*((lambda2+mu2+1)^2)
 
-!INTEGER :: k1,k2,k3,k4 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! VYMAZAT
+INTEGER :: k1,k2,k3,k4 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! VYMAZAT
 !INTEGER,DIMENSION((lambda1x+mu1x+1)*((lambda2x+mu2x+1)**2),rhomax) :: Lambda12at,Lambda22at,epsilon2at !!!!!!!!!!! VYMAZAT
 
 ! BACHA, PODLA PATRIKA POLIA, KTORE SU LEN V PODPROGRAME, BY MALI BYT ALOKOVATELNE A NIE AUTOMATICKE ABY NEBOL SEGMENTATION FAULT
 
 REAL(KIND=8),DIMENSION(0:lambda1x+mu1x,0:lambda2x+mu2x) :: wigner ! Dimensions should be (0:lambda1+mu1,0:lambda2+mu2)
-REAL(KIND=8),DIMENSION(0:20,0:20,0:20,1:9) :: wignerfinal ! First index is 2*Lambda1, second is (epsilon2-epsilon2HW)/3, third is 2*Lambda2, fourth is rho
+REAL(KIND=8),DIMENSION(0:30,0:30,0:30,1:9) :: wignerfinal ! First index is 2*Lambda1, second is (epsilon2-epsilon2HW)/3, third is 2*Lambda2, fourth is rho
 ! Preco tu nefungure assumed-shape array???
 REAL(KIND=8),DIMENSION(rhomax) :: norm ! dimension is rhomax
 REAL(KIND=8),DIMENSION(2:rhomax,rhomax-1) :: scalprod ! dimension is (2:rhomax,rhomax-1)
@@ -87,6 +88,8 @@ DO
 END DO
 ! lambda2 is \bar{lambda2}, mu2 is \bar{mu2}
 
+!print*,"eta=",eta
+
 ! Beginning of (20)
 
 n=(lambda1+lambda2-lambda3+2*(mu1+mu2-mu3))/3
@@ -120,9 +123,9 @@ IF(i1>1)THEN
     p2tilde=mu2-q(lambda2,mu2,epsilon2,Lambda22)
     q2tilde=lambda2-p2
     IF(p2tilde==0)THEN
-      F=1
+      F=1.D0
     ELSE
-      F=0
+      F=0.D0
       DO i=0,p2tilde
         prod=1
         DO j=0,p2tilde-1
@@ -132,23 +135,23 @@ IF(i1>1)THEN
             prod=prod*(a+j+1)*(b-j-1)
           END IF
         END DO
-        F=F+binom(p2tilde,i)*prod
+        F=F+binom(p2tilde,i)*DFLOAT(prod)
       END DO
       IF(2*(p2tilde/2)/=p2tilde)F=-F
     END IF
-    G=1
-    IF(j2>j1)THEN
+    G=1.D0
+    IF(j2>j1)THEN ! This condition is redundant because if i1>1, then j2>j1 always!
       DO j=j1,j2-1
         IF(j<q2tilde)THEN
-          G=G*(a+n-j)*(b-n+j)*(c+n-j)*(d+n-j)*(lambda2+mu2-j+1)
+          G=G*DFLOAT((a+n-j)*(b-n+j)*(c+n-j)*(d+n-j)*(lambda2+mu2-j+1))
         ELSE
-          G=G*(mu2-n+j+1)
+          G=G*DFLOAT(mu2-n+j+1)
         END IF
       END DO
-      G=G*(lambda2-2*q2tilde+n+1)*binom(n,q2tilde)
+      G=G*DFLOAT(lambda2-2*q2tilde+n+1)*binom(n,q2tilde)
     END IF
     H=binom(n+1+lambda2-q2tilde,lambda2-q2tilde)
-    wigner(lambda1,Lambda22)=DFLOAT(F)*DSQRT(DFLOAT(G)/DFLOAT(H))
+    wigner(lambda1,Lambda22)=F*DSQRT(G/H)
   END DO
 ELSE
   wigner(lambda1,Lambda22a(1))=1.D0
@@ -215,12 +218,14 @@ IF(steps21>0)THEN
 
                       ABCD=(lambda1-i2+Lambda22-lambda3+2)*(lambda1-i2+Lambda22+lambda3+4) ! PREMENNU ABCD MOZNO UPLNE ZRUSIT, TJ. NEPOCITAT JU A VSADE JU NAHRADIT PRISLUSNYM VYRAZOM.
 
-!     	              IF(ABCD>0)THEN !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! PRIDANE ABY SA NEODMOCNOVALO ZAPORNE CISLO
+!if(DFLOAT(Sq2*ABCD)/DFLOAT(Lambda22+2)<0.d0)print*,"(1)"
+
+                     IF(ABCD>=0)THEN !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! PRIDANE ABY SA NEODMOCNOVALO ZAPORNE CISLO
                       wigner(lambda1-i2,Lambda22)=-DSQRT(DFLOAT(Sq2*ABCD)&
                         /DFLOAT(Lambda22+2))*wigner(lambda1+1-i2,Lambda22+1)/2.D0
 !                     ELSE
 !                       wigner(lambda1-i2,Lambda22)=0.D0
-!                     END IF
+                     END IF
          
                     END IF
                   END IF
@@ -239,14 +244,22 @@ IF(steps21>0)THEN
                     IF((q2tilde>=0).AND.(q2tilde<=mu2))THEN
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! KONIEC TESTU
                       ABCD=(Lambda22+lambda3-lambda1+i2)*(lambda3+lambda1-i2-Lambda22+2)
-!                     IF(ABCD>0)
+                     IF(ABCD>=0)then
+
+!if(DFLOAT(Rp2*ABCD)/DFLOAT(Lambda22)<0.d0)print*,"(2): Rp2,ABCD,Lambda22=",Rp2,ABCD,Lambda22
+
+
                       wigner(lambda1-i2,Lambda22)=wigner(lambda1-i2,Lambda22)-DSQRT(DFLOAT(Rp2*& !!!!!!!!!!!!! PODMIENKA NA ABCD PRIDANA ABY SA NEODMOCNOVALO ZAPORNE CISLO
                       ABCD)/DFLOAT(Lambda22))*wigner(lambda1+1-i2,Lambda22-1)/2.D0
+                     end if
 
                     END IF
                   END IF
 
                 END IF
+
+!if(DFLOAT(lambda1-i2+1)/DFLOAT((lambda1+2-i2)*(Lambda22+1)*R(lambda1,mu1,p1))<0.d0)print*,"(3)"
+
                 wigner(lambda1-i2,Lambda22)=wigner(lambda1-i2,Lambda22)&
                   *DSQRT(DFLOAT(lambda1-i2+1)/DFLOAT((lambda1+2-i2)*(Lambda22+1)*R(lambda1,mu1,p1)))
 
@@ -294,12 +307,14 @@ IF(steps21>0)THEN
 
                 ABCD=(Lambda22+lambda3-Lambda12+1)*(lambda3+Lambda12-Lambda22+1)
 
-!                IF(ABCD>0)THEN !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! PRIDANE ABY SA NEODMOCNOVALO ZAPORNE CISLO
+!if(DFLOAT(Sq2*ABCD)/DFLOAT(Lambda22+2)<0.d0)print*,"(4): Sq2,ABCD,Lambda22+2=",Sq2,ABCD,Lambda22+2
+
+                IF(ABCD>=0)THEN !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! PRIDANE ABY SA NEODMOCNOVALO ZAPORNE CISLO
                 wigner(Lambda12+1,Lambda22)=-DSQRT(DFLOAT(Sq2*ABCD)&
                   /DFLOAT(Lambda22+2))*wigner(Lambda12,Lambda22+1)/2.D0
 !                ELSE
 !                  wigner(Lambda12+1,Lambda22)=0.D0
-!                END IF
+                END IF
 
               END IF
             END IF
@@ -318,14 +333,21 @@ IF(steps21>0)THEN
               IF((q2tilde>=0).AND.(q2tilde<=mu2))THEN
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! KONIEC TESTU
                 ABCD=(Lambda12+Lambda22-lambda3+1)*(Lambda12+Lambda22+lambda3+3)
-!                IF(ABCD>0)
+                IF(ABCD>=0)then
+
+!if(DFLOAT(Rp2*ABCD)/DFLOAT(Lambda22)<0.d0)print*,"(5)"
+
                 wigner(Lambda12+1,Lambda22)=wigner(Lambda12+1,Lambda22)+DSQRT(DFLOAT(Rp2*& !!!!!!!!!!!!! PODMIENKA NA ABCD PRIDANA ABY SA NEODMOCNOVALO ZAPORNE CISLO
                   ABCD)/DFLOAT(Lambda22))*wigner(Lambda12,Lambda22-1)/2.D0
+                end if
 
               END IF
             END IF
 
           END IF
+
+!if(DFLOAT(Lambda12+2)/DFLOAT((Lambda12+1)*(Lambda22+1)*S(lambda1,mu1,q1))<0.d0)print*,"(6)"
+
           wigner(Lambda12+1,Lambda22)=wigner(Lambda12+1,Lambda22)&
             *DSQRT(DFLOAT(Lambda12+2)/DFLOAT((Lambda12+1)*(Lambda22+1)*S(lambda1,mu1,q1)))
         END IF
@@ -584,6 +606,13 @@ END DO
 !end do
 !end do
 !end do
+!print*,"alebo"
+!DO i1=1,i2
+!  Lambda12=Lambda12a(i1)
+!  epsilon2=epsilon2a(i1)
+!  Lambda22=Lambda22a(i1)
+!  print*,Lambda12,epsilon2,Lambda22,wignerfinal(Lambda12,(epsilon2+lambda2+2*mu2)/3,Lambda22,1)
+!END DO
 
 ! Valid values of Lambda1, epsilon2 and Lambda2 are elements of arrays Lambda12a, epsilon2a and Lambda22a with indeces from 1 to i2.
 
@@ -657,6 +686,16 @@ END DO
 
 ! End of the orthonormalization
 
+!print*,"----------------------------------------------"
+!print*,"po ortonormalizacii:"
+!DO i1=1,i2
+!  Lambda12=Lambda12a(i1)
+!  epsilon2=epsilon2a(i1)
+!  Lambda22=Lambda22a(i1)
+!  print*,Lambda12,epsilon2,Lambda22,wignerfinal(Lambda12,(epsilon2+lambda2+2*mu2)/3,Lambda22,1)
+!END DO
+
+
 ! Beginning of phase convention (K.T.Hecht, Nucl.Phys. 62 (1965) 1)
 
 ! The phase is such that <(lambda1,mu1)LW;(lambda2,mu2)epsilon2,Lambda2_max||(lambda3,mu3)LW>_rho > 0, which
@@ -683,6 +722,8 @@ END DO
 ! End of phase convention
 
 ! kontrolny vypis
+!print*,"------------------------------------------"
+!print*,"po fazovej konvencii:"
 !DO i1=1,i2
 !  Lambda12=Lambda12a(i1)
 !  epsilon2=epsilon2a(i1)
@@ -748,10 +789,15 @@ CONTAINS
  
     implicit none
     integer, intent (in) :: n
-    integer(KIND=8) :: res
+    real(KIND=8) :: res
     integer :: i
- 
-    res = product ((/(i, i = 1, n)/))
+
+!    res = product ((/(i, i = 1, n)/))
+
+    res=1.d0
+    do i=2,n
+      res=res*dfloat(i)
+    end do
  
   end function factorial
  
@@ -760,7 +806,7 @@ CONTAINS
     implicit none
     integer, intent (in) :: n
     integer, intent (in) :: k
-    integer(KIND=8) :: res
+    real(KIND=8) :: res
  
     res = factorial (n) / (factorial (k) * factorial (n - k))
  
