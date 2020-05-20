@@ -65,8 +65,8 @@ ELSE ! E=LW.
   mu3=lambda3x
 END IF
 
-wigner=0
-!wigner(0:lambda1,0:lambda2,0:mu2,1:rhomax)=0.D0
+!wigner=0
+wigner(0:lambda1,0:lambda2,0:mu2,1:rhomax)=0.D0
 Lambda22max=0
 
 DO rho=1,rhomax
