@@ -35,18 +35,19 @@ SUBROUTINE wigner_canonical_extremal(lambda1x,mu1x,lambda2x,mu2x,lambda3x,mu3x,I
 ! Note: There is a typo in Eq.(18). There are 4 expressions for X. The 3rd one is for X(Lambda1+1/2,Lambda2-1/2),
 !       not X(Lambda1-1/2,Lambda2-1/2).
 !-------------------------------------------------------------------------------------------------------------------------------
-!USE binomial_coeff
+USE binomial_coeff
 IMPLICIT NONE
 INTEGER,EXTERNAL :: outer_multiplicity
-INTEGER :: lambda1,mu1,lambda2,mu2,lambda3,mu3,p2,q2,Lambda22,i1,j2,j1,p2tilde,q2tilde,i,j,n,a,b,c,d,i2,&
-           epsilon2,steps21,eps2,Lambda12,epsilon1,Sq2,Rp2,eta,p1,q1,rho,rhomax,i4,Lambda22max,ABCD,&
-           lambda1x,mu1x,lambda2x,mu2x,lambda3x,mu3x,I3,phiprhomax,p2min,p2max,noname1,p1min,noname2,p1max
+INTEGER,INTENT(IN) :: lambda1x,mu1x,lambda2x,mu2x,lambda3x,mu3x,I3,rhomax
+INTEGER,INTENT(OUT) :: i2
+INTEGER :: lambda1,mu1,lambda2,mu2,lambda3,mu3,p2,q2,Lambda22,i1,j2,j1,p2tilde,q2tilde,i,j,n,a,b,c,d,&
+           epsilon2,steps21,eps2,Lambda12,epsilon1,Sq2,Rp2,eta,p1,q1,rho,i4,Lambda22max,ABCD,&
+           phiprhomax,p2min,p2max,noname1,p1min,noname2,p1max
 INTEGER(KIND=8) :: prod!,F,G,H
 REAL(KIND=8) :: F,G,H,scalprod,norm
 !INTEGER,DIMENSION(4096) :: Lambda12a,Lambda22a,epsilon2a ! Dimension is (lambda1+1)*(lambda2+1)*(mu2+1)
-INTEGER,DIMENSION(1) :: p1a,p2a,q2a ! Dimension is (lambda1+1)*(lambda2+1)*(mu2+1)
-REAL(KIND=8),DIMENSION(0:15,0:15,0:15,1:9) :: wigner ! First index is p1, second is p2, third is q2, fourth is rho
-! Why doesn't assumed-shape array work???
+INTEGER,DIMENSION(:),INTENT(OUT) :: p1a,p2a,q2a ! Dimension is (lambda1+1)*(lambda2+1)*(mu2+1)
+REAL(KIND=8),DIMENSION(0:,0:,0:,1:),INTENT(OUT) :: wigner ! First index is p1, second is p2, third is q2, fourth is rho
 
 IF(I3==1)THEN ! E=HW
   lambda1=lambda1x
@@ -496,22 +497,22 @@ IF(I3==0)THEN ! E=LW
   END DO
 END IF
 
-CONTAINS 
-  FUNCTION factorial(n) RESULT(res)
-    IMPLICIT NONE
-    INTEGER,INTENT(IN) :: n
-    REAL(KIND=8) :: res
-    INTEGER :: i
-!   res=PRODUCT((/(i,i=1,n)/))
-    res=1.D0
-    DO i=2,n
-      res=res*DFLOAT(i)
-    END DO
-    END FUNCTION factorial
-  FUNCTION binom(n,k) RESULT(res)
-    IMPLICIT NONE
-    INTEGER,INTENT(IN) :: n,k
-    REAL(KIND=8) :: res
-    res=factorial(n)/(factorial(k)*factorial(n-k))
-  END FUNCTION binom
+!CONTAINS 
+!  FUNCTION factorial(n) RESULT(res)
+!    IMPLICIT NONE
+!    INTEGER,INTENT(IN) :: n
+!    REAL(KIND=8) :: res
+!    INTEGER :: i
+!!   res=PRODUCT((/(i,i=1,n)/))
+!    res=1.D0
+!    DO i=2,n
+!      res=res*DFLOAT(i)
+!    END DO
+!    END FUNCTION factorial
+!  FUNCTION binom(n,k) RESULT(res)
+!    IMPLICIT NONE
+!    INTEGER,INTENT(IN) :: n,k
+!    REAL(KIND=8) :: res
+!    res=factorial(n)/(factorial(k)*factorial(n-k))
+!  END FUNCTION binom
 END SUBROUTINE wigner_canonical_extremal

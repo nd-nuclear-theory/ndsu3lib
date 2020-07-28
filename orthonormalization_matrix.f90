@@ -16,9 +16,10 @@ SUBROUTINE orthonormalization_matrix(I,J,lambda,mu,L,kappamax,matrix)
 !-------------------------------------------------------------------------------------------
 IMPLICIT NONE
 REAL(KIND=8),EXTERNAL :: transformation_coeff
-REAL(KIND=8),DIMENSION(9,9) :: matrix
+REAL(KIND=8),DIMENSION(:,:),INTENT(OUT) :: matrix
 REAL(KIND=8) :: sum
-INTEGER :: I,J,lambda,mu,L,kappamax,ii,jj,k,epsilon,Ki,Kj,Kminm2,Lambda2,MLambda2
+INTEGER,INTENT(IN) :: I,J,lambda,mu,L,kappamax
+INTEGER :: ii,jj,k,epsilon,Ki,Kj,Kminm2,Lambda2,MLambda2
 
 IF(I==1)THEN ! E=HW or HW'
   epsilon=-lambda-2*mu ! the HW epsilon
@@ -67,13 +68,12 @@ DO jj=1,kappamax-1 ! loop over columns
 END DO
 
 CONTAINS
- FUNCTION Kmin(lambda,mu,L) RESULT(res) ! This function calculates the lowest K for given lambda,mu,L as given by Eq.(4a) in the reference.
-  IMPLICIT NONE
-  INTEGER,INTENT(IN) :: lambda,mu,L
-  INTEGER :: res
-  res=MAX(0,L-mu)
-  res=res+MOD(res+lambda,2) ! K and lambda must have the same parity.
-  IF(res==0)res=res+MOD(L+mu,2)*2 ! If K=0, L and mu must have the same parity.
- END FUNCTION Kmin
-
+  FUNCTION Kmin(lambda,mu,L) RESULT(res) ! This function calculates the lowest K for given lambda,mu,L as given by Eq.(4a) in the reference.
+    IMPLICIT NONE
+    INTEGER,INTENT(IN) :: lambda,mu,L
+    INTEGER :: res
+    res=MAX(0,L-mu)
+    res=res+MOD(res+lambda,2) ! K and lambda must have the same parity.
+    IF(res==0)res=res+MOD(L+mu,2)*2 ! If K=0, L and mu must have the same parity.
+  END FUNCTION Kmin
 END SUBROUTINE orthonormalization_matrix

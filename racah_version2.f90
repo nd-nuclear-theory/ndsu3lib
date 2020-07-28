@@ -1,4 +1,4 @@
-SUBROUTINE racah(lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,lambda23,mu23,&
+SUBROUTINE racah_version2(lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,lambda23,mu23,&
                  rhomaxa,rhomaxb,rhomaxc,rhomaxd,rac,info)
 !---------------------------------------------------------------------------------------------------------------------------
 ! Calsulates SU(3) recoupling coefficients
@@ -31,7 +31,8 @@ INTEGER :: epsilon23,rhomaxabc,numba,numbb,numbc,numbd,i1,i2,inda,indd,i,&
 REAL(KIND=8) :: factor1,factor2,factor3
 REAL(KIND=8),DIMENSION(:,:),INTENT(OUT) :: rac ! Dimensions are at least rhomaxd and rhomaxa*rhomaxb*rhomaxc
 REAL(KIND=8),DIMENSION(9,9) :: matrix ! Dimensions are at least rhomaxd and rhomaxd
-REAL(KIND=8),DIMENSION(0:15,0:15,0:15,1:9) :: wignera,wignerb,wignerc,wignerd,wigner
+REAL(KIND=8),DIMENSION(0:15,0:15,0:15,1:9) :: wignera,wignerb,wignerc,wignerd
+REAL(KIND=8),DIMENSION(0:15,0:15,0:15,1:9,1:9) :: wigner
 INTEGER,DIMENSION(4096) :: p1aa,p2aa,q2aa,p1ac,p2ac,q2ac,p2ad,q2ad
 
 INTERFACE
@@ -42,14 +43,12 @@ INTERFACE
     INTEGER,DIMENSION(:),INTENT(OUT) :: p1a,p2a,q2a
     REAL(KIND=8),DIMENSION(0:,0:,0:,1:),INTENT(OUT) :: wigner
   END SUBROUTINE wigner_canonical_extremal
-  SUBROUTINE wigner_canonical(lambda1,mu1,lambda2,mu2,lambda3,mu3,epsilon3,Lambda32,rhomax,numb,wignerex,wigner,p1a,p2a,q2a)
+  SUBROUTINE wigner_canonical_for_racah(lambda1,mu1,lambda2,mu2,lambda3,mu3,epsilon3,Lambda32max,numbLambda3,rhomax,wignerex,wigner)
     IMPLICIT NONE
-    INTEGER,INTENT(IN) :: lambda1,mu1,lambda2,mu2,lambda3,mu3,epsilon3,Lambda32,rhomax
-    INTEGER,INTENT(OUT) :: numb
-    INTEGER,DIMENSION(:),INTENT(OUT) :: p1a,p2a,q2a
-    REAL(KIND=8),DIMENSION(0:,0:,0:,1:),INTENT(IN) :: wignerex
-    REAL(KIND=8),DIMENSION(0:,0:,0:,1:),INTENT(OUT) :: wigner
-  END SUBROUTINE wigner_canonical
+    INTEGER,INTENT(IN) :: lambda1,mu1,lambda2,mu2,lambda3,mu3,epsilon3,Lambda32max,numbLambda3,rhomax
+    REAL(KIND=8),DIMENSION(0:,0:,0:,1:) :: wignerex
+    REAL(KIND=8),DIMENSION(0:,0:,0:,1:,1:),INTENT(OUT) :: wigner
+  END SUBROUTINE wigner_canonical_for_racah
 END INTERFACE
 
 !print*,"rhomaxa=",rhomaxa
@@ -84,6 +83,9 @@ CALL wigner_canonical_extremal(lambda12,mu12,mu2,lambda2,lambda1,mu1,1,rhomaxa,n
 i=0
 !j=rhomaxd+1
 Lambda232=mu23+p2ad(numbd)-q2ad(numbd)
+
+CALL wigner_canonical_for_racah(lambda2,mu2,lambda3,mu3,lambda23,mu23,epsilon23,Lambda232,rhomaxd,rhomaxc,wignerc,wigner)
+
 DO indd=numbd,numbd-rhomaxd+1,-1 ! This is a loop over Lambda23
 !  Lambda232=Lambda22ad(indd)
   p23=p2ad(indd)
@@ -95,8 +97,8 @@ DO indd=numbd,numbd-rhomaxd+1,-1 ! This is a loop over Lambda23
   matrix(i,1:rhomaxd)=wignerd(lambda1,p23,q23,1:rhomaxd)
   factor2=DSQRT(factor1*DFLOAT(Lambda232+1))
 
-  CALL wigner_canonical(lambda2,mu2,lambda3,mu3,lambda23,mu23,epsilon23,Lambda232,&
-                        rhomaxc,numbc,wignerc,wigner,p1ac,p2ac,q2ac)
+!  CALL wigner_canonical(lambda2,mu2,lambda3,mu3,lambda23,mu23,epsilon23,Lambda232,&
+!                        rhomaxc,numbc,wignerc,wigner,p1ac,p2ac,q2ac)
 
 !print*,"-----"
 !do inda=1,numbc
@@ -143,7 +145,7 @@ DO indd=numbd,numbd-rhomaxd+1,-1 ! This is a loop over Lambda23
 !              n=rhoa+rhomaxa*(rhob-1)+rhomaxa*rhomaxb*(rhoc-1)
               n=n+1
               rac(i,n)=rac(i,n)+factor3*wignera(p12,p2,q2,rhoa)&
-                       *wignerb(p12,p3,q3,rhob)*wigner(lambda2-q2,p3,q3,rhoc) ! See the relation between p and \tilde{p} in Eq.(32)
+                       *wignerb(p12,p3,q3,rhob)*wigner(lambda2-q2,p3,q3,i,rhoc) ! See the relation between p and \tilde{p} in Eq.(32)
 
 !print*,"factor3=",factor3
 !print*,"wignera(p12,p2,q2,rhoa)=",wignera(p12,p2,q2,rhoa)
@@ -182,4 +184,4 @@ CONTAINS
     INTEGER :: dm
     dm=(lambdax+1)*(mux+1)*(lambdax+mux+2)/2
   END FUNCTION dimen
-END SUBROUTINE racah
+END SUBROUTINE racah_version2
