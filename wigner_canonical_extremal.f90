@@ -7,6 +7,7 @@ SUBROUTINE wigner_canonical_extremal(lambda1x,mu1x,lambda2x,mu2x,lambda3x,mu3x,I
 !
 ! References: [1] J.P.Draayer, Y.Akiyama, J.Math.Phys., Vol.14, No.12 (1973) 1904
 !             [2] K.T.Hecht, Nucl.Phys. 62 (1965) 1
+!             [3] D.Goldberg, ACM Computing Surveys, Vol.23, No.1 (1991) 5
 !
 ! Input arguments: lambda1x,mu1x,lambda2x,mu2x,lambda3x,mu3x,I3,rhomax
 ! Output arguments: i2,wigner,p1a,p2a,q2a
@@ -32,8 +33,8 @@ SUBROUTINE wigner_canonical_extremal(lambda1x,mu1x,lambda2x,mu2x,lambda3x,mu3x,I
 !         q1=(2*(mu1+mu2+lambda3)+lambda1+lambda2+mu3)/3-p1-p2-q2 for I3=0
 !         1<=i<=i2
 !
-! Note: There is a typo in Eq.(18). There are 4 expressions for X. The 3rd one is for X(Lambda1+1/2,Lambda2-1/2),
-!       not X(Lambda1-1/2,Lambda2-1/2).
+! Note: There are typos in Eq.(18),(20). There are 4 expressions for X in Eq.(18). The 3rd one is for X(Lambda1+1/2,Lambda2-1/2),
+!       not X(Lambda1-1/2,Lambda2-1/2). In Eq.(20), there should be \bar{lambda2} instead of lambda 2 in a,b,c,d.
 !-------------------------------------------------------------------------------------------------------------------------------
 USE binomial_coeff
 IMPLICIT NONE
@@ -43,8 +44,8 @@ INTEGER,INTENT(OUT) :: i2
 INTEGER :: lambda1,mu1,lambda2,mu2,lambda3,mu3,p2,q2,Lambda22,i1,j2,j1,p2tilde,q2tilde,i,j,n,a,b,c,d,&
            epsilon2,steps21,eps2,Lambda12,epsilon1,Sq2,Rp2,eta,p1,q1,rho,i4,Lambda22max,ABCD,&
            phiprhomax,p2min,p2max,noname1,p1min,noname2,p1max
-INTEGER(KIND=8) :: prod!,F,G,H
-REAL(KIND=8) :: F,G,H,scalprod,norm
+!INTEGER(KIND=8) :: prod!,F,G,H
+REAL(KIND=8) :: F,G,H,scalprod,CC,Y,T!,prod!,norm
 !INTEGER,DIMENSION(4096) :: Lambda12a,Lambda22a,epsilon2a ! Dimension is (lambda1+1)*(lambda2+1)*(mu2+1)
 INTEGER,DIMENSION(:),INTENT(OUT) :: p1a,p2a,q2a ! Dimension is (lambda1+1)*(lambda2+1)*(mu2+1)
 REAL(KIND=8),DIMENSION(0:,0:,0:,1:),INTENT(OUT) :: wigner ! First index is p1, second is p2, third is q2, fourth is rho
@@ -83,18 +84,27 @@ END DO
 !**************************************************************************************
 ! Beginning of (20)
 !**************************************************************************************
-n=(lambda1+lambda2-lambda3+2*(mu1+mu2-mu3))/3
-a=(lambda2+lambda3-lambda1-n)/2
-b=(lambda3+lambda1-lambda2+n+2)/2
-c=(lambda1+lambda2-lambda3-n)/2
-d=(lambda1+lambda2+lambda3+2-n)/2
+!n=(lambda1+lambda2-lambda3+2*(mu1+mu2-mu3))/3
+!a=(lambda2+eta+lambda3-lambda1-n)/2
+!b=(lambda3+lambda1-lambda2+eta+n+2)/2
+!c=(lambda1+lambda2+eta-lambda3-n)/2
+!d=(lambda1+lambda2+eta+lambda3+2-n)/2
 epsilon2=lambda1+2*mu1-lambda3-2*mu3
 noname1=(2*lambda2+mu2-epsilon2)/3
 p2max=MIN(lambda2,noname1,(lambda1+lambda3-mu2+noname1)/2)
 !p2min=MAX(0,noname1-mu2,(lambda3-lambda1-mu2+noname1)/2,(lambda1-lambda3-mu2+noname1)/2)
 p2min=MAX(0,noname1-mu2,(lambda3-lambda1-mu2+noname1+1)/2,(lambda1-lambda3-mu2+noname1+1)/2)
+!if(p2min/=MAX(0,noname1-mu2,(lambda3-lambda1-mu2+noname1)/2,(lambda1-lambda3-mu2+noname1)/2))then
+!        print*,"p2min/=p2min"
+!        stop
+!end if
 q2=noname1-p2min
 IF(p2min/=p2max)THEN
+  n=(lambda1+lambda2-lambda3+2*(mu1+mu2-mu3))/3
+  a=(lambda2+lambda3-lambda1-n)/2
+  b=(lambda3+lambda1-lambda2+n+2)/2
+  c=(lambda1+lambda2-lambda3-n)/2
+  d=(lambda1+lambda2+lambda3+2-n)/2
   j1=lambda2-p2max
   j2=lambda2-p2min
   DO p2=p2min,p2max
@@ -107,22 +117,50 @@ IF(p2min/=p2max)THEN
     IF(p2tilde==0)THEN
       F=1.D0
     ELSE
-      F=0.D0
-      DO i=0,p2tilde
-        prod=1
-        DO j=0,p2tilde-1
+      F=DFLOAT((a+1)*(b-1))
+      DO j=1,p2tilde-1
+        F=F*DFLOAT((a+j+1)*(b-j-1))
+      END DO
+      DO i=1,p2tilde
+        scalprod=DFLOAT((p2+1)*(mu1+lambda2+mu2-n+2))
+        DO j=1,p2tilde-1
           IF(j<i)THEN
-            prod=prod*(p2+j+1)*(mu1+lambda2+mu2-n+j+2)
+            scalprod=scalprod*DFLOAT((p2+j+1)*(mu1+lambda2+mu2-n+j+2))
           ELSE
-            prod=prod*(a+j+1)*(b-j-1)
+            scalprod=scalprod*DFLOAT((a+j+1)*(b-j-1))
           END IF
         END DO
-        F=F+binom(p2tilde,i)*DFLOAT(prod)
+        F=F+binom(p2tilde,i)*scalprod
       END DO
+!      F=DFLOAT((a+1)*(b-1))
+!      DO j=1,p2tilde-1
+!        F=F*DFLOAT((a+j+1)*(b-j-1))
+!      END DO
+!      CC=0.D0
+!      DO i=1,p2tilde
+!        scalprod=DFLOAT((p2+1)*(mu1+lambda2+mu2-n+2))
+!        DO j=1,p2tilde-1
+!          IF(j<i)THEN
+!            scalprod=scalprod*DFLOAT((p2+j+1)*(mu1+lambda2+mu2-n+j+2))
+!          ELSE
+!            scalprod=scalprod*DFLOAT((a+j+1)*(b-j-1))
+!          END IF
+!        END DO
+!        scalprod=binom(p2tilde,i)*scalprod
+!        Y=scalprod-CC
+!        T=F+Y
+!        CC=T-F
+!        CC=CC-Y
+!        F=T
+!      END DO
       IF(BTEST(p2tilde,0))F=-F
     END IF
-    G=1.D0
-    DO j=j1,j2-1
+    IF(j1<q2tilde)THEN
+      G=DFLOAT((a+n-j1)*(b-n+j1)*(c+n-j1)*(d+n-j1)*(lambda2+mu2-j1+1))
+    ELSE
+      G=DFLOAT(mu2-n+j1+1)
+    END IF
+    DO j=j1+1,j2-1
       IF(j<q2tilde)THEN
         G=G*DFLOAT((a+n-j)*(b-n+j)*(c+n-j)*(d+n-j)*(lambda2+mu2-j+1))
       ELSE
@@ -176,7 +214,9 @@ DO i2=1,steps21
         IF(q2>0)THEN
           ABCD=(lambda1-i2+Lambda22-lambda3+2)*(lambda1-i2+Lambda22+lambda3+4)
           IF(ABCD>0)THEN
-            wigner(p1min-1,p2,q2,rho)=-DSQRT(DFLOAT(Sq2*ABCD)/DFLOAT(Lambda22+2))*wigner(p1min,p2,q2-1,rho)/2.D0
+!!            wigner(p1min-1,p2,q2,rho)=-DSQRT(DFLOAT(Sq2*ABCD)/DFLOAT(Lambda22+2))*wigner(p1min,p2,q2-1,rho)/2.D0
+wigner(p1min-1,p2,q2,rho)=-DSQRT(DFLOAT((lambda1-i2+1)*Sq2*ABCD)&
+/DFLOAT((lambda1+2-i2)*(Lambda22+1)*p1min*(lambda1+1-p1min)*(mu1+1+p1min)*(Lambda22+2)))*wigner(p1min,p2,q2-1,rho)!/2.D0
 !         ELSE
 !           wigner(p1min-1,p2,q2,rho)=0.D0
           END IF
@@ -186,11 +226,15 @@ DO i2=1,steps21
       END IF
       IF((Lambda22>=1).AND.(p2>0))THEN
         ABCD=(Lambda22+lambda3-lambda1+i2)*(lambda3+lambda1-i2-Lambda22+2)
-        IF(ABCD>0)wigner(p1min-1,p2,q2,rho)=wigner(p1min-1,p2,q2,rho)&
-                  -DSQRT(DFLOAT(Rp2*ABCD)/DFLOAT(Lambda22))*wigner(p1min,p2-1,q2,rho)/2.D0
+!!        IF(ABCD>0)wigner(p1min-1,p2,q2,rho)=wigner(p1min-1,p2,q2,rho)&
+!!                  -DSQRT(DFLOAT(Rp2*ABCD)/DFLOAT(Lambda22))*wigner(p1min,p2-1,q2,rho)/2.D0
+IF(ABCD>0)wigner(p1min-1,p2,q2,rho)=wigner(p1min-1,p2,q2,rho)&
+-DSQRT(DFLOAT((lambda1-i2+1)*Rp2*ABCD)/DFLOAT((lambda1+2-i2)*(Lambda22+1)*p1min*(lambda1+1-p1min)*(mu1+1+p1min)&
+*Lambda22))*wigner(p1min,p2-1,q2,rho)!/2.D0
       END IF
-      wigner(p1min-1,p2,q2,rho)=wigner(p1min-1,p2,q2,rho)&
-        *DSQRT(DFLOAT(lambda1-i2+1)/DFLOAT((lambda1+2-i2)*(Lambda22+1)*p1min*(lambda1+1-p1min)*(mu1+1+p1min)))
+!!      wigner(p1min-1,p2,q2,rho)=wigner(p1min-1,p2,q2,rho)&
+!!        *DSQRT(DFLOAT(lambda1-i2+1)/DFLOAT((lambda1+2-i2)*(Lambda22+1)*p1min*(lambda1+1-p1min)*(mu1+1+p1min)))
+!wigner(p1min-1,p2,q2,rho)=wigner(p1min-1,p2,q2,rho)/2.D0
     END IF
 
     q1=noname2-p1min
@@ -206,7 +250,9 @@ DO i2=1,steps21
           IF(q2>0)THEN
             ABCD=(Lambda22+lambda3-Lambda12+1)*(lambda3+Lambda12-Lambda22+1)
             IF(ABCD>0)THEN
-              wigner(p1,p2,q2,rho)=-DSQRT(DFLOAT(Sq2*ABCD)/DFLOAT(Lambda22+2))*wigner(p1,p2,q2-1,rho)/2.D0
+!!              wigner(p1,p2,q2,rho)=-DSQRT(DFLOAT(Sq2*ABCD)/DFLOAT(Lambda22+2))*wigner(p1,p2,q2-1,rho)/2.D0
+wigner(p1,p2,q2,rho)=-DSQRT(DFLOAT((Lambda12+2)*Sq2*ABCD)&
+/DFLOAT((Lambda12+1)*(Lambda22+1)*q1*(mu1+1-q1)*(lambda1+mu1+2-q1)*(Lambda22+2)))*wigner(p1,p2,q2-1,rho)!/2.D0
 !           ELSE
 !             wigner(p1,p2,q2,rho)=0.D0
             END IF
@@ -216,11 +262,15 @@ DO i2=1,steps21
         END IF
         IF((Lambda22>=1).AND.(p2>0))THEN
           ABCD=(Lambda12+Lambda22-lambda3+1)*(Lambda12+Lambda22+lambda3+3)
-          IF(ABCD>0)wigner(p1,p2,q2,rho)=wigner(p1,p2,q2,rho)&
-                    +DSQRT(DFLOAT(Rp2*ABCD)/DFLOAT(Lambda22))*wigner(p1,p2-1,q2,rho)/2.D0
+!!          IF(ABCD>0)wigner(p1,p2,q2,rho)=wigner(p1,p2,q2,rho)&
+!!                    +DSQRT(DFLOAT(Rp2*ABCD)/DFLOAT(Lambda22))*wigner(p1,p2-1,q2,rho)/2.D0
+IF(ABCD>0)wigner(p1,p2,q2,rho)=wigner(p1,p2,q2,rho)&
++DSQRT(DFLOAT((Lambda12+2)*Rp2*ABCD)/DFLOAT((Lambda12+1)*(Lambda22+1)*q1*(mu1+1-q1)*(lambda1+mu1+2-q1)&
+*Lambda22))*wigner(p1,p2-1,q2,rho)!/2.D0
         END IF
-        wigner(p1,p2,q2,rho)=wigner(p1,p2,q2,rho)&
-          *DSQRT(DFLOAT(Lambda12+2)/DFLOAT((Lambda12+1)*(Lambda22+1)*q1*(mu1+1-q1)*(lambda1+mu1+2-q1)))
+!!        wigner(p1,p2,q2,rho)=wigner(p1,p2,q2,rho)&
+!!          *DSQRT(DFLOAT(Lambda12+2)/DFLOAT((Lambda12+1)*(Lambda22+1)*q1*(mu1+1-q1)*(lambda1+mu1+2-q1)))
+!wigner(p1,p2,q2,rho)=wigner(p1,p2,q2,rho)*0.5D0
 !     END IF
       q1=q1-1
     END DO
@@ -239,7 +289,7 @@ DO i1=1,eta
   IF(noname2==mu1)THEN
     IF(wigner(1,lambda2-1,mu2-1,rho)/=0.D0)THEN ! This IF is needed.
       wigner(0,lambda2,mu2,rho)=-DSQRT(DFLOAT(lambda1*(mu1+2)*(lambda2+lambda3)&
-        *(lambda3-lambda2+2))/8.D0)*wigner(1,lambda2-1,mu2-1,rho)
+        *(lambda3-lambda2+2))/2.D0)*wigner(1,lambda2-1,mu2-1,rho)
 !   ELSE
 !     wigner(0,lambda2,mu2,rho)=0.D0
     END IF
@@ -254,22 +304,64 @@ DO i1=1,eta
 ! 3) 1<=Lambda12<=lambda1+mu1-1, where Lambda12=mu1+p1-q1
     Lambda12=Lambda12+2
     IF(wigner(p1+1,lambda2-1,mu2-1,rho)/=0.D0)THEN ! This IF is nedeed.
+
+!IF(p1==noname2-mu1.OR.p1==lambda1)then
+!        print*,"p1==noname2-mu1.OR.p1==lambda1"
+!        stop
+!end if
+!epsilon1=-lambda3-2*mu3+lambda2+2*mu2
+
       wigner(p1,lambda2,mu2,rho)=-DSQRT(DFLOAT((p1+1)*(lambda1-p1)*(mu1+2+p1)*(lambda2+lambda3-Lambda12)&
-        *(lambda3+Lambda12-lambda2+2))/DFLOAT(4*(Lambda12+2)*(Lambda12+1)))*wigner(p1+1,lambda2-1,mu2-1,rho)
+        *(lambda3+Lambda12-lambda2+2))/DFLOAT((Lambda12+2)*(Lambda12+1)))*wigner(p1+1,lambda2-1,mu2-1,rho)
+
+if((Lambda12<ABS(2*(lambda1-mu1)+lambda3+2*mu3-lambda2-2*mu2)/3&
+        .or.Lambda12>MIN(2*lambda1+4*mu1+lambda3+2*mu3-lambda2-2*mu2,4*lambda1+2*mu1-lambda3-2*mu3+lambda2+2*mu2)/3.or.&
+        Lambda12<ABS(lambda2-lambda3).or.Lambda12>lambda2+lambda3).and.wigner(p1,lambda2,mu2,rho)/=0.D0)then
+        print*,"vadne Lambda12 v prvom v (17)"
+        stop
+!        wigner(p1,lambda2,mu2,rho)=0.D0
+end if
+
 !   ELSE
 !     wigner(p1,lambda2,mu2,rho)=0.D0
     END IF
-    IF(wigner(p1,lambda2-1,mu2-1,rho)/=0.D0)wigner(p1,lambda2,mu2,rho)=wigner(p1,lambda2,mu2,rho)&
+    IF(wigner(p1,lambda2-1,mu2-1,rho)/=0.D0)then
+            
+!IF(p1==noname2-mu1.OR.p1==lambda1)then
+!        print*,"p1==noname2-mu1.OR.p1==lambda1"
+!        stop
+!end if
+            
+      wigner(p1,lambda2,mu2,rho)=wigner(p1,lambda2,mu2,rho)&
       +DSQRT(DFLOAT((q1+1)*(mu1-q1)*(lambda1+mu1+1-q1)*(Lambda12+lambda2-lambda3)&
-      *(Lambda12+lambda2+lambda3+2))/DFLOAT(4*(Lambda12+1)*Lambda12))*wigner(p1,lambda2-1,mu2-1,rho)
+      *(Lambda12+lambda2+lambda3+2))/DFLOAT((Lambda12+1)*Lambda12))*wigner(p1,lambda2-1,mu2-1,rho)
     ! This IF is needed.
+
+if((Lambda12<ABS(2*(lambda1-mu1)+lambda3+2*mu3-lambda2-2*mu2)/3&
+        .or.Lambda12>MIN(2*lambda1+4*mu1+lambda3+2*mu3-lambda2-2*mu2,4*lambda1+2*mu1-lambda3-2*mu3+lambda2+2*mu2)/3.or.&
+        Lambda12<ABS(lambda2-lambda3).or.Lambda12>lambda2+lambda3).and.wigner(p1,lambda2,mu2,rho)/=0.D0)then
+        print*,"vadne Lambda12 v druhom v (17)"
+        stop
+!        wigner(p1,lambda2,mu2,rho)=0.D0
+end if
+
+    end if
     q1=q1-1
   END DO
   IF(noname2==lambda1)THEN ! This IF is necessary.
     IF(wigner(lambda1,lambda2-1,mu2-1,rho)/=0.D0)THEN ! This IF is needed.
        Lambda12=lambda1+mu1
        wigner(lambda1,lambda2,mu2,rho)=DSQRT(DFLOAT(mu1*(lambda1+mu1+1)*(Lambda12+lambda2-lambda3)&
-        *(Lambda12+lambda2+lambda3+2))/DFLOAT(4*(Lambda12+1)*Lambda12))*wigner(lambda1,lambda2-1,mu2-1,rho)
+        *(Lambda12+lambda2+lambda3+2))/DFLOAT((Lambda12+1)*Lambda12))*wigner(lambda1,lambda2-1,mu2-1,rho)
+
+if((Lambda12<ABS(2*(lambda1-mu1)+lambda3+2*mu3-lambda2-2*mu2)/3&
+        .or.Lambda12>MIN(2*lambda1+4*mu1+lambda3+2*mu3-lambda2-2*mu2,4*lambda1+2*mu1-lambda3-2*mu3+lambda2+2*mu2)/3.or.&
+        Lambda12<ABS(lambda2-lambda3).or.Lambda12>lambda2+lambda3).and.wigner(lambda1,lambda2,mu2,rho)/=0.D0)then
+        print*,"vadne Lambda12 v tretom v (17)"
+        stop
+!        wigner(lambda1,lambda2,mu2,rho)=0.D0
+end if
+
 !   ELSE
 !     wigner(p1,lambda2,mu2,rho)=0.D0
     END IF
@@ -337,59 +429,98 @@ DO i1=1,lambda2+mu2 ! This is loop over epsilon2=epsilon2HW+3,...,2*lambda2+mu2;
 ! 3) ABS(Lambda12-Lambda22)<=lambda3<=Lambda12+Lambda22, where Lambda12=mu1+p1-q1
       Lambda12=Lambda12+2
 
-      IF(lambda2>=mu2)THEN
+!      IF(lambda2>=mu2)THEN
         IF((Lambda22==lambda2-i1).OR.(Lambda22==0))THEN
-          IF(Lambda12>=1)THEN
-            wigner(p1,p2,q2,rho)=-DSQRT(DFLOAT((p1*(lambda1+1-p1)*(mu1+1+p1)*(Lambda22+lambda3-Lambda12+2)&
-              *(lambda3+Lambda12-Lambda22)))/DFLOAT(4*Lambda12))*wigner(p1-1,p2+1,q2,rho)
+          IF(Lambda12>=1.and.p1/=0)THEN
+!!            wigner(p1,p2,q2,rho)=-DSQRT(DFLOAT((p1*(lambda1+1-p1)*(mu1+1+p1)*(Lambda22+lambda3-Lambda12+2)&
+!!              *(lambda3+Lambda12-Lambda22)))/DFLOAT(4*Lambda12))*wigner(p1-1,p2+1,q2,rho)
+wigner(p1,p2,q2,rho)=-DSQRT(DFLOAT((Lambda22+1)*(p1*(lambda1+1-p1)*(mu1+1+p1)*(Lambda22+lambda3-Lambda12+2)&
+*(lambda3+Lambda12-Lambda22)))&
+/DFLOAT((Lambda12+1)*(Lambda22+2)*(p2+1)*(lambda2-p2)*(mu2+2+p2)*4*Lambda12))*wigner(p1-1,p2+1,q2,rho)
+
+!if(p1==0)then
+!        print*,"p1=0"
+!        stop
+!end if
+
           ELSE
             wigner(p1,p2,q2,rho)=0.D0
           END IF
-          IF(Lambda12+1<=lambda1+mu1)wigner(p1,p2,q2,rho)=wigner(p1,p2,q2,rho)&
-            +DSQRT(DFLOAT(q1*(mu1+1-q1)*(lambda1+mu1+2-q1)*(Lambda12+Lambda22-lambda3+2)*(Lambda12+Lambda22+lambda3+4))&
-            /DFLOAT(4*(Lambda12+2)))*wigner(p1,p2+1,q2,rho)
-          wigner(p1,p2,q2,rho)=wigner(p1,p2,q2,rho)&
-            *DSQRT(DFLOAT(Lambda22+1)/DFLOAT((Lambda12+1)*(Lambda22+2)*(p2+1)*(lambda2-p2)*(mu2+2+p2)))
+!!          IF(Lambda12+1<=lambda1+mu1)wigner(p1,p2,q2,rho)=wigner(p1,p2,q2,rho)&
+!!            +DSQRT(DFLOAT(q1*(mu1+1-q1)*(lambda1+mu1+2-q1)*(Lambda12+Lambda22-lambda3+2)*(Lambda12+Lambda22+lambda3+4))&
+!!            /DFLOAT(4*(Lambda12+2)))*wigner(p1,p2+1,q2,rho)
+IF(Lambda12+1<=lambda1+mu1.and.q1/=0)wigner(p1,p2,q2,rho)=wigner(p1,p2,q2,rho)&
++DSQRT(DFLOAT((Lambda22+1)*q1*(mu1+1-q1)*(lambda1+mu1+2-q1)*(Lambda12+Lambda22-lambda3+2)*(Lambda12+Lambda22+lambda3+4))&
+/DFLOAT((Lambda12+1)*(Lambda22+2)*(p2+1)*(lambda2-p2)*(mu2+2+p2)*4*(Lambda12+2)))*wigner(p1,p2+1,q2,rho)
+!!          wigner(p1,p2,q2,rho)=wigner(p1,p2,q2,rho)&
+!!            *DSQRT(DFLOAT(Lambda22+1)/DFLOAT((Lambda12+1)*(Lambda22+2)*(p2+1)*(lambda2-p2)*(mu2+2+p2)))
         ELSE
-          IF(Lambda12>=1)THEN
-            wigner(p1,p2,q2,rho)=-DSQRT(DFLOAT(p1*(lambda1+1-p1)*(mu1+1+p1)*(Lambda12+Lambda22-lambda3)&
-              *(Lambda12+Lambda22+lambda3+2))/DFLOAT(4*Lambda12))*wigner(p1-1,p2,q2+1,rho)
+          IF(Lambda12>=1.and.p1/=0)THEN
+!!            wigner(p1,p2,q2,rho)=-DSQRT(DFLOAT(p1*(lambda1+1-p1)*(mu1+1+p1)*(Lambda12+Lambda22-lambda3)&
+!!              *(Lambda12+Lambda22+lambda3+2))/DFLOAT(4*Lambda12))*wigner(p1-1,p2,q2+1,rho)
+wigner(p1,p2,q2,rho)=-DSQRT(DFLOAT((Lambda22+1)*p1*(lambda1+1-p1)*(mu1+1+p1)*(Lambda12+Lambda22-lambda3)&
+*(Lambda12+Lambda22+lambda3+2))&
+/DFLOAT((Lambda12+1)*Lambda22*(q2+1)*(mu2-q2)*(lambda2+mu2+1-q2)*4*Lambda12))*wigner(p1-1,p2,q2+1,rho)
           ELSE
             wigner(p1,p2,q2,rho)=0.D0
           END IF
-          IF(Lambda12+1<=lambda1+mu1)wigner(p1,p2,q2,rho)=wigner(p1,p2,q2,rho)&
-            -DSQRT(DFLOAT(q1*(mu1+1-q1)*(lambda1+mu1+2-q1)*(Lambda22+lambda3-Lambda12)*(lambda3+Lambda12-Lambda22+2))&
-             /DFLOAT(4*(Lambda12+2)))*wigner(p1,p2,q2+1,rho)
-          wigner(p1,p2,q2,rho)=wigner(p1,p2,q2,rho)&
-            *DSQRT(DFLOAT(Lambda22+1)/DFLOAT((Lambda12+1)*Lambda22*(q2+1)*(mu2-q2)*(lambda2+mu2+1-q2)))
+!!          IF(Lambda12+1<=lambda1+mu1)wigner(p1,p2,q2,rho)=wigner(p1,p2,q2,rho)&
+!!            -DSQRT(DFLOAT(q1*(mu1+1-q1)*(lambda1+mu1+2-q1)*(Lambda22+lambda3-Lambda12)*(lambda3+Lambda12-Lambda22+2))&
+!!             /DFLOAT(4*(Lambda12+2)))*wigner(p1,p2,q2+1,rho)
+IF(Lambda12+1<=lambda1+mu1.and.q1/=0)wigner(p1,p2,q2,rho)=wigner(p1,p2,q2,rho)&
+-DSQRT(DFLOAT((Lambda22+1)*q1*(mu1+1-q1)*(lambda1+mu1+2-q1)*(Lambda22+lambda3-Lambda12)*(lambda3+Lambda12-Lambda22+2))&
+/DFLOAT((Lambda12+1)*Lambda22*(q2+1)*(mu2-q2)*(lambda2+mu2+1-q2)*4*(Lambda12+2)))*wigner(p1,p2,q2+1,rho)
+!!          wigner(p1,p2,q2,rho)=wigner(p1,p2,q2,rho)&
+!!            *DSQRT(DFLOAT(Lambda22+1)/DFLOAT((Lambda12+1)*Lambda22*(q2+1)*(mu2-q2)*(lambda2+mu2+1-q2)))
         END IF
-      ELSE
+
+!      ELSE ! This is not necassary. It seems to slightly increase the maximal error and slightly decrease the mean error.
+           ! Since the effect on the maximal error seems to be more significant, the code after this ELSE should probably
+           ! be removed along with IF(lambda2>=mu2)THEN above (and END IF down).
+
+go to 10
+
         IF((Lambda22==lambda2+i1).OR.(Lambda22==lambda2+mu2))THEN
-          IF(Lambda12>=1)THEN
-            wigner(p1,p2,q2,rho)=-DSQRT(DFLOAT(p1*(lambda1+1-p1)*(mu1+1+p1)*(Lambda12+Lambda22-lambda3)&
-              *(Lambda12+Lambda22+lambda3+2))/DFLOAT(4*Lambda12))*wigner(p1-1,p2,q2+1,rho)
+          IF(Lambda12>=1.and.p1/=0)THEN
+!!            wigner(p1,p2,q2,rho)=-DSQRT(DFLOAT(p1*(lambda1+1-p1)*(mu1+1+p1)*(Lambda12+Lambda22-lambda3)&
+!!              *(Lambda12+Lambda22+lambda3+2))/DFLOAT(4*Lambda12))*wigner(p1-1,p2,q2+1,rho)
+wigner(p1,p2,q2,rho)=-DSQRT(DFLOAT((Lambda22+1)*p1*(lambda1+1-p1)*(mu1+1+p1)*(Lambda12+Lambda22-lambda3)&
+*(Lambda12+Lambda22+lambda3+2))&
+/DFLOAT((Lambda12+1)*Lambda22*(q2+1)*(mu2-q2)*(lambda2+mu2+1-q2)*4*Lambda12))*wigner(p1-1,p2,q2+1,rho)
           ELSE
             wigner(p1,p2,q2,rho)=0.D0
           END IF
-          IF(Lambda12+1<=lambda1+mu1)wigner(p1,p2,q2,rho)=wigner(p1,p2,q2,rho)&
-            -DSQRT(DFLOAT(q1*(mu1+1-q1)*(lambda1+mu1+2-q1)*(Lambda22+lambda3-Lambda12)*(lambda3+Lambda12-Lambda22+2))&
-            /DFLOAT(4*(Lambda12+2)))*wigner(p1,p2,q2+1,rho)
-          wigner(p1,p2,q2,rho)=wigner(p1,p2,q2,rho)&
-            *DSQRT(DFLOAT(Lambda22+1)/DFLOAT((Lambda12+1)*Lambda22*(q2+1)*(mu2-q2)*(lambda2+mu2+1-q2)))
+!!          IF(Lambda12+1<=lambda1+mu1)wigner(p1,p2,q2,rho)=wigner(p1,p2,q2,rho)&
+!!            -DSQRT(DFLOAT(q1*(mu1+1-q1)*(lambda1+mu1+2-q1)*(Lambda22+lambda3-Lambda12)*(lambda3+Lambda12-Lambda22+2))&
+!!            /DFLOAT(4*(Lambda12+2)))*wigner(p1,p2,q2+1,rho)
+IF(Lambda12+1<=lambda1+mu1.and.q1/=0)wigner(p1,p2,q2,rho)=wigner(p1,p2,q2,rho)&
+-DSQRT(DFLOAT((Lambda22+1)*q1*(mu1+1-q1)*(lambda1+mu1+2-q1)*(Lambda22+lambda3-Lambda12)*(lambda3+Lambda12-Lambda22+2))&
+/DFLOAT((Lambda12+1)*Lambda22*(q2+1)*(mu2-q2)*(lambda2+mu2+1-q2)*4*(Lambda12+2)))*wigner(p1,p2,q2+1,rho)
+!!          wigner(p1,p2,q2,rho)=wigner(p1,p2,q2,rho)&
+!!            *DSQRT(DFLOAT(Lambda22+1)/DFLOAT((Lambda12+1)*Lambda22*(q2+1)*(mu2-q2)*(lambda2+mu2+1-q2)))
         ELSE
-          IF(Lambda12>=1)THEN
-            wigner(p1,p2,q2,rho)=-DSQRT(DFLOAT(p1*(lambda1+1-p1)*(mu1+1+p1)*(Lambda22+lambda3-Lambda12+2)&
-              *(lambda3+Lambda12-Lambda22))/DFLOAT(4*Lambda12))*wigner(p1-1,p2+1,q2,rho)
+          IF(Lambda12>=1.and.p1/=0)THEN
+!!            wigner(p1,p2,q2,rho)=-DSQRT(DFLOAT(p1*(lambda1+1-p1)*(mu1+1+p1)*(Lambda22+lambda3-Lambda12+2)&
+!!              *(lambda3+Lambda12-Lambda22))/DFLOAT(4*Lambda12))*wigner(p1-1,p2+1,q2,rho)
+wigner(p1,p2,q2,rho)=-DSQRT(DFLOAT((Lambda22+1)*p1*(lambda1+1-p1)*(mu1+1+p1)*(Lambda22+lambda3-Lambda12+2)&
+*(lambda3+Lambda12-Lambda22))&
+/DFLOAT((Lambda12+1)*(Lambda22+2)*(p2+1)*(lambda2-p2)*(mu2+2+p2)*4*Lambda12))*wigner(p1-1,p2+1,q2,rho)
           ELSE
             wigner(p1,p2,q2,rho)=0.D0
           END IF
-          IF(Lambda12+1<=lambda1+mu1)wigner(p1,p2,q2,rho)=wigner(p1,p2,q2,rho)&
-            +DSQRT(DFLOAT(q1*(mu1+1-q1)*(lambda1+mu1+2-q1)*(Lambda12+Lambda22-lambda3+2)*(Lambda12+Lambda22+lambda3+4))&
-            /DFLOAT(4*(Lambda12+2)))*wigner(p1,p2+1,q2,rho)
-          wigner(p1,p2,q2,rho)=wigner(p1,p2,q2,rho)&
-            *DSQRT(DFLOAT(Lambda22+1)/DFLOAT((Lambda12+1)*(Lambda22+2)*(p2+1)*(lambda2-p2)*(mu2+2+p2)))
+!!          IF(Lambda12+1<=lambda1+mu1)wigner(p1,p2,q2,rho)=wigner(p1,p2,q2,rho)&
+!!            +DSQRT(DFLOAT(q1*(mu1+1-q1)*(lambda1+mu1+2-q1)*(Lambda12+Lambda22-lambda3+2)*(Lambda12+Lambda22+lambda3+4))&
+!!            /DFLOAT(4*(Lambda12+2)))*wigner(p1,p2+1,q2,rho)
+IF(Lambda12+1<=lambda1+mu1.and.q1/=0)wigner(p1,p2,q2,rho)=wigner(p1,p2,q2,rho)&
++DSQRT(DFLOAT((Lambda22+1)*q1*(mu1+1-q1)*(lambda1+mu1+2-q1)*(Lambda12+Lambda22-lambda3+2)*(Lambda12+Lambda22+lambda3+4))&
+/DFLOAT((Lambda12+1)*(Lambda22+2)*(p2+1)*(lambda2-p2)*(mu2+2+p2)*4*(Lambda12+2)))*wigner(p1,p2+1,q2,rho)
+!!          wigner(p1,p2,q2,rho)=wigner(p1,p2,q2,rho)&
+!!            *DSQRT(DFLOAT(Lambda22+1)/DFLOAT((Lambda12+1)*(Lambda22+2)*(p2+1)*(lambda2-p2)*(mu2+2+p2)))
         END IF
-      END IF
+
+10 continue
+
+!      END IF
 
       IF(rho==rhomax)THEN
         i2=i2+1
@@ -419,36 +550,78 @@ END DO ! end of the loop over rho
 !**************************************************************************************
 ! Gram-Schmidt orthonormalization is performed, where Wigner coefficients for given rho represent a vector,
 ! whose components are indexed by alpha1 and alpha2, and the scalar product is defined in Eq.(8).
+!!DO rho=1,rhomax
+!!  DO i4=1,rho-1
+!!    scalprod=0.D0
+!!    DO i1=1,i2
+!!      p1=p1a(i1)
+!!      p2=p2a(i1)
+!!      q2=q2a(i1)
+!!      scalprod=scalprod+wigner(p1,p2,q2,rho)*wigner(p1,p2,q2,i4)
+!!    END DO
+!!    DO i1=1,i2
+!!      p1=p1a(i1)
+!!      p2=p2a(i1)
+!!      q2=q2a(i1)
+!!      wigner(p1,p2,q2,rho)=wigner(p1,p2,q2,rho)-scalprod*wigner(p1,p2,q2,i4)
+!!    END DO
+!!  END DO
+!!  norm=0.D0
+!!  DO i1=1,i2
+!!    p1=p1a(i1)
+!!    p2=p2a(i1)
+!!    q2=q2a(i1)
+!!    norm=norm+wigner(p1,p2,q2,rho)*wigner(p1,p2,q2,rho)
+!!  END DO
+!!  DO i1=1,i2
+!!    p1=p1a(i1)
+!!    p2=p2a(i1)
+!!    q2=q2a(i1)
+!!    wigner(p1,p2,q2,rho)=wigner(p1,p2,q2,rho)/DSQRT(norm)
+!!  END DO
+!!END DO
+
+!--------------------------------------------------------------------------------------
 DO rho=1,rhomax
-  DO i4=1,rho-1
-    scalprod=0.D0
-    DO i1=1,i2
+  a=1
+!  IF((etamax==rhomax-1).AND.rho==rhomax)a=rhomax
+  DO i4=a,rho
+    p1=p1a(1)
+    p2=p2a(1)
+    q2=q2a(1)
+    scalprod=wigner(p1,p2,q2,rho)*wigner(p1,p2,q2,i4)
+    F=0.D0 ! F->CC
+    DO i1=2,i2 ! Kahan summation fomula (see Ref.[3]) is used to calculate the scalar product.
       p1=p1a(i1)
       p2=p2a(i1)
       q2=q2a(i1)
-      scalprod=scalprod+wigner(p1,p2,q2,rho)*wigner(p1,p2,q2,i4)
+      G=wigner(p1,p2,q2,rho)*wigner(p1,p2,q2,i4)-F ! G->Y
+      H=scalprod+G ! H->T
+      F=H-scalprod
+      F=F-G
+      scalprod=H
     END DO
-    DO i1=1,i2
-      p1=p1a(i1)
-      p2=p2a(i1)
-      q2=q2a(i1)
-      wigner(p1,p2,q2,rho)=wigner(p1,p2,q2,rho)-scalprod*wigner(p1,p2,q2,i4)
-    END DO
-  END DO
-  norm=0.D0
-  DO i1=1,i2
-    p1=p1a(i1)
-    p2=p2a(i1)
-    q2=q2a(i1)
-    norm=norm+wigner(p1,p2,q2,rho)*wigner(p1,p2,q2,rho)
-  END DO
-  DO i1=1,i2
-    p1=p1a(i1)
-    p2=p2a(i1)
-    q2=q2a(i1)
-    wigner(p1,p2,q2,rho)=wigner(p1,p2,q2,rho)/DSQRT(norm)
+    IF(i4/=rho)THEN
+!      IF(DABS(scalprod)<1.D-12)CYCLE
+      DO i1=1,i2
+        p1=p1a(i1)
+        p2=p2a(i1)
+        q2=q2a(i1)
+        wigner(p1,p2,q2,rho)=wigner(p1,p2,q2,rho)-scalprod*wigner(p1,p2,q2,i4)
+      END DO
+    ELSE
+      scalprod=1.D0/DSQRT(scalprod)
+      DO i1=1,i2
+        p1=p1a(i1)
+        p2=p2a(i1)
+        q2=q2a(i1)
+        wigner(p1,p2,q2,rho)=wigner(p1,p2,q2,rho)*scalprod
+      END DO
+    END IF
   END DO
 END DO
+!--------------------------------------------------------------------------------------
+
 !**************************************************************************************
 ! End of the orthonormalization and beginning of setting the phase according to Ref.[2]
 !**************************************************************************************
