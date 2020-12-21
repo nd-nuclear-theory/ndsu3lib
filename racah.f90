@@ -1,4 +1,4 @@
-SUBROUTINE racah(lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,lambda23,mu23,&
+SUBROUTINE racah_allocatable_gsl(lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,lambda23,mu23,&
                  rhomaxa,rhomaxb,rhomaxc,rhomaxd,rac,info)
 !---------------------------------------------------------------------------------------------------------------------------
 ! Calsulates SU(3) recoupling coefficients
@@ -22,17 +22,21 @@ SUBROUTINE racah(lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,lam
 !---------------------------------------------------------------------------------------------------------------------------
 IMPLICIT NONE
 !INTEGER,EXTERNAL :: outer_multiplicity
-REAL(KIND=8),EXTERNAL :: DRR3 ! TO DO: Replace DRR3
+REAL(KIND=8),EXTERNAL :: su2racah ! TO DO: Replace DRR3
 INTEGER,INTENT(IN) :: lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,lambda23,mu23,rhomaxa,rhomaxb,rhomaxc,rhomaxd
 INTEGER,INTENT(OUT) :: info
 INTEGER :: epsilon23,rhomaxabc,numba,numbb,numbc,numbd,i1,i2,inda,indd,i,&
-           Lambda122,epsilon2,Lambda22,p3,q3,n,rhoa,rhob,rhoc,&
-           Lambda232,Lambda32,p23,q23,p12,q12,p2,q2,m,noname3!,j,epsilon2ind,epsilon23ind,epsilon3ind,p3min,p3max
+           Lambda122,epsilon2,Lambda22,p3,q3,n,rhoa,rhob,rhoc,I23,&
+           Lambda232,Lambda32,p23,q23,p12,q12,p2,q2,m,noname3,epsilon2max,aux,p3min!,j,epsilon2ind,epsilon23ind,epsilon3ind,p3min,p3max
 REAL(KIND=8) :: factor1,factor2,factor3
 REAL(KIND=8),DIMENSION(:,:),INTENT(OUT) :: rac ! Dimensions are at least rhomaxd and rhomaxa*rhomaxb*rhomaxc
-REAL(KIND=8),DIMENSION(9,9) :: matrix ! Dimensions are at least rhomaxd and rhomaxd
-REAL(KIND=8),DIMENSION(0:15,0:15,0:15,1:9) :: wignera,wignerb,wignerc,wignerd,wigner
-INTEGER,DIMENSION(4096) :: p1aa,p2aa,q2aa,p1ac,p2ac,q2ac,p2ad,q2ad
+!REAL(KIND=8),DIMENSION(9,9) :: matrix ! Dimensions are at least rhomaxd and rhomaxd
+!REAL(KIND=8),DIMENSION(0:20,0:20,0:20,1:9) :: wignera,wignerb,wignerc,wignerd,wigner
+!INTEGER,DIMENSION(9261) :: p1aa,p2aa,q2aa,p1ac,p2ac,q2ac,p2ad,q2ad
+INTEGER :: pqdima,pqdimc,pqdimd
+REAL(KIND=8),ALLOCATABLE,DIMENSION(:,:) :: matrix
+REAL(KIND=8),ALLOCATABLE,DIMENSION(:,:,:,:) :: wignera,wignerb,wignerc,wignerd,wigner
+INTEGER,ALLOCATABLE,DIMENSION(:) :: p1aa,p2aa,q2aa,p1ac,p2ac,q2ac,p2ad,q2ad
 
 INTERFACE
   SUBROUTINE wigner_canonical_extremal(lambda1x,mu1x,lambda2x,mu2x,lambda3x,mu3x,I3,rhomax,i2,wigner,p1a,p2a,q2a)
@@ -42,15 +46,45 @@ INTERFACE
     INTEGER,DIMENSION(:),INTENT(OUT) :: p1a,p2a,q2a
     REAL(KIND=8),DIMENSION(0:,0:,0:,1:),INTENT(OUT) :: wigner
   END SUBROUTINE wigner_canonical_extremal
-  SUBROUTINE wigner_canonical(lambda1,mu1,lambda2,mu2,lambda3,mu3,epsilon3,Lambda32,rhomax,numb,wignerex,wigner,p1a,p2a,q2a)
+  SUBROUTINE wigner_canonical(lambda1,mu1,lambda2,mu2,lambda3,mu3,epsilon3,Lambda32,I3,rhomax,numb,wignerex,wigner,p1a,p2a,q2a)
     IMPLICIT NONE
-    INTEGER,INTENT(IN) :: lambda1,mu1,lambda2,mu2,lambda3,mu3,epsilon3,Lambda32,rhomax
-    INTEGER,INTENT(OUT) :: numb
-    INTEGER,DIMENSION(:),INTENT(OUT) :: p1a,p2a,q2a
+    INTEGER,INTENT(IN) :: lambda1,mu1,lambda2,mu2,lambda3,mu3,epsilon3,Lambda32,I3,rhomax
+    INTEGER :: numb
+    INTEGER,DIMENSION(:) :: p1a,p2a,q2a
     REAL(KIND=8),DIMENSION(0:,0:,0:,1:),INTENT(IN) :: wignerex
     REAL(KIND=8),DIMENSION(0:,0:,0:,1:),INTENT(OUT) :: wigner
   END SUBROUTINE wigner_canonical
 END INTERFACE
+
+pqdima=(lambda12+1)*(MAX(mu2,lambda3)+1)*(MAX(lambda2,mu3)+1)
+pqdimc=(MAX(lambda2,mu2)+1)*(lambda3+1)*(mu3+1)
+pqdimd=(lambda1+1)*(lambda23+1)*(mu23+1)
+ALLOCATE(matrix(rhomaxd,rhomaxd),wignera(0:lambda12,0:mu2,0:lambda2,1:rhomaxa),&
+                                 wignerb(0:lambda12,0:lambda3,0:mu3,1:rhomaxb),&
+                                 wignerc(0:MAX(lambda2,mu2),0:MAX(lambda3,mu3),0:MAX(lambda3,mu3),1:rhomaxc),&
+                                 wignerd(0:lambda1,0:lambda23,0:mu23,1:rhomaxd),&
+                                 wigner(0:lambda2,0:lambda3,0:mu3,1:rhomaxc),&
+         p1aa((MAX(lambda12,lambda1)+1)*(MAX(mu2,lambda3,lambda23)+1)*(MAX(lambda2,mu3,mu23)+1)),&
+         p2aa(MAX(pqdima,rhomaxd)),&
+         q2aa(pqdima),&
+         p1ac(pqdimc),&
+         p2ac(pqdimc),&
+         q2ac(pqdimc),&
+         p2ad(pqdimd),&
+         q2ad(pqdimd))
+!ALLOCATE(matrix(9,9),wignera(0:20,0:20,0:20,1:9),&
+!                     wignerb(0:20,0:20,0:20,1:9),&
+!                     wignerc(0:20,0:20,0:20,1:9),&
+!                     wignerd(0:20,0:20,0:20,1:9),&
+!                     wigner(0:20,0:20,0:20,1:9),&
+!         p1aa(9261),&
+!         p2aa(9261),&
+!         q2aa(9261),&
+!         p1ac(9261),&
+!         p2ac(9261),&
+!         q2ac(9261),&
+!         p2ad(9261),&
+!         q2ad(9261))
 
 !print*,"rhomaxa=",rhomaxa
 !print*,"rhomaxb=",rhomaxb
@@ -63,15 +97,24 @@ END INTERFACE
 !rhomaxd=outer_multiplicity(lambda1,mu1,lambda23,mu23,lambda,mu)
 rhomaxabc=rhomaxa*rhomaxb*rhomaxc
 epsilon23=-lambda-2*mu+lambda1+2*mu1
+
+IF(2*epsilon23<=lambda23-mu23)THEN
+  I23=1
+ELSE
+  I23=0
+END IF
+
 !epsilon23ind=(epsilon23+lambda23+2*mu23)/3!mozno netreba
-i1=3*lambda1+8*lambda2-6*lambda12+6*mu1+4*mu2-6*mu12
+epsilon2max=2*mu2+lambda2
+i1=3*lambda1-6*lambda12+6*mu1-6*mu12+8*lambda2+4*mu2
 factor1=DFLOAT((lambda1+1)*dimen(lambda12,mu12))/DFLOAT(dimen(lambda1,mu1))
 m=(2*(lambda12+mu2+mu1-mu12)+lambda2+lambda1)/3
+aux=2*lambda3+mu3-epsilon23
 
 rac(1:rhomaxd,1:rhomaxabc)=0.D0
 
 CALL wigner_canonical_extremal(lambda1,mu1,lambda23,mu23,lambda,mu,1,rhomaxd,numbd,wignerd,p1aa,p2ad,q2ad)
-CALL wigner_canonical_extremal(lambda2,mu2,lambda3,mu3,lambda23,mu23,1,rhomaxc,numbc,wignerc,p1ac,p2ac,q2ac)
+CALL wigner_canonical_extremal(lambda2,mu2,lambda3,mu3,lambda23,mu23,I23,rhomaxc,numbc,wignerc,p1ac,p2ac,q2ac)
 
 !print*,"-----"
 !do inda=1,numbc
@@ -95,7 +138,7 @@ DO indd=numbd,numbd-rhomaxd+1,-1 ! This is a loop over Lambda23
   matrix(i,1:rhomaxd)=wignerd(lambda1,p23,q23,1:rhomaxd)
   factor2=DSQRT(factor1*DFLOAT(Lambda232+1))
 
-  CALL wigner_canonical(lambda2,mu2,lambda3,mu3,lambda23,mu23,epsilon23,Lambda232,&
+  CALL wigner_canonical(lambda2,mu2,lambda3,mu3,lambda23,mu23,epsilon23,Lambda232,I23,&
                         rhomaxc,numbc,wignerc,wigner,p1ac,p2ac,q2ac)
 
 !print*,"-----"
@@ -113,23 +156,26 @@ DO indd=numbd,numbd-rhomaxd+1,-1 ! This is a loop over Lambda23
 !    Lambda122=mu12+p12-q12
     Lambda122=2*p12-m+p2+q2
 !    epsilon2=epsilon2aa(inda) ! WARNING: epsilon2 is -epsilon2 in the formula!
-    epsilon2=2*mu2+lambda2-3*(p2+q2)!mozno netreba
+    epsilon2=epsilon2max-3*(p2+q2)!mozno netreba
 !    epsilon2ind=(epsilon2+mu2+2*lambda2)/3!mozno netreba
 !    Lambda22=Lambda22aa(inda)
     Lambda22=lambda2+p2-q2
 !    epsilon3ind=(epsilon23+epsilon2+lambda3+2*mu3)/3!mozno netreba
-    noname3=(2*lambda3+mu3-epsilon23-epsilon2)/3
+    noname3=(aux-epsilon2)/3
     i2=i1+epsilon2+3*Lambda122
 !    p3min=MAX(0,lambda3-epsilon3ind)
 !    p3max=MIN(lambda3,lambda3+mu3-epsilon3ind)
 !    IF(p3min<=p3max)THEN
 !      DO p3=p3min,p3max ! sum over Lambda3
-      DO p3=MAX(0,noname3-mu3),MIN(lambda3,noname3)
+      p3min=MAX(0,noname3-mu3)
+      q3=noname3-p3min
+      Lambda32=mu3+p3min-q3
+      DO p3=p3min,MIN(lambda3,noname3)
 !        q3=lambda3+mu3-epsilon3ind-p3
-        q3=noname3-p3
-        Lambda32=mu3+p3-q3
+!        q3=noname3-p3
+!        Lambda32=mu3+p3-q3
 !        Lambda32=2*p3-lambda3+epsilon3ind
-        factor3=factor2*DRR3(lambda1,Lambda22,lambda,Lambda32,Lambda122,Lambda232) ! TO DO: Replace DRR3
+        factor3=factor2*su2racah(lambda1,Lambda22,lambda,Lambda32,Lambda122,Lambda232) ! TO DO: Replace DRR3
 
 !print*,"factor2=",factor2
 !print*,"su2racah=",su2racah(lambda1,Lambda22,lambda,Lambda32,Lambda122,Lambda232)
@@ -153,7 +199,9 @@ DO indd=numbd,numbd-rhomaxd+1,-1 ! This is a loop over Lambda23
             END DO
           END DO
         END DO
-
+        
+        q3=q3-1
+        Lambda32=Lambda32+2
       END DO
 !    else
 !      print*,"p3min>p3max"
@@ -166,13 +214,15 @@ END DO
 !print*,matrix(2,1),matrix(2,2),rac(2,1)
 
 IF(rhomaxd>1)THEN
-  CALL dgesv(rhomaxd,rhomaxabc,matrix,9,p2aa,rac,9,info)
+  CALL dgesv(rhomaxd,rhomaxabc,matrix,rhomaxd,p2aa,rac,9,info)
 ELSE
   rac(1,1:rhomaxabc)=rac(1,1:rhomaxabc)/matrix(1,1)
 
 !print*,"rac(1,1)=",rac(1,1),"matrix(1,1)=",matrix(1,1)
 
 END IF
+
+DEALLOCATE(matrix,wignera,wignerb,wignerc,wignerd,wigner,p1aa,p2aa,q2aa,p1ac,p2ac,q2ac,p2ad,q2ad)
 
 RETURN
 CONTAINS
@@ -182,4 +232,4 @@ CONTAINS
     INTEGER :: dm
     dm=(lambdax+1)*(mux+1)*(lambdax+mux+2)/2
   END FUNCTION dimen
-END SUBROUTINE racah
+END SUBROUTINE racah_allocatable_gsl
