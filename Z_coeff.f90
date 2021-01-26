@@ -24,13 +24,21 @@ IMPLICIT NONE
 REAL(KIND=8),EXTERNAL :: su2racah ! TO DO: Replace DRR3
 INTEGER,INTENT(IN) :: lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,lambda13,mu13,rhomaxa,rhomaxb,rhomaxc,rhomaxd
 INTEGER,INTENT(OUT) :: info
-INTEGER :: rhomaxabc,numba,numbb,numbc,numbd,i,indd,p2,q2,indb,p12,p3,q3,epsilon,epsilon3,epsilon12,q12,Lambda122,Lambda32,&
-           epsilon13,epsilon2,p1,q1,pq1,epsilon1,n,rhoa,rhob,rhoc,expp,Lambda22,LLambda12
-REAL(KIND=8) :: factor1,factor2
+INTEGER :: rhomaxabc,numba,numbb,numbd,i,indd,p2,q2,indb,p12,p3,q3,epsilon,epsilon12,Lambda122,Lambda32,&
+           p1,pq1,n,rhoa,rhob,rhoc,expp,Lambda22,LLambda12,p1min,aux1,mu1mpq1,aux3,aux4,&
+           aux5,aux6,inddmin,epsilon1lwpepsilon2,epsilonmepsilon3lw,epsilon12lw,lambdamlambda13
+REAL(KIND=8) :: factor1,factor2,factor3
 REAL(KIND=8),DIMENSION(:,:),INTENT(OUT) :: Zcoeff ! Dimensions are at least rhomaxd and rhomaxa*rhomaxb*rhomaxc
-REAL(KIND=8),ALLOCATABLE,DIMENSION(:,:) :: matrix
-REAL(KIND=8),ALLOCATABLE,DIMENSION(:,:,:,:) :: wignera,wignerb,wignerc,wignerd,wigner
-INTEGER,ALLOCATABLE,DIMENSION(:) :: p1aa,p2aa,q2aa,p1ab,p2ab,q2ab,p1ac,p2ac,q2ac,p1ad,p2ad,q2ad
+REAL(KIND=8),DIMENSION(rhomaxd,rhomaxd) :: matrix
+REAL(KIND=8),DIMENSION(0:lambda1,0:lambda2,0:mu2,rhomaxa) :: wignera,wigner
+REAL(KIND=8),DIMENSION(0:lambda12,0:lambda3,0:mu3,rhomaxb) :: wignerb
+REAL(KIND=8),DIMENSION(0:lambda1,0:lambda3,0:mu3,rhomaxc) :: wignerc
+REAL(KIND=8),DIMENSION(0:lambda13,0:lambda2,0:mu2,rhomaxd) :: wignerd
+INTEGER,DIMENSION((lambda1+1)*(lambda2+1)*(mu2+1)) :: p1aa,q2aa
+INTEGER,DIMENSION(MAX((lambda1+1)*(lambda2+1)*(mu2+1),rhomaxd)) :: p2aa
+INTEGER,DIMENSION(MAX((lambda13+1)*(lambda2+1)*(mu2+1),(lambda1+1)*(lambda3+1)*(mu3+1),&
+                      (lambda1+1)*(lambda2+1)*(mu2+1),(lambda12+1)*(lambda3+1)*(mu3+1))) :: p1ab,p2ab,q2ab
+INTEGER,DIMENSION((lambda13+1)*(lambda2+1)*(mu2+1)) :: p2ad,q2ad
 
 INTERFACE
   SUBROUTINE wigner_canonical_extremal(lambda1x,mu1x,lambda2x,mu2x,lambda3x,mu3x,I3,rhomax,i2,wigner,p1a,p2a,q2a)
@@ -50,37 +58,23 @@ INTERFACE
   END SUBROUTINE wigner_canonical
 END INTERFACE
 
-ALLOCATE(matrix(rhomaxd,rhomaxd),wignera(0:10,0:10,0:10,1:9),&
-                     wignerb(0:10,0:10,0:10,1:9),&
-                     wignerc(0:10,0:10,0:10,1:9),&
-                     wignerd(0:10,0:10,0:10,1:9),&
-                     wigner(0:10,0:10,0:10,1:9),&
-         p1aa(1331),&
-         p2aa(1331),&
-         q2aa(1331),&
-         p1ab(1331),&
-         p2ab(1331),&
-         q2ab(1331),&
-         p1ac(1331),&
-         p2ac(1331),&
-         q2ac(1331),&
-         p1ad(1331),&
-         p2ad(1331),&
-         q2ad(1331))
-
 rhomaxabc=rhomaxa*rhomaxb*rhomaxc
 epsilon=-lambda-2*mu
-epsilon13=-lambda13-2*mu13
-epsilon2=epsilon-epsilon13
+epsilon1lwpepsilon2=2*lambda1+mu1+epsilon+lambda13+2*mu13
+epsilonmepsilon3lw=epsilon-2*lambda3-mu3
+epsilon12lw=2*lambda12+mu12
+lambdamlambda13=lambda-lambda13
 
-CALL wigner_canonical_extremal(lambda13,mu13,lambda2,mu2,lambda,mu,1,rhomaxd,numbd,wignerd,p1ad,p2ad,q2ad)
-CALL wigner_canonical_extremal(lambda1,mu1,lambda3,mu3,lambda13,mu13,1,rhomaxc,numbc,wignerc,p1ac,p2ac,q2ac)
+CALL wigner_canonical_extremal(lambda13,mu13,lambda2,mu2,lambda,mu,1,rhomaxd,numbd,wignerd,p1ab,p2ad,q2ad)
+CALL wigner_canonical_extremal(lambda1,mu1,lambda3,mu3,lambda13,mu13,1,rhomaxc,numba,wignerc,p1ab,p2ab,q2ab)
+CALL wigner_canonical_extremal(lambda1,mu1,lambda2,mu2,lambda12,mu12,1,rhomaxa,numba,wignera,p1ab,p2ab,q2ab)
 CALL wigner_canonical_extremal(lambda12,mu12,lambda3,mu3,lambda,mu,1,rhomaxb,numbb,wignerb,p1ab,p2ab,q2ab)
-CALL wigner_canonical_extremal(lambda1,mu1,lambda2,mu2,lambda12,mu12,1,rhomaxa,numba,wignera,p1aa,p2aa,q2aa)
+
+inddmin=numbd-rhomaxd+1
 
 ! Construction of matrix
 i=0
-DO indd=numbd,numbd-rhomaxd+1,-1 ! This is a loop over Lambda2
+DO indd=inddmin,numbd ! This is a loop over Lambda2
   p2=p2ad(indd)
   q2=q2ad(indd)
   i=i+1
@@ -93,39 +87,45 @@ DO indb=1,numbb ! This is a loop over epsilon1,epsilon3,epsilon12,Lambda3,Lambda
   p12=p1ab(indb)
   p3=p2ab(indb)
   q3=q2ab(indb)
-  epsilon3=2*lambda3+mu3-3*(p3+q3)
-  epsilon12=epsilon-epsilon3
-  q12=(2*lambda12+mu12-epsilon12)/3-p12
-  Lambda122=mu12+p12-q12
+  epsilon12=epsilonmepsilon3lw+3*(p3+q3)!=epsilon-epsilon3
+  Lambda122=mu12-(epsilon12lw-epsilon12)/3+2*p12
   Lambda32=mu3+p3-q3
+  aux1=lambdamlambda13-Lambda122
 
   CALL wigner_canonical(lambda1,mu1,lambda2,mu2,lambda12,mu12,epsilon12,Lambda122,1,rhomaxa,numba,wignera,wigner,p1aa,p2aa,q2aa)
 
   factor1=DSQRT(DFLOAT((Lambda122+1)*(lambda13+1)))
 
-  epsilon1=epsilon12-epsilon2!=epsilon13-epsilon3
-  pq1=(2*lambda1+mu1-epsilon1)/3 ! pq1 is p1+q1
+  pq1=(epsilon1lwpepsilon2-epsilon12)/3 ! pq1 is p1+q1
+  mu1mpq1=mu1-pq1
+  aux3=MIN(lambda1,pq1,(Lambda32+lambda13-mu1mpq1)/2)
+  aux4=MAX(0,-mu1mpq1,(Lambda32-lambda13-mu1mpq1)/2,-(Lambda32-lambda13+mu1mpq1)/2)
+  aux5=Lambda122-mu1mpq1
+  aux6=Lambda122+mu1mpq1
 
   i=0
-  DO indd=numbd,numbd-rhomaxd+1,-1 ! This is a loop over Lambda2
+  DO indd=inddmin,numbd ! This is a loop over Lambda2
     i=i+1
     p2=p2ad(indd)
     q2=q2ad(indd)
     Lambda22=mu2+p2-q2
 
-    DO p1=0,lambda1 ! Medze treba urcit, aby neboli potrebne kontroly nizsie.
-      q1=pq1-p1
-      IF(q1<0.OR.q1>mu1)CYCLE
-      LLambda12=mu1+p1-q1
-      IF(ABS(LLambda12-Lambda22)>Lambda122.OR.Lambda122>LLambda12+Lambda22)CYCLE
-      IF(ABS(LLambda12-Lambda32)>lambda13.OR.lambda13>LLambda12+Lambda32)CYCLE
-
-      expp=LLambda12+lambda-Lambda122-lambda13
-      IF(4*(expp/4)==expp)THEN
-        factor2=factor1*su2racah(Lambda22,LLambda12,lambda,Lambda32,Lambda122,lambda13)
-      ELSE
-        factor2=-factor1*su2racah(Lambda22,LLambda12,lambda,Lambda32,Lambda122,lambda13)
-      END IF
+    p1min=MAX(aux4,(Lambda22-aux6)/2,(aux5-Lambda22)/2)
+    LLambda12=mu1mpq1+2*p1min ! LLambda12 is 2*Lambda1
+    expp=LLambda12+aux1
+    IF(4*(expp/4)==expp)THEN
+      factor2=-factor1
+    ELSE
+      factor2=factor1
+    END IF
+    DO p1=p1min,MIN((Lambda22+aux5)/2,aux3)
+! Lower and upper bounds on p1 are such that:
+! 1) 0<=q1<=mu1, where q1=pq1-p1
+! 2) ABS(LLambda12-Lambda22)<=Lambda122<=LLambda12+Lambda22, where LLambda12=mu1+p1-q1=mu1-pq1+2*p1
+! 3) ABS(LLambda12-Lambda32)<=lambda13<=LLambda12+Lambda32
+      
+      factor2=-factor2
+      factor3=factor2*su2racah(Lambda22,LLambda12,lambda,Lambda32,Lambda122,lambda13)
 
       n=0
       DO rhoc=1,rhomaxc
@@ -133,12 +133,13 @@ DO indb=1,numbb ! This is a loop over epsilon1,epsilon3,epsilon12,Lambda3,Lambda
           DO rhoa=1,rhomaxa
 !            n=rhoa+rhomaxa*(rhob-1)+rhomaxa*rhomaxb*(rhoc-1)
             n=n+1
-            Zcoeff(i,n)=Zcoeff(i,n)+factor2*wignerc(p1,p3,q3,rhoc)&
+            Zcoeff(i,n)=Zcoeff(i,n)+factor3*wignerc(p1,p3,q3,rhoc)&
                         *wigner(p1,p2,q2,rhoa)*wignerb(p12,p3,q3,rhob)
           END DO
         END DO
       END DO
 
+      LLambda12=LLambda12+2
     END DO
 
   END DO
@@ -152,14 +153,5 @@ ELSE
   Zcoeff(1,1:rhomaxabc)=Zcoeff(1,1:rhomaxabc)/matrix(1,1)
 END IF
 
-DEALLOCATE(matrix,wignera,wignerb,wignerc,wignerd,wigner,p1aa,p2aa,q2aa,p1ab,p2ab,q2ab,p1ac,p2ac,q2ac,p1ad,p2ad,q2ad)
-
 RETURN
-CONTAINS
-  FUNCTION dimen(lambdax,mux) RESULT(dm) ! Function dimen(lambdax,mux) calculates the dimension of the SU(3) irrep (lambdax,mux).
-    IMPLICIT NONE
-    INTEGER,INTENT (IN) :: lambdax,mux
-    INTEGER :: dm
-    dm=(lambdax+1)*(mux+1)*(lambdax+mux+2)/2
-  END FUNCTION dimen
 END SUBROUTINE Z_coeff
