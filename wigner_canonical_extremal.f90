@@ -121,7 +121,9 @@ IF(p2min/=p2max)THEN
       DO j=1,p2tilde-1
         F=F*DFLOAT((a+j+1)*(b-j-1))
       END DO
+      i1=p2tilde*(p2tilde+1)/2
       DO i=1,p2tilde
+        i1=i1+1
         scalprod=DFLOAT((p2+1)*(mu1+lambda2+mu2-n+2))
         DO j=1,p2tilde-1
           IF(j<i)THEN
@@ -130,7 +132,7 @@ IF(p2min/=p2max)THEN
             scalprod=scalprod*DFLOAT((a+j+1)*(b-j-1))
           END IF
         END DO
-        F=F+binom(p2tilde,i)*scalprod
+        F=F+binom(i1)*scalprod
       END DO
 !      F=DFLOAT((a+1)*(b-1))
 !      DO j=1,p2tilde-1
@@ -167,8 +169,9 @@ IF(p2min/=p2max)THEN
         G=G*DFLOAT(mu2-n+j+1)
       END IF
     END DO
-    G=G*DFLOAT(lambda2-2*q2tilde+n+1)*binom(n,q2tilde)
-    H=binom(n+1+lambda2-q2tilde,lambda2-q2tilde)
+    G=G*DFLOAT(lambda2-2*q2tilde+n+1)*binom(n*(n+1)/2+q2tilde)
+    i1=n+1+lambda2-q2tilde
+    H=binom(i1*(i1+1)/2+lambda2-q2tilde)
     wigner(lambda1,p2,q2,rho)=F*DSQRT(G/H)
     q2=q2-1
   END DO
