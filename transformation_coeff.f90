@@ -14,12 +14,13 @@ FUNCTION transformation_coeff(I,J,lambdax,mux,epsilonx,Lambda2p,MLambda2px,M,L,M
 !          S_1(N_Lambda,Lambda,M_Lambda=Lambda,M).
 !--------------------------------------------------------------------------------------------------------------
 USE binomial_coeff
+USE I_S_module
 IMPLICIT NONE
 INTEGER,INTENT(IN) :: I,J,lambdax,mux,epsilonx,Lambda2p,MLambda2px,M,L,Mp
-REAL(KIND=8) :: coeff,C,S2,S2b!,r
-REAL(KIND=8) :: S11,S12,S1b ! These are actually integers but might be very large
-INTEGER :: lambda,mu,epsilon,MLambda2p,p,q,a2,a3,a4,LmM,LpM,LmMp,MmLambda,gamma,NLambda2p,k2L,kkappa,alpha,beta,&
-           alphamin,alphamax,betamin,betamax,alphaminS2,alphamaxS2,LambdaM,MNLambda2p,LambdapMp,x,y,xm,xn!,NLambda2,k2Lo,pq,a1
+REAL(KIND=8) :: coeff,S11,S12,S2
+INTEGER :: lambda,mu,epsilon,MLambda2p,p,q,a4,LmM,LpM,LmMp,gamma,NLambda2p,k2L,kkappa,alpha,beta,&
+           alphamin,alphamax,alphaminS2,alphamaxS2,LambdaM,MNLambda2p,LambdapMp,x,y,xm,xn,&
+           aux1,ind1,aux2,ind2,aux3,ind3,aux4,xpys,lambdas,aux5
 
 IF(I==1)THEN
   lambda=lambdax
@@ -61,234 +62,134 @@ coeff=0.D0
 !!END IF
 
 LambdapMp=(Lambda2p+Mp)/2
-
 q=p+mu-Lambda2p
 LmM=L-M
 LmMp=L-Mp
-
 alphaminS2=MAX(0,-Mp-M) ! alphaminS2 in the lower bound for alpha in S_2 in Eq.(26)
-alphamaxS2=MIN(LmM,LmMp) ! alphamaxS2 in the upper bound for alpha in S_2 in Eq.(26)
-!IF(alphaminS2>alphamaxS2)RETURN ! This is probably redundant.
-
+alphamaxS2=MIN(LmM,LmMp)-2 ! alphamaxS2 in the upper bound for alpha in S_2 in Eq.(26) minus 2
 LpM=L+M
 LambdaM=(lambda+M)/2
-MmLambda=(M-lambda)/2
 xm=(Lambda2p-MLambda2p)/2
-!k2Lo=lambda+mu+L
 k2L=lambda+mu+L
-!pq=p+q
 kkappa=p+q
-!a1=q+(lambda+M+Lambda2p+Mp)/2
-a2=q+(lambda+M+Lambda2p+Mp)/2
-a3=a2-k2L
-
+lambdas=lambda**2
 NLambda2p=2*(p+1)-Lambda2p
 MNLambda2p=(MLambda2p+NLambda2p)/2
 xn=(Lambda2p-NLambda2p)/2
+aux1=xn*(xn+1)/2
+ind3=p*(p+1)/2
+aux2=ind3+xm
+aux3=LmM*(LmM+1)/2
+aux4=LpM*(LpM+1)/2+LmMp
+aux5=k2L*(k2L+1)/2+k2L-q-(lambda+M+Lambda2p+Mp)/2-alphaminS2
 DO gamma=0,p
-!  IF(gamma>Lambda2)EXIT !????????????????????????????
-
-  !kappa2= k2-2*(lambda-p+mu-q) ! kappa2 is 2*kappa'
-
-!  NLambda2p=2*(p-gamma)-Lambda2p ! NLambda2p is 2*N'_Lambda
-  NLambda2p=NLambda2p-2 ! NLambda2p is 2*N'_Lambda
-!  MNLambda2p=(MLambda2p+NLambda2p)/2
   MNLambda2p=MNLambda2p-1
-!  xn=(Lambda2p-NLambda2p)/2
   xn=xn+1
+  aux1=aux1+xn
 
-!if(M==0.and.BTEST(gamma,0))goto 10
+  IF(lambda-gamma>=gamma)THEN ! S12=I(lambda-gamma,gamma,LambdaM)
+    S12=Ia(((lambda-gamma)**3+lambdas+gamma)/2+LambdaM)
+  ELSE IF(BTEST(LambdaM,0))THEN ! S12=(-1)^(LambdaM)*I(lambda-gamma,gamma,LambdaM)
+    S12=-Ia((gamma**3+lambdas+lambda-gamma)/2+LambdaM)
+  ELSE
+    S12=Ia((gamma**3+lambdas+lambda-gamma)/2+LambdaM)
+  END IF
+! S12 is the second S_1 in Eq.(26), where only alpha=0 contributes. CAUTION: There is a typo: it should be
+! S_1(M_Lambda=Lambda,Lambda,N_Lambda,M), not S_1(N_Lambda,Lambda,M_Lambda=Lambda,M)
+
+  IF(S12/=0.D0)THEN
 
   alphamin=MAX(0,-MNLambda2p) ! alphamin is the lower bound for alpha in the first S_1 in Eq.(26)
   alphamax=MIN(xm,xn) ! alphamin is the upper bound for alpha in the first S_1 in Eq.(26)
-!  IF(alphamin>alphamax)CYCLE ! This is probably redundant.
-
-  betamin=MAX(0,MmLambda+gamma) ! betamin is the lower bound on beta in the second S_1 in Eq.(26)
-  betamax=MIN(LambdaM,gamma) ! betamax is the upper bound on beta in the second S_1 in Eq.(26)
-!  IF(betamin<=betamax)THEN ! This is probably redundant.
-!    NLambda2=Lambda2-2*gamma !NLambda2 is 2*N_Lambda
-    S12=0.D0 ! S12 is the second S_1 in Eq.(26), where only alpha=0 contributes. CAUTION: There is a typo: it should be
-!              S_1(M_Lambda=Lambda,Lambda,N_Lambda,M), not S_1(N_Lambda,Lambda,M_Lambda=Lambda,M)
-    IF(BTEST(betamin,0))THEN ! if betamin is odd
-      DO beta=betamin,betamax,2
-        S12=S12-binom(gamma,beta)*binom(lambda-gamma,LambdaM-beta)
-      END DO
-      DO beta=betamin+1,betamax,2
-        S12=S12+binom(gamma,beta)*binom(lambda-gamma,LambdaM-beta)
-      END DO
-    ELSE
-      DO beta=betamin,betamax,2
-        S12=S12+binom(gamma,beta)*binom(lambda-gamma,LambdaM-beta)
-      END DO
-      DO beta=betamin+1,betamax,2
-        S12=S12-binom(gamma,beta)*binom(lambda-gamma,LambdaM-beta)
-      END DO
-    END IF
-    !S12=S12*binom(lambda,gamma)
-!  ELSE
-!    CYCLE
-!  END IF
-  IF(S12==0.D0)GO TO 10
-
   S11=0.D0 ! S11 is the first S_1 in Eq.(26)
   x=2*alphamin+MNLambda2p
   y=Lambda2p-x
+  xpys=(x+y)**2
+  ind1=aux1+alphamin
+  ind2=aux2-alphamin
   DO alpha=alphamin,alphamax
-!    x=2*alpha+MNLambda2p
-!    y=Lambda2p-x
-    betamin=MAX(0,LambdapMp-x)
-    betamax=MIN(y,LambdapMp)
-    IF(betamin<=betamax)THEN
-      S1b=0.D0 !S1b is the sum over beta in S11
-      IF(BTEST(betamin,0))THEN ! if betamin is odd
-        DO beta=betamin,betamax,2
-          S1b=S1b-binom(y,beta)*binom(x,LambdapMp-beta)
-        END DO
-        DO beta=betamin+1,betamax,2
-          S1b=S1b+binom(y,beta)*binom(x,LambdapMp-beta)
-        END DO
+    IF(MAX(0,LambdapMp-x)<=MIN(y,LambdapMp))THEN
+      IF(x>=y)THEN
+        S11=S11+binom(ind1)*binom(ind2)*Ia((x**3+xpys+y)/2+LambdapMp)
+      ELSE IF(BTEST(LambdapMp,0))THEN
+        S11=S11-binom(ind1)*binom(ind2)*Ia((y**3+xpys+x)/2+LambdapMp)
       ELSE
-        DO beta=betamin,betamax,2
-          S1b=S1b+binom(y,beta)*binom(x,LambdapMp-beta)
-        END DO
-        DO beta=betamin+1,betamax,2
-          S1b=S1b-binom(y,beta)*binom(x,LambdapMp-beta)
-        END DO
+        S11=S11+binom(ind1)*binom(ind2)*Ia((y**3+xpys+x)/2+LambdapMp)
       END IF
     ELSE
-      !CYCLE
       EXIT
     END IF
-    S11=S11+binom(xn,alpha)*binom(p-gamma,xm-alpha)*S1b
     x=x+2
     y=y-2
+    ind1=ind1+1
+    ind2=ind2-1
   END DO
-  IF(S11==0.D0)GO TO 10
+  IF(S11/=0.D0)THEN
 
-!  k2L=k2Lo-gamma ! k2L is 2*k+L
-!  kkappa=pq-gamma ! kkappa is k+kappa'
-!  a2=a1-gamma
-!  a3=a2-k2L
   S2=0.D0 ! S2 is S_2 is Eq.(26)
-
+  a4=upbound*kkappa*(kkappa+upbound+2)/2+aux5
+  ind1=aux3+alphaminS2
+  ind2=aux4-alphaminS2
   IF(BTEST(alphaminS2,0))THEN ! if alphaminS2 is odd
-
-    a4=a2+alphaminS2
     DO alpha=alphaminS2,alphamaxS2,2
-!    a4=a2+alpha
-!    betamin=MAX(0,a3+alpha) ! betamin seems to be always 0
-      betamax=MIN(a4,kkappa)
-!    IF(betamin<=betamax)THEN ! This is probably redundant
-      S2b=0.D0 ! S2b is the sum over beta in S2
-!      DO beta=betamin,betamax
-      DO beta=0,betamax,2
-        S2b=S2b+binom(kkappa,beta)*binom_inv(k2L,a4-beta)
-      END DO
-      DO beta=1,betamax,2
-        S2b=S2b-binom(kkappa,beta)*binom_inv(k2L,a4-beta)
-      END DO
-!    ELSE
-!      CYCLE
-!    END IF
-!    IF((alpha/2)*2==alpha)THEN
-!      S2=S2+binom(LmM,alpha)*binom(LpM,LmMp-alpha)*S2b
-!    ELSE
-      S2=S2-binom(LmM,alpha)*binom(LpM,LmMp-alpha)*S2b
-!    END IF
-      a4=a4+2
+      S2=S2-binom(ind1)*binom(ind2)*Sa(a4)
+      S2=S2+binom(ind1+1)*binom(ind2-1)*Sa(a4-1)
+      a4=a4-2
+      ind1=ind1+2
+      ind2=ind2-2
     END DO
-
-    a4=a2+alphaminS2+1
-    DO alpha=alphaminS2+1,alphamaxS2,2
-      betamax=MIN(a4,kkappa)
-      S2b=0.D0 ! S2b is the sum over beta in S2
-      DO beta=0,betamax,2
-        S2b=S2b+binom(kkappa,beta)*binom_inv(k2L,a4-beta)
-      END DO
-      DO beta=1,betamax,2
-        S2b=S2b-binom(kkappa,beta)*binom_inv(k2L,a4-beta)
-      END DO
-      S2=S2+binom(LmM,alpha)*binom(LpM,LmMp-alpha)*S2b
-      a4=a4+2
-    END DO
-
+    IF(BTEST(alphamaxS2,0))THEN
+      S2=S2-binom(ind1)*binom(ind2)*Sa(a4)
+    ELSE
+      S2=S2-binom(ind1)*binom(ind2)*Sa(a4)
+      S2=S2+binom(ind1+1)*binom(ind2-1)*Sa(a4-1)
+    END IF
   ELSE
-
-    a4=a2+alphaminS2
     DO alpha=alphaminS2,alphamaxS2,2
-      betamax=MIN(a4,kkappa)
-      S2b=0.D0 ! S2b is the sum over beta in S2
-      DO beta=0,betamax,2
-        S2b=S2b+binom(kkappa,beta)*binom_inv(k2L,a4-beta)
-      END DO
-      DO beta=1,betamax,2
-        S2b=S2b-binom(kkappa,beta)*binom_inv(k2L,a4-beta)
-      END DO
-      S2=S2+binom(LmM,alpha)*binom(LpM,LmMp-alpha)*S2b
-      a4=a4+2
+      S2=S2+binom(ind1)*binom(ind2)*Sa(a4)
+      S2=S2-binom(ind1+1)*binom(ind2-1)*Sa(a4-1)
+      a4=a4-2
+      ind1=ind1+2
+      ind2=ind2-2
     END DO
-
-    a4=a2+alphaminS2+1
-    DO alpha=alphaminS2+1,alphamaxS2,2
-      betamax=MIN(a4,kkappa)
-      S2b=0.D0 ! S2b is the sum over beta in S2
-      DO beta=0,betamax,2
-        S2b=S2b+binom(kkappa,beta)*binom_inv(k2L,a4-beta)
-      END DO
-      DO beta=1,betamax,2
-        S2b=S2b-binom(kkappa,beta)*binom_inv(k2L,a4-beta)
-      END DO
-      S2=S2-binom(LmM,alpha)*binom(LpM,LmMp-alpha)*S2b
-      a4=a4+2
-    END DO
+    IF(BTEST(alphamaxS2,0))THEN
+      S2=S2+binom(ind1)*binom(ind2)*Sa(a4)
+      S2=S2-binom(ind1+1)*binom(ind2-1)*Sa(a4-1)
+    ELSE
+      S2=S2+binom(ind1)*binom(ind2)*Sa(a4)
+    END IF
+  END IF
+  IF(S2/=0.D0)THEN
+    coeff=coeff+binom(ind3)*S11*S12*S2/DFLOAT(k2L+1)
+  END IF
 
   END IF
-  IF(S2==0.D0)GO TO 10
+  END IF
 
-  S2=S2/DFLOAT(k2L+1)
-
-  coeff=coeff+binom(p,gamma)*S11*S12*S2
-
-10  k2L=k2L-1
+  aux5=aux5-k2L
+  k2L=k2L-1
   kkappa=kkappa-1
-  a2=a2-1
+  aux2=aux2-p+gamma
+  ind3=ind3+1
 END DO
 
 IF(coeff/=0.D0)THEN
-!  r=DFLOAT(2*L+1)/DFLOAT(2**p) ! This factor appears in C in Eq.(26) as squared but that is probably a typo. The factor of (2L+1) should not be squared!
-!!  C=DFLOAT(2*L+1)/DFLOAT(4**p)*DSQRT((binom(lambda,p)*binom(mu,q)*binom(lambda+mu+1,q)*binom(2*L,L-M))&
-!!    /(binom(2*L,L-Mp)*binom(Lambda2p,(Lambda2p+MLambda2p)/2)*binom(p+mu+1,q)))
-  C=DFLOAT(2*L+1)*DSQRT((binom(lambda,p)*binom(mu,q)*binom(lambda+mu+1,q)*binom(2*L,L-M))&
-    *binom_inv(2*L,L-Mp)*binom_inv(Lambda2p,(Lambda2p+MLambda2p)/2)*binom_inv(p+mu+1,q))/DFLOAT(4**p)
-!!  C=inv_pow_4(p)*DFLOAT(2*L+1)*DSQRT((binom(lambda,p)*binom(mu,q)*binom(lambda+mu+1,q)*binom(2*L,L-M))&
-!!    /(binom(2*L,L-Mp)*binom(Lambda2p,(Lambda2p+MLambda2p)/2)*binom(p+mu+1,q)))
-  IF(BTEST(L-p,0))C=-C
-  coeff=coeff*C
+! Factor (2*L+1)/(2**p) appears in C in Eq.(26) as squared but that is a typo: (2L+1) should not be squared!
+  aux1=lambda+mu+1
+  aux2=p+mu+1
+  aux3=2*L*(L+1)
+  S2=DFLOAT(2*L+1)*DSQRT((binom((lambdas+lambda)/2+p)/binom(aux3-Mp))*(binom(mu*(mu+1)/2+q)&
+    /binom((Lambda2p*(Lambda2p+2)+MLambda2p)/2))&
+    *(binom(aux1*(aux1+1)/2+q)/binom(aux2*(aux2+1)/2+q))*binom(aux3-M))/DFLOAT(4**p)
+! S2 is C
+  IF(BTEST(L-p,0))S2=-S2
+  coeff=coeff*S2
 ELSE
   RETURN
 END IF
 
 ! Now coeff is the coefficient for E=HW. For E=HW' there is additinal phase factor of (-1)^((lambda+M)/2) according to Eq.(33,6B), therefore:
-IF(I/=J.AND.BTEST((lambda+M)/2,0))coeff=-coeff
+IF(I/=J.AND.BTEST(lambdaM,0))coeff=-coeff
 
 RETURN
-
-!CONTAINS
-!  FUNCTION factorial(n) RESULT(res)
-!    IMPLICIT NONE
-!    INTEGER,INTENT(IN) :: n
-!    REAL(KIND=8) :: res
-!    INTEGER :: i
-!!   res=PRODUCT((/(i,i=1,n)/))
-!    res=1.D0
-!    DO i=2,n
-!      res=res*DFLOAT(i)
-!    END DO
-!    END FUNCTION factorial
-!  FUNCTION binom(n,k) RESULT(res)
-!    IMPLICIT NONE
-!    INTEGER,INTENT(IN) :: n,k
-!    REAL(KIND=8) :: res
-!    res=factorial(n)/(factorial(k)*factorial(n-k))
-!  END FUNCTION binom                                              
 END FUNCTION transformation_coeff
