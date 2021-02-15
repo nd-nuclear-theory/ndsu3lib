@@ -18,6 +18,11 @@ USE I_S_module
 IMPLICIT NONE
 INTEGER,INTENT(IN) :: I,J,lambdax,mux,epsilonx,Lambda2p,MLambda2px,M,L,Mp
 REAL(KIND=8) :: coeff,S11,S12,S2
+#if defined(SU3DBL)
+REAL(KIND=8) :: coeffq,S11q,S12q,S2q
+#elif (defined(SU3QUAD) || defined(SU3QUAD_GNU))
+REAL(KIND=16) :: coeffq,S11q,S12q,S2q
+#endif
 INTEGER :: lambda,mu,epsilon,MLambda2p,p,q,a4,LmM,LpM,LmMp,gamma,NLambda2p,k2L,kkappa,alpha,beta,&
            alphamin,alphamax,alphaminS2,alphamaxS2,LambdaM,MNLambda2p,LambdapMp,x,y,xm,xn,&
            aux1,ind1,aux2,ind2,aux3,ind3,aux4,xpys,lambdas,aux5
@@ -52,7 +57,7 @@ p=((2*(lambda-mu)-epsilon)/3+Lambda2p)/2
 !  RETURN
 !END IF
 
-coeff=0.D0
+!coeff=0.D0
 ! The following test is not necessary because this function will not be called for odd 2*Lambda'+M'.
 !!LambdapMp=Lambda2p+Mp
 !!IF(2*(LambdapMp/2)==LambdapMp)THEN
@@ -82,6 +87,10 @@ aux2=ind3+xm
 aux3=LmM*(LmM+1)/2
 aux4=LpM*(LpM+1)/2+LmMp
 aux5=k2L*(k2L+1)/2+k2L-q-(lambda+M+Lambda2p+Mp)/2-alphaminS2
+
+IF(lambda+mu+L<=17)THEN
+coeff=0.D0
+
 DO gamma=0,p
   MNLambda2p=MNLambda2p-1
   xn=xn+1
@@ -186,6 +195,159 @@ IF(coeff/=0.D0)THEN
   coeff=coeff*S2
 ELSE
   RETURN
+END IF
+
+ELSE ! lambda+mu+L>17
+coeffq=0.Q0
+
+DO gamma=0,p
+  MNLambda2p=MNLambda2p-1
+  xn=xn+1
+  aux1=aux1+xn
+
+  IF(lambda-gamma>=gamma)THEN ! S12=I(lambda-gamma,gamma,LambdaM)
+    S12q=Ia(((lambda-gamma)**3+lambdas+gamma)/2+LambdaM)
+  ELSE IF(BTEST(LambdaM,0))THEN ! S12=(-1)^(LambdaM)*I(lambda-gamma,gamma,LambdaM)
+    S12q=-Ia((gamma**3+lambdas+lambda-gamma)/2+LambdaM)
+  ELSE
+    S12q=Ia((gamma**3+lambdas+lambda-gamma)/2+LambdaM)
+  END IF
+! S12 is the second S_1 in Eq.(26), where only alpha=0 contributes. CAUTION:
+! There is a typo: it should be
+! S_1(M_Lambda=Lambda,Lambda,N_Lambda,M), not
+! S_1(N_Lambda,Lambda,M_Lambda=Lambda,M)
+
+#if defined(SU3DBL)
+  IF(S12q/=0.D0)THEN
+#elif (defined(SU3QUAD) || defined(SU3QUAD_GNU))
+  IF(S12q/=0.Q0)THEN
+#endif
+
+  alphamin=MAX(0,-MNLambda2p) ! alphamin is the lower bound for alpha in the first S_1 in Eq.(26)
+  alphamax=MIN(xm,xn) ! alphamin is the upper bound for alpha in the first S_1 in Eq.(26)
+#if defined(SU3DBL)
+  S11q=0.D0 ! S11 is the first S_1 in Eq.(26)
+#elif (defined(SU3QUAD) || defined(SU3QUAD_GNU))
+  S11q=0.Q0
+#endif
+  x=2*alphamin+MNLambda2p
+  y=Lambda2p-x
+  xpys=(x+y)**2
+  ind1=aux1+alphamin
+  ind2=aux2-alphamin
+  DO alpha=alphamin,alphamax
+    IF(MAX(0,LambdapMp-x)<=MIN(y,LambdapMp))THEN
+      IF(x>=y)THEN
+        S11q=S11q+binom_quad(ind1)*binom_quad(ind2)*Ia((x**3+xpys+y)/2+LambdapMp)
+      ELSE IF(BTEST(LambdapMp,0))THEN
+        S11q=S11q-binom_quad(ind1)*binom_quad(ind2)*Ia((y**3+xpys+x)/2+LambdapMp)
+      ELSE
+        S11q=S11q+binom_quad(ind1)*binom_quad(ind2)*Ia((y**3+xpys+x)/2+LambdapMp)
+      END IF
+    ELSE
+      EXIT
+    END IF
+    x=x+2
+    y=y-2
+    ind1=ind1+1
+    ind2=ind2-1
+  END DO
+
+#if defined(SU3DBL)
+  IF(S11q/=0.D0)THEN
+  S2q=0.D0 ! S2 is S_2 is Eq.(26)
+#elif (defined(SU3QUAD) || defined(SU3QUAD_GNU))
+  IF(S11q/=0.Q0)THEN
+  S2q=0.Q0
+#endif
+  a4=upbound*kkappa*(kkappa+upbound+2)/2+aux5
+  ind1=aux3+alphaminS2
+  ind2=aux4-alphaminS2
+  IF(BTEST(alphaminS2,0))THEN ! if alphaminS2 is odd
+    DO alpha=alphaminS2,alphamaxS2,2
+      S2q=S2q-binom_quad(ind1)*binom_quad(ind2)*Sa(a4)
+      S2q=S2q+binom_quad(ind1+1)*binom_quad(ind2-1)*Sa(a4-1)
+      a4=a4-2
+      ind1=ind1+2
+      ind2=ind2-2
+    END DO
+    IF(BTEST(alphamaxS2,0))THEN
+      S2q=S2q-binom_quad(ind1)*binom_quad(ind2)*Sa(a4)
+    ELSE
+      S2q=S2q-binom_quad(ind1)*binom_quad(ind2)*Sa(a4)
+      S2q=S2q+binom_quad(ind1+1)*binom_quad(ind2-1)*Sa(a4-1)
+    END IF
+  ELSE
+    DO alpha=alphaminS2,alphamaxS2,2
+      S2q=S2q+binom_quad(ind1)*binom_quad(ind2)*Sa(a4)
+      S2q=S2q-binom_quad(ind1+1)*binom_quad(ind2-1)*Sa(a4-1)
+      a4=a4-2
+      ind1=ind1+2
+      ind2=ind2-2
+    END DO
+    IF(BTEST(alphamaxS2,0))THEN
+      S2q=S2q+binom_quad(ind1)*binom_quad(ind2)*Sa(a4)
+      S2q=S2q-binom_quad(ind1+1)*binom_quad(ind2-1)*Sa(a4-1)
+    ELSE
+      S2q=S2q+binom_quad(ind1)*binom_quad(ind2)*Sa(a4)
+    END IF
+  END IF
+#if defined(SU3DBL)
+  IF(S2q/=0.D0)THEN
+    coeffq=coeffq+binom(ind3)*S11q*S12q*S2q/DFLOAT(k2L+1)
+#elif defined(SU3QUAD)
+  IF(S2q/=0.Q0)THEN
+    coeffq=coeffq+binom_quad(ind3)*S11q*S12q*S2q/QFLOAT(k2L+1)
+#elif defined(SU3QUAD_GNU)
+  IF(S2q/=0.Q0)THEN
+    coeffq=coeffq+binom_quad(ind3)*S11q*S12q*S2q/REAL(k2L+1,16)
+#endif
+  END IF
+
+  END IF
+  END IF
+
+  aux5=aux5-k2L
+  k2L=k2L-1
+  kkappa=kkappa-1
+  aux2=aux2-p+gamma
+  ind3=ind3+1
+END DO
+
+#if defined(SU3DBL)
+IF(coeffq/=0.D0)THEN
+#elif (defined(SU3QUAD) || defined(SU3QUAD_GNU))
+IF(coeffq/=0.Q0)THEN
+#endif
+! Factor (2*L+1)/(2**p) appears in C in Eq.(26) as squared but that is a typo:
+! (2L+1) should not be squared!
+  aux1=lambda+mu+1
+  aux2=p+mu+1
+  aux3=2*L*(L+1)
+#if defined(SU3DBL)
+  S2q=DFLOAT(2*L+1)*DSQRT((binom((lambdas+lambda)/2+p)/binom(aux3-Mp))*(binom(mu*(mu+1)/2+q)&
+    /binom((Lambda2p*(Lambda2p+2)+MLambda2p)/2))&
+    *(binom(aux1*(aux1+1)/2+q)/binom(aux2*(aux2+1)/2+q))*binom(aux3-M))/DFLOAT(4**p)
+#elif defined(SU3QUAD)
+  S2q=QFLOAT(2*L+1)*QSQRT((binom_quad((lambdas+lambda)/2+p)/binom_quad(aux3-Mp))*(binom_quad(mu*(mu+1)/2+q)&
+    /binom_quad((Lambda2p*(Lambda2p+2)+MLambda2p)/2))&
+    *(binom_quad(aux1*(aux1+1)/2+q)/binom_quad(aux2*(aux2+1)/2+q))*binom_quad(aux3-M))/QFLOAT(4**p)
+#elif defined(SU3QUAD_GNU)
+  S2q=REAL(2*L+1,16)*SQRT((binom_quad((lambdas+lambda)/2+p)/binom_quad(aux3-Mp))*(binom_quad(mu*(mu+1)/2+q)&
+    /binom_quad((Lambda2p*(Lambda2p+2)+MLambda2p)/2))&
+    *(binom_quad(aux1*(aux1+1)/2+q)/binom_quad(aux2*(aux2+1)/2+q))*binom_quad(aux3-M))/REAL(4**p,16)
+#endif
+! S2q is C
+  IF(BTEST(L-p,0))THEN
+    coeff=-coeffq*S2q
+  ELSE
+    coeff=coeffq*S2q
+  END IF
+ELSE
+  coeff=0.D0
+  RETURN
+END IF
+
 END IF
 
 ! Now coeff is the coefficient for E=HW. For E=HW' there is additinal phase factor of (-1)^((lambda+M)/2) according to Eq.(33,6B), therefore:

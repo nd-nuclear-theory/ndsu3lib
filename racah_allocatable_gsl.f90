@@ -1,5 +1,5 @@
 SUBROUTINE racah_allocatable_gsl(lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,lambda23,mu23,&
-                 rhomaxa,rhomaxb,rhomaxc,rhomaxd,rac,info)
+                 rhomaxa,rhomaxb,rhomaxc,rhomaxd,rac,ldb,info)
 !---------------------------------------------------------------------------------------------------------------------------
 ! Calsulates SU(3) recoupling coefficients
 ! U((lambda1,mu1)(lambda2,mu2)(lambda,mu)(lambda3,mu3);(lambda12,mu12)rhoa,rhob(lambda23,mu23)rhoc,rhod)
@@ -8,14 +8,15 @@ SUBROUTINE racah_allocatable_gsl(lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,l
 !
 ! Reference: J.P.Draayer, Y.Akiyama, J.Math.Phys., Vol.14, No.12 (1973) 1904
 !
-! Input arguments: lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,lambda23,mu23,rhomaxa,rhomaxb,rhomaxc,rhomaxd
+! Input arguments: lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,lambda23,mu23,rhomaxa,rhomaxb,rhomaxc,rhomaxd,ldb
 ! Output arguments: rac,info
 !
 ! rhomaxa = multiplicity of coupling (lambda1,mu1)x(lambda2,mu2)->(lambda12,mu12)
 ! rhomaxb = multiplicity of coupling (lambda12,mu12)x(lambda3,mu3)->(lambda,mu)
 ! rhomaxc = multiplicity of coupling (lambda2,mu2)x(lambda3,mu3)->(lambda23,mu23)
 ! rhomaxd = multiplicity of coupling (lambda1,mu1)x(lambda23,mu23)->(lambda,mu)
-! 
+! ldb = the leading dimension of the array rac
+!
 ! rac(rhod,n)=U((lambda1,mu1)(lambda2,mu2)(lambda,mu)(lambda3,mu3);(lambda12,mu12)rhoa,rhob(lambda23,mu23)rhoc,rhod)
 !   where n=rhoa+rhomaxa*(rhob-1)+rhomaxa*rhomaxb*(rhoc-1)
 ! info=0 if dgesv ran without errors
@@ -23,7 +24,7 @@ SUBROUTINE racah_allocatable_gsl(lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,l
 IMPLICIT NONE
 !INTEGER,EXTERNAL :: outer_multiplicity
 REAL(KIND=8),EXTERNAL :: su2racah ! TO DO: Replace DRR3
-INTEGER,INTENT(IN) :: lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,lambda23,mu23,rhomaxa,rhomaxb,rhomaxc,rhomaxd
+INTEGER,INTENT(IN) :: lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,lambda23,mu23,rhomaxa,rhomaxb,rhomaxc,rhomaxd,ldb
 INTEGER,INTENT(OUT) :: info
 INTEGER :: epsilon23,rhomaxabc,numba,numbb,numbc,numbd,i1,i2,inda,indd,i,&
            Lambda122,epsilon2,Lambda22,p3,q3,n,rhoa,rhob,rhoc,I23,&
@@ -59,6 +60,7 @@ END INTERFACE
 pqdima=(lambda12+1)*(MAX(mu2,lambda3)+1)*(MAX(lambda2,mu3)+1)
 pqdimc=(MAX(lambda2,mu2)+1)*(lambda3+1)*(mu3+1)
 pqdimd=(lambda1+1)*(lambda23+1)*(mu23+1)
+! How about automatic arrays?
 ALLOCATE(matrix(rhomaxd,rhomaxd),wignera(0:lambda12,0:mu2,0:lambda2,1:rhomaxa),&
                                  wignerb(0:lambda12,0:lambda3,0:mu3,1:rhomaxb),&
                                  wignerc(0:MAX(lambda2,mu2),0:MAX(lambda3,mu3),0:MAX(lambda3,mu3),1:rhomaxc),&
@@ -214,7 +216,7 @@ END DO
 !print*,matrix(2,1),matrix(2,2),rac(2,1)
 
 IF(rhomaxd>1)THEN
-  CALL dgesv(rhomaxd,rhomaxabc,matrix,rhomaxd,p2aa,rac,9,info)
+  CALL dgesv(rhomaxd,rhomaxabc,matrix,rhomaxd,p2aa,rac,ldb,info)
 ELSE
   rac(1,1:rhomaxabc)=rac(1,1:rhomaxabc)/matrix(1,1)
 

@@ -1,5 +1,5 @@
 SUBROUTINE Z_coeff(lambda2,mu2,lambda1,mu1,lambda,mu,lambda3,mu3,lambda12,mu12,lambda13,mu13,&
-                   rhomaxa,rhomaxb,rhomaxc,rhomaxd,Zcoeff,info)
+                   rhomaxa,rhomaxb,rhomaxc,rhomaxd,Zcoeff,ldb,info)
 !---------------------------------------------------------------------------------------------------------------------------
 ! Calsulates SU(3) recoupling coefficients
 ! Z((lambda2,mu2)(lambda1,mu1)(lambda,mu)(lambda3,mu3);(lambda12,mu12)rhoa,rhob(lambda13,mu13)rhoc,rhod)
@@ -8,37 +8,31 @@ SUBROUTINE Z_coeff(lambda2,mu2,lambda1,mu1,lambda,mu,lambda3,mu3,lambda12,mu12,l
 !
 ! Reference: D.J.Millener, J.Math.Phys., Vol.19, No.7 (1978) 1513
 !
-! Input arguments: lambda2,mu2,lambda1,mu1,lambda,mu,lambda3,mu3,lambda12,mu12,lambda13,mu13,rhomaxa,rhomaxb,rhomaxc,rhomaxd
+! Input arguments: lambda2,mu2,lambda1,mu1,lambda,mu,lambda3,mu3,lambda12,mu12,lambda13,mu13,rhomaxa,rhomaxb,rhomaxc,rhomaxd,ldb
 ! Output arguments: Zcoeff,info
 !
 ! rhomaxa = multiplicity of coupling (lambda1,mu1)x(lambda2,mu2)->(lambda12,mu12)
 ! rhomaxb = multiplicity of coupling (lambda12,mu12)x(lambda3,mu3)->(lambda,mu)
 ! rhomaxc = multiplicity of coupling (lambda1,mu1)x(lambda3,mu3)->(lambda13,mu13)
 ! rhomaxd = multiplicity of coupling (lambda13,mu13)x(lambda2,mu2)->(lambda,mu)
-! 
+! ldb = the leading dimension of the array Zcoeff
+!
 ! Zcoeff(rhod,n)=Z((lambda2,mu2)(lambda1,mu1)(lambda,mu)(lambda3,mu3);(lambda12,mu12)rhoa,rhob(lambda13,mu13)rhoc,rhod)
 !   where n=rhoa+rhomaxa*(rhob-1)+rhomaxa*rhomaxb*(rhoc-1)
 ! info=0 if dgesv ran without errors
 !---------------------------------------------------------------------------------------------------------------------------
 IMPLICIT NONE
 REAL(KIND=8),EXTERNAL :: su2racah ! TO DO: Replace DRR3
-INTEGER,INTENT(IN) :: lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,lambda13,mu13,rhomaxa,rhomaxb,rhomaxc,rhomaxd
+INTEGER,INTENT(IN) :: lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,lambda13,mu13,rhomaxa,rhomaxb,rhomaxc,rhomaxd,ldb
 INTEGER,INTENT(OUT) :: info
 INTEGER :: rhomaxabc,numba,numbb,numbd,i,indd,p2,q2,indb,p12,p3,q3,epsilon,epsilon12,Lambda122,Lambda32,&
            p1,pq1,n,rhoa,rhob,rhoc,expp,Lambda22,LLambda12,p1min,aux1,mu1mpq1,aux3,aux4,&
-           aux5,aux6,inddmin,epsilon1lwpepsilon2,epsilonmepsilon3lw,epsilon12lw,lambdamlambda13
+           aux5,aux6,inddmin,epsilon1lwpepsilon2,epsilonmepsilon3lw,epsilon12lw,lambdamlambda13,pqdima,pqdimb,pqdimd
 REAL(KIND=8) :: factor1,factor2,factor3
 REAL(KIND=8),DIMENSION(:,:),INTENT(OUT) :: Zcoeff ! Dimensions are at least rhomaxd and rhomaxa*rhomaxb*rhomaxc
-REAL(KIND=8),DIMENSION(rhomaxd,rhomaxd) :: matrix
-REAL(KIND=8),DIMENSION(0:lambda1,0:lambda2,0:mu2,rhomaxa) :: wignera,wigner
-REAL(KIND=8),DIMENSION(0:lambda12,0:lambda3,0:mu3,rhomaxb) :: wignerb
-REAL(KIND=8),DIMENSION(0:lambda1,0:lambda3,0:mu3,rhomaxc) :: wignerc
-REAL(KIND=8),DIMENSION(0:lambda13,0:lambda2,0:mu2,rhomaxd) :: wignerd
-INTEGER,DIMENSION((lambda1+1)*(lambda2+1)*(mu2+1)) :: p1aa,q2aa
-INTEGER,DIMENSION(MAX((lambda1+1)*(lambda2+1)*(mu2+1),rhomaxd)) :: p2aa
-INTEGER,DIMENSION(MAX((lambda13+1)*(lambda2+1)*(mu2+1),(lambda1+1)*(lambda3+1)*(mu3+1),&
-                      (lambda1+1)*(lambda2+1)*(mu2+1),(lambda12+1)*(lambda3+1)*(mu3+1))) :: p1ab,p2ab,q2ab
-INTEGER,DIMENSION((lambda13+1)*(lambda2+1)*(mu2+1)) :: p2ad,q2ad
+REAL(KIND=8),ALLOCATABLE,DIMENSION(:,:) :: matrix
+REAL(KIND=8),ALLOCATABLE,DIMENSION(:,:,:,:) :: wignera,wignerb,wignerc,wignerd,wigner
+INTEGER,ALLOCATABLE,DIMENSION(:) :: p1aa,p2aa,q2aa,p1ab,p2ab,q2ab,p2ad,q2ad
 
 INTERFACE
   SUBROUTINE wigner_canonical_extremal(lambda1x,mu1x,lambda2x,mu2x,lambda3x,mu3x,I3,rhomax,i2,wigner,p1a,p2a,q2a)
@@ -57,6 +51,25 @@ INTERFACE
     REAL(KIND=8),DIMENSION(0:,0:,0:,1:),INTENT(OUT) :: wigner
   END SUBROUTINE wigner_canonical
 END INTERFACE
+
+pqdima=(lambda1+1)*(lambda2+1)*(mu2+1)
+pqdimb=MAX((lambda13+1)*(lambda2+1)*(mu2+1),(lambda1+1)*(lambda3+1)*(mu3+1),&
+           (lambda1+1)*(lambda2+1)*(mu2+1),(lambda12+1)*(lambda3+1)*(mu3+1))
+pqdimd=(lambda13+1)*(lambda2+1)*(mu2+1)
+ALLOCATE(matrix(rhomaxd,rhomaxd),&
+         wignera(0:lambda1,0:lambda2,0:mu2,rhomaxa),&
+         wignerb(0:lambda12,0:lambda3,0:mu3,rhomaxb),&
+         wignerc(0:lambda1,0:lambda3,0:mu3,rhomaxc),&
+         wignerd(0:lambda13,0:lambda2,0:mu2,rhomaxd),&
+         wigner(0:lambda1,0:lambda2,0:mu2,rhomaxa),&
+         p1aa(pqdima),&
+         p2aa(MAX(pqdima,rhomaxd)),&
+         q2aa(pqdima),&
+         p1ab(pqdimb),&
+         p2ab(pqdimb),&
+         q2ab(pqdimb),&
+         p2ad(pqdimd),&
+         q2ad(pqdimd))
 
 rhomaxabc=rhomaxa*rhomaxb*rhomaxc
 epsilon=-lambda-2*mu
@@ -148,10 +161,12 @@ END DO
 
 ! Solution of system of linear equations
 IF(rhomaxd>1)THEN
-  CALL dgesv(rhomaxd,rhomaxabc,matrix,rhomaxd,p2aa,Zcoeff,9,info)
+  CALL dgesv(rhomaxd,rhomaxabc,matrix,rhomaxd,p2aa,Zcoeff,ldb,info)
 ELSE
   Zcoeff(1,1:rhomaxabc)=Zcoeff(1,1:rhomaxabc)/matrix(1,1)
 END IF
+
+DEALLOCATE(matrix,wignera,wignerb,wignerc,wignerd,wigner,p1aa,p2aa,q2aa,p1ab,p2ab,q2ab,p2ad,q2ad)
 
 RETURN
 END SUBROUTINE Z_coeff
