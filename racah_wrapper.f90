@@ -1,3 +1,13 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! racah_wrapper.f90 -- wrapper for SU(3) U-recoupling coefficients
+!
+! Jakub Herko
+! University of Notre Dame
+!
+! SPDX-License-Identifier: MIT
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE racah_wrapper(lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,lambda23,mu23,&
                          rhomaxa,rhomaxb,rhomaxc,rhomaxd,dimen,racah_block,info)
 !----------------------------------------------------------------------------------------------------------------------

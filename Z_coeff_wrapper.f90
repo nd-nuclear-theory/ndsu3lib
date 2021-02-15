@@ -1,3 +1,13 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! Z_coeff_wrapper.f90 -- wrapper for SU(3) Z-recoupling coefficients
+!
+! Jakub Herko
+! University of Notre Dame
+!
+! SPDX-License-Identifier: MIT
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE Z_coeff_wrapper(lambda2,mu2,lambda1,mu1,lambda,mu,lambda3,mu3,lambda12,mu12,lambda13,mu13,&
                            rhomaxa,rhomaxb,rhomaxc,rhomaxd,dimen,Z_block,info)
 !----------------------------------------------------------------------------------------------------------------------

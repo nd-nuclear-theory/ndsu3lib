@@ -1,3 +1,13 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! wigner_physical_wrap.f90 -- inner wrapper for SU(3)-SO(3) coupling coefficients
+!
+! Jakub Herko
+! University of Notre Dame
+!
+! SPDX-License-Identifier: MIT
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE wigner_physical_wrap(lambda1,mu1,L1,kappa1max,lambda2,mu2,L2,kappa2max,lambda3,mu3,L3,kappa3max,rhomax,wigner_phys)
 !------------------------------------------------------------------------------------------------
 ! Calculates physical Wigner coefficients for given lambda1,mu1,L1,lambda2,mu2,L2,lambda3,mu3,L3.

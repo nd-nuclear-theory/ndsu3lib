@@ -1,3 +1,13 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! wigner_canonical_extremal.f90 -- extremal SU(3)-SU(2)xU(1) coupling coefficients
+!
+! Jakub Herko
+! University of Notre Dame
+!
+! SPDX-License-Identifier: MIT
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE wigner_canonical_extremal(lambda1x,mu1x,lambda2x,mu2x,lambda3x,mu3x,I3,rhomax,&
                                      i2,wigner,p1a,p2a,q2a)!,Lambda12a,Lambda22a,epsilon2a)
 !--------------------------------------------------------------------------------------------------------------------------------

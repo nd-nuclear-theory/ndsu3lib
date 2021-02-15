@@ -1,3 +1,13 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! clebsh_gordan.f90 -- bindings for GSL CG coefficients
+!
+! Jakub Herko
+! University of Notre Dame
+!
+! SPDX-License-Identifier: MIT
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 FUNCTION clebsch_gordan(j1,m1,j2,m2,j3,m3) RESULT(cg)
 !----------------------------------------------------------------------------
 ! Calculates SU(2) Clebsch-Gordan coefficient <j1/2,m1/2,j2/2,m2/2|j3/2,m3/2>

@@ -1,3 +1,13 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! su2racah.f90 -- bindings for GSL 6j coefficients
+!
+! Jakub Herko
+! University of Notre Dame
+!
+! SPDX-License-Identifier: MIT
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 FUNCTION su2racah(j1,j2,j,j3,j12,j23) RESULT(w)
 !---------------------------------------------------------------------
 ! Calculates SU(2) Racah coefficient W(j1/2,j2/2,j/2,j3/2,j12/2,j23/2)

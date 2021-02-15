@@ -1,3 +1,13 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! wigner_physical_wrapper.f90 -- wrapper for SU(3)-SO(3) coupling coefficients
+!
+! Jakub Herko
+! University of Notre Dame
+!
+! SPDX-License-Identifier: MIT
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE wigner_physical_wrapper(lambda1,mu1,L1,lambda2,mu2,L2,lambda3,mu3,L3,&
                                    kappa1max,kappa2max,kappa3max,rhomax,dimen,wigner_phys_block)
 !---------------------------------------------------------------------------------------------------------------------

@@ -1,3 +1,13 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! transformation_coeff.F90 -- coefficient of transformation between U(2) and SO(3) reduced bases
+!
+! Jakub Herko
+! University of Notre Dame
+!
+! SPDX-License-Identifier: MIT
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 FUNCTION transformation_coeff(I,J,lambdax,mux,epsilonx,Lambda2p,MLambda2px,M,L,Mp) RESULT(coeff)
 !--------------------------------------------------------------------------------------------------------------
 ! Calculates transformation coefficient for SU(3)-SO(3) reduction <G|(G_E)MLM'>, where

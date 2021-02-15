@@ -1,3 +1,13 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! orthonormalization_matrix.f90 -- orthonormalization matrix for SO(3) reduced basis states
+!
+! Jakub Herko
+! University of Notre Dame
+!
+! SPDX-License-Identifier: MIT
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE orthonormalization_matrix(I,J,lambda,mu,L,kappamax,matrix)
 !-------------------------------------------------------------------------------------------
 ! Calculates the bottom triangle, including the diagonal, of the orthonormalization matrix O

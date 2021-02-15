@@ -1,3 +1,13 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! wigner_physical.f90 -- SU(3)-SO(3) coupling coefficients
+!
+! Jakub Herko
+! University of Notre Dame
+!
+! SPDX-License-Identifier: MIT
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE wigner_physical(I1,J1,lambda1,mu1,L1,kappa1max,matrix1,I2,J2,lambda2,mu2,L2,kappa2max,matrix2,&
  I3,lambda3,mu3,L3,kappa3max,matrix3,rhomax,numb,wigner_can,p1a,p2a,q2a,wigner_phys)
 !---------------------------------------------------------------------------------------------------------------------------------
