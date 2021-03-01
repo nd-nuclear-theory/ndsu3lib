@@ -36,6 +36,7 @@ REAL(KIND=16) :: coeffq,S11q,S12q,S2q
 INTEGER :: lambda,mu,epsilon,MLambda2p,p,q,a4,LmM,LpM,LmMp,gamma,NLambda2p,k2L,kkappa,alpha,beta,&
            alphamin,alphamax,alphaminS2,alphamaxS2,LambdaM,MNLambda2p,LambdapMp,x,y,xm,xn,&
            aux1,ind1,aux2,ind2,aux3,ind3,aux4,xpys,lambdas,aux5
+INTEGER(KIND=8) :: p8
 
 IF(I==1)THEN
   lambda=lambdax
@@ -58,6 +59,7 @@ ENDIF
 !!END IF
 
 p=((2*(lambda-mu)-epsilon)/3+Lambda2p)/2
+p8=p
 
 !q=(2*lambda+mu-epsilon)/3+mu-Lambda2p
 !IF((q>=0).AND.(q<=2*mu).AND.(2*(q/2)==q))THEN
@@ -337,15 +339,15 @@ IF(coeffq/=0.Q0)THEN
 #if defined(SU3DBL)
   S2q=DFLOAT(2*L+1)*DSQRT((binom((lambdas+lambda)/2+p)/binom(aux3-Mp))*(binom(mu*(mu+1)/2+q)&
     /binom((Lambda2p*(Lambda2p+2)+MLambda2p)/2))&
-    *(binom(aux1*(aux1+1)/2+q)/binom(aux2*(aux2+1)/2+q))*binom(aux3-M))/DFLOAT(4**p)
+    *(binom(aux1*(aux1+1)/2+q)/binom(aux2*(aux2+1)/2+q))*binom(aux3-M))/DFLOAT(4**p8)
 #elif defined(SU3QUAD)
   S2q=QFLOAT(2*L+1)*QSQRT((binom_quad((lambdas+lambda)/2+p)/binom_quad(aux3-Mp))*(binom_quad(mu*(mu+1)/2+q)&
     /binom_quad((Lambda2p*(Lambda2p+2)+MLambda2p)/2))&
-    *(binom_quad(aux1*(aux1+1)/2+q)/binom_quad(aux2*(aux2+1)/2+q))*binom_quad(aux3-M))/QFLOAT(4**p)
+    *(binom_quad(aux1*(aux1+1)/2+q)/binom_quad(aux2*(aux2+1)/2+q))*binom_quad(aux3-M))/QFLOAT(4**p8)
 #elif defined(SU3QUAD_GNU)
   S2q=REAL(2*L+1,16)*SQRT((binom_quad((lambdas+lambda)/2+p)/binom_quad(aux3-Mp))*(binom_quad(mu*(mu+1)/2+q)&
     /binom_quad((Lambda2p*(Lambda2p+2)+MLambda2p)/2))&
-    *(binom_quad(aux1*(aux1+1)/2+q)/binom_quad(aux2*(aux2+1)/2+q))*binom_quad(aux3-M))/REAL(4**p,16)
+    *(binom_quad(aux1*(aux1+1)/2+q)/binom_quad(aux2*(aux2+1)/2+q))*binom_quad(aux3-M))/REAL(4**p8,16)
 #endif
 ! S2q is C
   IF(BTEST(L-p,0))THEN
