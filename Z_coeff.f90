@@ -1,13 +1,3 @@
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! Z_coeff.f90 -- SU(3) Z-recoupling coefficients
-!
-! Jakub Herko
-! University of Notre Dame
-!
-! SPDX-License-Identifier: MIT
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE Z_coeff(lambda2,mu2,lambda1,mu1,lambda,mu,lambda3,mu3,lambda12,mu12,lambda13,mu13,&
                    rhomaxa,rhomaxb,rhomaxc,rhomaxd,Zcoeff,ldb,info)
 !---------------------------------------------------------------------------------------------------------------------------
@@ -35,13 +25,13 @@ IMPLICIT NONE
 REAL(KIND=8),EXTERNAL :: su2racah ! TO DO: Replace DRR3
 INTEGER,INTENT(IN) :: lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,lambda13,mu13,rhomaxa,rhomaxb,rhomaxc,rhomaxd,ldb
 INTEGER,INTENT(OUT) :: info
-INTEGER :: rhomaxabc,numba,numbb,numbd,i,indd,p2,q2,indb,p12,p3,q3,epsilon,epsilon12,Lambda122,Lambda32,&
-           p1,pq1,n,rhoa,rhob,rhoc,expp,Lambda22,LLambda12,p1min,aux1,mu1mpq1,aux3,aux4,&
+INTEGER :: rhomaxabc,numbahw,numbalw,numbb,numbd,i,indd,p2,q2,indb,p12,p3,q3,epsilon,epsilon12,Lambda122,Lambda32,&
+           p1,pq1,n,rhoa,rhob,rhoc,expp,Lambda22,LLambda12,p1min,aux1,mu1mpq1,aux3,aux4,lambdammu12,&
            aux5,aux6,inddmin,epsilon1lwpepsilon2,epsilonmepsilon3lw,epsilon12lw,lambdamlambda13,pqdima,pqdimb,pqdimd
 REAL(KIND=8) :: factor1,factor2,factor3
 REAL(KIND=8),DIMENSION(:,:),INTENT(OUT) :: Zcoeff ! Dimensions are at least rhomaxd and rhomaxa*rhomaxb*rhomaxc
 REAL(KIND=8),ALLOCATABLE,DIMENSION(:,:) :: matrix
-REAL(KIND=8),ALLOCATABLE,DIMENSION(:,:,:,:) :: wignera,wignerb,wignerc,wignerd,wigner
+REAL(KIND=8),ALLOCATABLE,DIMENSION(:,:,:,:) :: wignerahw,wigneralw,wignerb,wignerc,wignerd,wigner
 INTEGER,ALLOCATABLE,DIMENSION(:) :: p1aa,p2aa,q2aa,p1ab,p2ab,q2ab,p2ad,q2ad
 
 INTERFACE
@@ -64,10 +54,11 @@ END INTERFACE
 
 pqdima=(lambda1+1)*(lambda2+1)*(mu2+1)
 pqdimb=MAX((lambda13+1)*(lambda2+1)*(mu2+1),(lambda1+1)*(lambda3+1)*(mu3+1),&
-           (lambda1+1)*(lambda2+1)*(mu2+1),(lambda12+1)*(lambda3+1)*(mu3+1))
+           (lambda1+1)*(lambda2+1)*(mu2+1),(lambda12+1)*(lambda3+1)*(mu3+1),(mu1+1)*(mu2+1)*(lambda2+1))
 pqdimd=(lambda13+1)*(lambda2+1)*(mu2+1)
 ALLOCATE(matrix(rhomaxd,rhomaxd),&
-         wignera(0:lambda1,0:lambda2,0:mu2,rhomaxa),&
+         wignerahw(0:lambda1,0:lambda2,0:mu2,rhomaxa),&
+         wigneralw(0:mu1,0:mu2,0:lambda2,rhomaxa),&
          wignerb(0:lambda12,0:lambda3,0:mu3,rhomaxb),&
          wignerc(0:lambda1,0:lambda3,0:mu3,rhomaxc),&
          wignerd(0:lambda13,0:lambda2,0:mu2,rhomaxd),&
@@ -87,10 +78,12 @@ epsilon1lwpepsilon2=2*lambda1+mu1+epsilon+lambda13+2*mu13
 epsilonmepsilon3lw=epsilon-2*lambda3-mu3
 epsilon12lw=2*lambda12+mu12
 lambdamlambda13=lambda-lambda13
+lambdammu12=lambda12-mu12
 
 CALL wigner_canonical_extremal(lambda13,mu13,lambda2,mu2,lambda,mu,1,rhomaxd,numbd,wignerd,p1ab,p2ad,q2ad)
-CALL wigner_canonical_extremal(lambda1,mu1,lambda3,mu3,lambda13,mu13,1,rhomaxc,numba,wignerc,p1ab,p2ab,q2ab)
-CALL wigner_canonical_extremal(lambda1,mu1,lambda2,mu2,lambda12,mu12,1,rhomaxa,numba,wignera,p1ab,p2ab,q2ab)
+CALL wigner_canonical_extremal(lambda1,mu1,lambda3,mu3,lambda13,mu13,1,rhomaxc,numbahw,wignerc,p1ab,p2ab,q2ab)
+CALL wigner_canonical_extremal(lambda1,mu1,lambda2,mu2,lambda12,mu12,1,rhomaxa,numbahw,wignerahw,p1ab,p2ab,q2ab)
+CALL wigner_canonical_extremal(lambda1,mu1,lambda2,mu2,lambda12,mu12,0,rhomaxa,numbalw,wigneralw,p1ab,p2ab,q2ab)
 CALL wigner_canonical_extremal(lambda12,mu12,lambda3,mu3,lambda,mu,1,rhomaxb,numbb,wignerb,p1ab,p2ab,q2ab)
 
 inddmin=numbd-rhomaxd+1
@@ -115,7 +108,11 @@ DO indb=1,numbb ! This is a loop over epsilon1,epsilon3,epsilon12,Lambda3,Lambda
   Lambda32=mu3+p3-q3
   aux1=lambdamlambda13-Lambda122
 
-  CALL wigner_canonical(lambda1,mu1,lambda2,mu2,lambda12,mu12,epsilon12,Lambda122,1,rhomaxa,numba,wignera,wigner,p1aa,p2aa,q2aa)
+  IF(2*epsilon12<=lambdammu12)THEN
+    CALL wigner_canonical(lambda1,mu1,lambda2,mu2,lambda12,mu12,epsilon12,Lambda122,1,rhomaxa,numbahw,wignerahw,wigner,p1aa,p2aa,q2aa)
+  ELSE
+    CALL wigner_canonical(lambda1,mu1,lambda2,mu2,lambda12,mu12,epsilon12,Lambda122,0,rhomaxa,numbalw,wigneralw,wigner,p1aa,p2aa,q2aa)
+  END IF
 
   factor1=DSQRT(DFLOAT((Lambda122+1)*(lambda13+1)))
 
@@ -176,7 +173,7 @@ ELSE
   Zcoeff(1,1:rhomaxabc)=Zcoeff(1,1:rhomaxabc)/matrix(1,1)
 END IF
 
-DEALLOCATE(matrix,wignera,wignerb,wignerc,wignerd,wigner,p1aa,p2aa,q2aa,p1ab,p2ab,q2ab,p2ad,q2ad)
+DEALLOCATE(matrix,wignerahw,wigneralw,wignerb,wignerc,wignerd,wigner,p1aa,p2aa,q2aa,p1ab,p2ab,q2ab,p2ad,q2ad)
 
 RETURN
 END SUBROUTINE Z_coeff

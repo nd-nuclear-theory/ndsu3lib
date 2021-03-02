@@ -38,13 +38,13 @@ REAL(KIND=8),ALLOCATABLE,DIMENSION(:,:) :: rac
 INTEGER :: rhomaxabc,rhoabc,rhod,ind
 
 INTERFACE
-  SUBROUTINE racah_allocatable_gsl(lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,lambda23,mu23,&
-                                   rhomaxa,rhomaxb,rhomaxc,rhomaxd,rac,ldb,info)
+  SUBROUTINE racah(lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,lambda23,mu23,&
+                   rhomaxa,rhomaxb,rhomaxc,rhomaxd,rac,ldb,info)
     IMPLICIT NONE
     INTEGER,INTENT(IN) :: lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,lambda23,mu23,rhomaxa,rhomaxb,rhomaxc,rhomaxd,ldb
     INTEGER,INTENT(OUT) :: info
     REAL(KIND=8),DIMENSION(:,:),INTENT(OUT) :: rac
-  END SUBROUTINE racah_allocatable_gsl
+  END SUBROUTINE racah
 END INTERFACE
 
 info=0
@@ -60,8 +60,8 @@ ELSE
   rhomaxabc=rhomaxa*rhomaxb*rhomaxc
   dimen=rhomaxabc*rhomaxd
   ALLOCATE(rac(rhomaxd,rhomaxabc),racah_block(dimen))
-  CALL racah_allocatable_gsl(lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,&
-                             lambda23,mu23,rhomaxa,rhomaxb,rhomaxc,rhomaxd,rac,rhomaxd,info)
+  CALL racah(lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,&
+             lambda23,mu23,rhomaxa,rhomaxb,rhomaxc,rhomaxd,rac,rhomaxd,info)
   ind=0
   DO rhod=1,rhomaxd
     DO rhoabc=1,rhomaxabc
