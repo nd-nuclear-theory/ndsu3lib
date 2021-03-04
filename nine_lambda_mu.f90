@@ -1,3 +1,13 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! nine_lambda_mu.f90 -- 9-(lambda,mu) coefficients
+!
+! Jakub Herko
+! University of Notre Dame
+!
+! SPDX-License-Identifier: MIT
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE nine_lambda_mu(lambda1,mu1,lambda2,mu2,lambda12,mu12,lambda3,mu3,lambda4,mu4,lambda34,mu34,lambda13,mu13,&
                           lambda24,mu24,lambda,mu,rhomax12,rhomax34,rhomax1234,rhomax13,rhomax24,rhomax1324,ninelm,info)
 !------------------------------------------------------------------------------------------------------------------------------------
