@@ -201,7 +201,7 @@ IF(coeff/=0.D0)THEN
   aux3=2*L*(L+1)
   S2=DFLOAT(2*L+1)*DSQRT((binom((lambdas+lambda)/2+p)/binom(aux3-Mp))*(binom(mu*(mu+1)/2+q)&
     /binom((Lambda2p*(Lambda2p+2)+MLambda2p)/2))&
-    *(binom(aux1*(aux1+1)/2+q)/binom(aux2*(aux2+1)/2+q))*binom(aux3-M))/DFLOAT(4**p)
+    *(binom(aux1*(aux1+1)/2+q)/binom(aux2*(aux2+1)/2+q))*binom(aux3-M))/DFLOAT(4**p8)
 ! S2 is C
   IF(BTEST(L-p,0))S2=-S2
   coeff=coeff*S2
