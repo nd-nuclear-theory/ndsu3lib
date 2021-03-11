@@ -1,13 +1,3 @@
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! wigner_canonical.f90 -- SU(3)-SU(2)xU(1) coupling coefficients
-!
-! Jakub Herko
-! University of Notre Dame
-!
-! SPDX-License-Identifier: MIT
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE wigner_canonical(lambda1,mu1,lambda2,mu2,lambda3,mu3,epsilon3,Lambda32,I3,rhomax,numb,wignerex,wigner,p1a,p2a,q2a)
 !--------------------------------------------------------------------------------------------------------------------------------
 ! Calculates the reduced SU(3)-SU(2)xU(1) Wigner coefficients
@@ -48,7 +38,8 @@ IMPLICIT NONE
 INTEGER,INTENT(IN) :: lambda1,mu1,lambda2,mu2,lambda3,mu3,epsilon3,Lambda32,I3,rhomax
 !INTEGER,INTENT(OUT) :: numb
 INTEGER :: numb,eps3,rho,p1,q1,p2,q2,Lam32,epsilon2max,epsilon3ex,Lambda22,Lambda12,Lam32prime,p3,q3,&
-           pq1,noname1,noname2,Rp2,Sq2,s2,lm1,lm2,lm3,mu1p,mu2p,mu3p,q2ex,p1ex,lambda1p,lambda2p,lambda3p
+           pq1,noname1,noname2,s2,lm1,lm2,lm3,mu1p,mu2p,mu3p,q2ex,p1ex,lambda1p,lambda2p,lambda3p
+INTEGER(KIND=8) :: Rp2,Sq2
 REAL(KIND=8) :: N3
 !INTEGER,DIMENSION(:),INTENT(OUT) :: p1a,p2a,q2a ! Dimension is at least (lambda1+1)*(lambda2+1)*(mu2+1)
 INTEGER,DIMENSION(:) :: p1a,p2a,q2a ! Dimension is at least (lambda1+1)*(lambda2+1)*(mu2+1)
@@ -100,15 +91,15 @@ DO eps3=epsilon3ex,epsilon3,3 ! eps3 is epsilon3 in Eq.(19)
   IF(Lam32<Lambda32)THEN
     Lam32=Lam32+1
     q3=q3-1 ! p3 and q3 correspond to eps3 and Lam32
-    N3=DSQRT(DFLOAT(Lam32+1)/DFLOAT((q3+1)*(mu3-q3)*(lm3-q3)*(Lam32prime+2)*4))
+    N3=DSQRT(DFLOAT(Lam32+1)/DFLOAT(INT8(q3+1)*(mu3-q3)*(lm3-q3)*(Lam32prime+2)*4))
   ELSE
     Lam32=Lam32-1
     p3=p3-1 ! p3 and q3 correspond to eps3 and Lam32
-    N3=DSQRT(DFLOAT(Lam32+1)/DFLOAT((p3+1)*(lambda3-p3)*(mu3p+p3)*Lam32prime*4))
+    N3=DSQRT(DFLOAT(Lam32+1)/DFLOAT(INT8(p3+1)*(lambda3-p3)*(mu3p+p3)*Lam32prime*4))
   END IF ! Lam32 is 2*Lambda3 in Eq.(19) and N3 is sqrt((2*Lambda3'+1)*(2*Lambda3+1))/N3.
 
   DO p2=MAX(0,noname1-mu2,(Lam32-mu1+noname2-mu2)/2-lambda1),MIN(lambda2,noname2)
-    Rp2=(p2+1)*(lambda2-p2)*(mu2p+p2)
+    Rp2=INT8(p2+1)*(lambda2-p2)*(mu2p+p2)
     q2ex=MAX(0,noname1-p2,(mu2+noname2-Lam32-mu1)/2-lambda1)
     pq1=noname2-p2-q2ex ! pq1 is p1+q1
     Lambda22=mu2+p2-q2ex ! Lambda22 is 2*Lambda2 in Eq.(19)
@@ -118,7 +109,7 @@ DO eps3=epsilon3ex,epsilon3,3 ! eps3 is epsilon3 in Eq.(19)
 ! 2) -lambda1-2*mu1<=epsilon1<=2*lambda1+mu1, where epsilon1=eps3-epsilon2max+3*p2+3*q2
 !     epsilon2=epsilon2max-3*(p2+q2) ! epsilon2 is epsilon2 in Eq.(19)
 !     epsilon1=eps3-epsilon2 ! epsilon1 is epsilon1 in Eq.(19)
-      Sq2=(q2+1)*(mu2-q2)*(lm2-q2)
+      Sq2=INT8(q2+1)*(mu2-q2)*(lm2-q2)
       p1ex=MAX(0,pq1-mu1,(Lam32-mu1+pq1-Lambda22)/2,(Lambda22-Lam32-mu1+pq1)/2)
       q1=pq1-p1ex
       Lambda12=mu1+p1ex-q1 ! Lambda12 is 2*Lambda1 in Eq.(19)
@@ -140,13 +131,13 @@ DO eps3=epsilon3ex,epsilon3,3 ! eps3 is epsilon3 in Eq.(19)
         IF(Lam32>Lam32prime)THEN
 
           IF(q1/=mu1)THEN
-            wigner(p1,p2,q2,1:rhomax)=DSQRT(DFLOAT((q1+1)*(mu1-q1)*(lm1-q1)&
+            wigner(p1,p2,q2,1:rhomax)=DSQRT(DFLOAT(INT8(q1+1)*(mu1-q1)*(lm1-q1)&
              *(s2+2)*(s2-2*Lambda22))/DFLOAT(Lambda12*(Lambda12+1)))*wigner(p1,p2,q2,1:rhomax)
           ELSE
             wigner(p1,p2,q2,1:rhomax)=0.D0
           END IF
 
-          IF(p1/=lambda1)wigner(p1,p2,q2,1:rhomax)=wigner(p1,p2,q2,1:rhomax)+DSQRT(DFLOAT((p1+1)*(lambda1-p1)*(mu1p+p1)&
+          IF(p1/=lambda1)wigner(p1,p2,q2,1:rhomax)=wigner(p1,p2,q2,1:rhomax)+DSQRT(DFLOAT(INT8(p1+1)*(lambda1-p1)*(mu1p+p1)&
             *(s2-2*Lambda12)*(s2-2*Lam32prime))/DFLOAT((Lambda12+1)*(Lambda12+2)))*wigner(p1+1,p2,q2,1:rhomax)
 
           IF(p2/=lambda2)wigner(p1,p2,q2,1:rhomax)=wigner(p1,p2,q2,1:rhomax)-DSQRT(DFLOAT(Rp2&
@@ -158,13 +149,13 @@ DO eps3=epsilon3ex,epsilon3,3 ! eps3 is epsilon3 in Eq.(19)
         ELSE
 
           IF(q1/=mu1)THEN
-            wigner(p1,p2,q2,1:rhomax)=-DSQRT(DFLOAT((q1+1)*(mu1-q1)*(lm1-q1)&
+            wigner(p1,p2,q2,1:rhomax)=-DSQRT(DFLOAT(INT8(q1+1)*(mu1-q1)*(lm1-q1)&
               *(s2-2*Lambda12)*(s2-2*Lam32prime))/DFLOAT(Lambda12*(Lambda12+1)))*wigner(p1,p2,q2,1:rhomax)
           ELSE
             wigner(p1,p2,q2,1:rhomax)=0.D0
           END IF
 
-          IF(p1/=lambda1)wigner(p1,p2,q2,1:rhomax)=wigner(p1,p2,q2,1:rhomax)+DSQRT(DFLOAT((p1+1)*(lambda1-p1)*(mu1p+p1)&
+          IF(p1/=lambda1)wigner(p1,p2,q2,1:rhomax)=wigner(p1,p2,q2,1:rhomax)+DSQRT(DFLOAT(INT8(p1+1)*(lambda1-p1)*(mu1p+p1)&
             *(s2+2)*(s2-2*Lambda22))/DFLOAT((Lambda12+1)*(Lambda12+2)))*wigner(p1+1,p2,q2,1:rhomax)
 
           IF(p2/=lambda2)wigner(p1,p2,q2,1:rhomax)=wigner(p1,p2,q2,1:rhomax)+DSQRT(DFLOAT(Rp2&
@@ -236,15 +227,15 @@ DO eps3=epsilon3ex,epsilon3,-3 ! eps3 is epsilon3 in Eq.(19)
   IF(Lam32<Lambda32)THEN
     Lam32=Lam32+1
     p3=p3+1 ! p3 and q3 correspond to eps3 and Lam32
-    N3=DSQRT(DFLOAT(Lam32+1)/DFLOAT(p3*(lambda3p-p3)*(mu3p+p3)*(Lam32prime+2)*4)) ! N3 is sqrt((2*Lambda3+1)/(4*(2*Lambda3'+1)))/N3
+    N3=DSQRT(DFLOAT(Lam32+1)/DFLOAT(INT8(p3)*(lambda3p-p3)*(mu3p+p3)*(Lam32prime+2)*4)) ! N3 is sqrt((2*Lambda3+1)/(4*(2*Lambda3'+1)))/N3
   ELSE
     Lam32=Lam32-1
     q3=q3+1 ! p3 and q3 correspond to eps3 and Lam32
-    N3=DSQRT(DFLOAT(Lam32+1)/DFLOAT(q3*(mu3p-q3)*(lm3-q3)*Lam32prime*4)) ! N3 is sqrt((2*Lambda3+1)/(8*Lambda3'))/N3
+    N3=DSQRT(DFLOAT(Lam32+1)/DFLOAT(INT8(q3)*(mu3p-q3)*(lm3-q3)*Lam32prime*4)) ! N3 is sqrt((2*Lambda3+1)/(8*Lambda3'))/N3
   END IF ! Lam32 is 2*Lambda3 in Eq.(19).
 
   DO p2=MIN(lambda2,noname2),MAX(0,noname1-mu2,(Lam32-mu1+noname2-mu2)/2-lambda1),-1
-    Rp2=p2*(lambda2p-p2)*(mu2p+p2) ! Rp2 is R(p2)
+    Rp2=INT8(p2)*(lambda2p-p2)*(mu2p+p2) ! Rp2 is R(p2)
     q2ex=MIN(mu2,noname2-p2,(mu2+noname2+Lam32-mu1)/2)
     pq1=noname2-p2-q2ex ! pq1 is p1+q1
     Lambda22=mu2+p2-q2ex ! Lambda22 is 2*Lambda2 in Eq.(19)
@@ -254,7 +245,7 @@ DO eps3=epsilon3ex,epsilon3,-3 ! eps3 is epsilon3 in Eq.(19)
 ! 2) -lambda1-2*mu1<=epsilon1<=2*lambda1+mu1, where epsilon1=eps3-epsilon2max+3*p2+3*q2
 !     epsilon2=epsilon2max-3*(p2+q2) ! epsilon2 is epsilon2 in Eq.(19)
 !     epsilon1=eps3-epsilon2 ! epsilon1 is epsilon1 in Eq.(19)
-      Sq2=q2*(mu2p-q2)*(lm2-q2)
+      Sq2=INT8(q2)*(mu2p-q2)*(lm2-q2)
       p1ex=MIN(lambda1,pq1,(Lambda22+Lam32-mu1+pq1)/2)
       q1=pq1-p1ex
       Lambda12=mu1+p1ex-q1 ! Lambda12 is 2*Lambda1 in Eq.(19)
@@ -276,13 +267,13 @@ DO eps3=epsilon3ex,epsilon3,-3 ! eps3 is epsilon3 in Eq.(19)
         IF(Lam32>Lam32prime)THEN
 
           IF(q1/=0)THEN
-            wigner(p1,p2,q2,1:rhomax)=-DSQRT(DFLOAT(q1*(mu1p-q1)*(lm1-q1)&
+            wigner(p1,p2,q2,1:rhomax)=-DSQRT(DFLOAT(INT8(q1)*(mu1p-q1)*(lm1-q1)&
             *(s2-2*Lambda12)*(s2-2*Lam32prime))/DFLOAT((Lambda12+1)*(Lambda12+2)))*wigner(p1,p2,q2,1:rhomax) ! clen s Lambda1p=Lambda1+1/2
           ELSE
             wigner(p1,p2,q2,1:rhomax)=0.D0
           END IF
 
-          IF(p1/=0)wigner(p1,p2,q2,1:rhomax)=wigner(p1,p2,q2,1:rhomax)+DSQRT(DFLOAT(p1*(lambda1p-p1)*(mu1p+p1)&
+          IF(p1/=0)wigner(p1,p2,q2,1:rhomax)=wigner(p1,p2,q2,1:rhomax)+DSQRT(DFLOAT(INT8(p1)*(lambda1p-p1)*(mu1p+p1)&
             *(s2+2)*(s2-2*Lambda22))/DFLOAT(Lambda12*(Lambda12+1)))*wigner(p1-1,p2,q2,1:rhomax) ! clen s Lambda1p=Lambda1-1/2
 
           IF(q2/=0)wigner(p1,p2,q2,1:rhomax)=wigner(p1,p2,q2,1:rhomax)+DSQRT(DFLOAT(Sq2&
@@ -294,13 +285,13 @@ DO eps3=epsilon3ex,epsilon3,-3 ! eps3 is epsilon3 in Eq.(19)
         ELSE
 
           IF(q1/=0)THEN
-            wigner(p1,p2,q2,1:rhomax)=DSQRT(DFLOAT(q1*(mu1p-q1)*(lm1-q1)&
+            wigner(p1,p2,q2,1:rhomax)=DSQRT(DFLOAT(INT8(q1)*(mu1p-q1)*(lm1-q1)&
             *(s2+2)*(s2-2*Lambda22))/DFLOAT((Lambda12+1)*(Lambda12+2)))*wigner(p1,p2,q2,1:rhomax) ! clen s Lambda1p=Lambda1+1/2
           ELSE
             wigner(p1,p2,q2,1:rhomax)=0.D0
           END IF
 
-          IF(p1/=0)wigner(p1,p2,q2,1:rhomax)=wigner(p1,p2,q2,1:rhomax)+DSQRT(DFLOAT(p1*(lambda1p-p1)*(mu1p+p1)&
+          IF(p1/=0)wigner(p1,p2,q2,1:rhomax)=wigner(p1,p2,q2,1:rhomax)+DSQRT(DFLOAT(INT(p1)*(lambda1p-p1)*(mu1p+p1)&
             *(s2-2*Lambda12)*(s2-2*Lam32prime))/DFLOAT(Lambda12*(Lambda12+1)))*wigner(p1-1,p2,q2,1:rhomax) ! clen s Lambda1p=Lambda1-1/2
 
           IF(q2/=0)wigner(p1,p2,q2,1:rhomax)=wigner(p1,p2,q2,1:rhomax)+DSQRT(DFLOAT(Sq2&

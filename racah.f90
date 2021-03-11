@@ -1,13 +1,3 @@
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! racah.f90 -- SU(3) U-recoupling coefficients
-!
-! Jakub Herko
-! University of Notre Dame
-!
-! SPDX-License-Identifier: MIT
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE racah(lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,lambda23,mu23,&
                  rhomaxa,rhomaxb,rhomaxc,rhomaxd,rac,ldb,info)
 !---------------------------------------------------------------------------------------------------------------------------
@@ -33,13 +23,13 @@ SUBROUTINE racah(lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,lam
 !---------------------------------------------------------------------------------------------------------------------------
 IMPLICIT NONE
 !INTEGER,EXTERNAL :: outer_multiplicity
-REAL(KIND=8),EXTERNAL :: su2racah ! TO DO: Replace DRR3
+REAL(KIND=8),EXTERNAL :: fwig6jj!su2racah ! TO DO: Replace DRR3
 INTEGER,INTENT(IN) :: lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,lambda23,mu23,rhomaxa,rhomaxb,rhomaxc,rhomaxd,ldb
 INTEGER,INTENT(OUT) :: info
 INTEGER :: epsilon23,rhomaxabc,numba,numbb,numbc,numbd,i1,i2,inda,indd,i,&
-           Lambda122,epsilon2,Lambda22,p3,q3,n,rhoa,rhob,rhoc,I23,&
+           Lambda122,epsilon2,Lambda22,p3,q3,n,rhoa,rhob,rhoc,I23,phase,&
            Lambda232,Lambda32,p23,q23,p12,q12,p2,q2,m,noname3,epsilon2max,aux,p3min!,j,epsilon2ind,epsilon23ind,epsilon3ind,p3min,p3max
-REAL(KIND=8) :: factor1,factor2,factor3
+REAL(KIND=8) :: factor1,factor2,factor3,su2racah
 REAL(KIND=8),DIMENSION(:,:),INTENT(OUT) :: rac ! Dimensions are at least rhomaxd and rhomaxa*rhomaxb*rhomaxc
 !REAL(KIND=8),DIMENSION(9,9) :: matrix ! Dimensions are at least rhomaxd and rhomaxd
 !REAL(KIND=8),DIMENSION(0:20,0:20,0:20,1:9) :: wignera,wignerb,wignerc,wignerd,wigner
@@ -119,7 +109,7 @@ END IF
 !epsilon23ind=(epsilon23+lambda23+2*mu23)/3!mozno netreba
 epsilon2max=2*mu2+lambda2
 i1=3*lambda1-6*lambda12+6*mu1-6*mu12+8*lambda2+4*mu2
-factor1=DFLOAT((lambda1+1)*dimen(lambda12,mu12))/DFLOAT(dimen(lambda1,mu1))
+factor1=DFLOAT(INT8(lambda1+1)*dimen(lambda12,mu12))/DFLOAT(dimen(lambda1,mu1))
 m=(2*(lambda12+mu2+mu1-mu12)+lambda2+lambda1)/3
 aux=2*lambda3+mu3-epsilon23
 
@@ -187,7 +177,10 @@ DO indd=numbd,numbd-rhomaxd+1,-1 ! This is a loop over Lambda23
 !        q3=noname3-p3
 !        Lambda32=mu3+p3-q3
 !        Lambda32=2*p3-lambda3+epsilon3ind
-        factor3=factor2*su2racah(lambda1,Lambda22,lambda,Lambda32,Lambda122,Lambda232) ! TO DO: Replace DRR3
+        su2racah=fwig6jj(lambda1,Lambda22,Lambda122,Lambda32,lambda,Lambda232)
+        phase=lambda1+Lambda22+Lambda32+lambda
+        IF((phase/4)*4/=phase)su2racah=-su2racah
+        factor3=factor2*su2racah
 
 !print*,"factor2=",factor2
 !print*,"su2racah=",su2racah(lambda1,Lambda22,lambda,Lambda32,Lambda122,Lambda232)
