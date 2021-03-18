@@ -339,15 +339,15 @@ IF(coeffq/=0.Q0)THEN
 #if defined(SU3DBL)
   S2q=DFLOAT(2*L+1)*DSQRT((binom((lambdas+lambda)/2+p)/binom(aux3-Mp))*(binom(mu*(mu+1)/2+q)&
     /binom((Lambda2p*(Lambda2p+2)+MLambda2p)/2))&
-    *(binom(aux1*(aux1+1)/2+q)/binom(aux2*(aux2+1)/2+q))*binom(aux3-M))/DFLOAT(4**p8)
+    *(binom(aux1*(aux1+1)/2+q)/binom(aux2*(aux2+1)/2+q))*binom(aux3-M))/(4.D0**DFLOAT(p))
 #elif defined(SU3QUAD)
   S2q=QFLOAT(2*L+1)*QSQRT((binom_quad((lambdas+lambda)/2+p)/binom_quad(aux3-Mp))*(binom_quad(mu*(mu+1)/2+q)&
     /binom_quad((Lambda2p*(Lambda2p+2)+MLambda2p)/2))&
-    *(binom_quad(aux1*(aux1+1)/2+q)/binom_quad(aux2*(aux2+1)/2+q))*binom_quad(aux3-M))/QFLOAT(4**p8)
+    *(binom_quad(aux1*(aux1+1)/2+q)/binom_quad(aux2*(aux2+1)/2+q))*binom_quad(aux3-M))/(4.Q0**QFLOAT(p))
 #elif defined(SU3QUAD_GNU)
   S2q=REAL(2*L+1,16)*SQRT((binom_quad((lambdas+lambda)/2+p)/binom_quad(aux3-Mp))*(binom_quad(mu*(mu+1)/2+q)&
     /binom_quad((Lambda2p*(Lambda2p+2)+MLambda2p)/2))&
-    *(binom_quad(aux1*(aux1+1)/2+q)/binom_quad(aux2*(aux2+1)/2+q))*binom_quad(aux3-M))/REAL(4**p8,16)
+    *(binom_quad(aux1*(aux1+1)/2+q)/binom_quad(aux2*(aux2+1)/2+q))*binom_quad(aux3-M))/(4.Q0**REAL(p,16))
 #endif
 ! S2q is C
   IF(BTEST(L-p,0))THEN
