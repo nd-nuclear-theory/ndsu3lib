@@ -15,15 +15,20 @@ FUNCTION transformation_coeff(I,J,lambdax,mux,epsilonx,Lambda2p,MLambda2px,M,L,M
 !--------------------------------------------------------------------------------------------------------------
 USE binomial_coeff
 USE I_S_module
+USE mpmodule
+USE precision_level
 IMPLICIT NONE
 INTEGER,INTENT(IN) :: I,J,lambdax,mux,epsilonx,Lambda2p,MLambda2px,M,L,Mp
 REAL(KIND=8) :: coeff,S11,S12,S2
 #if defined(SU3DBL)
-REAL(KIND=8) :: coeffq,S11q,S12q,S2q
+REAL(KIND=8) :: coeffq,S11q,S12q,S2q,coeffmp,S11mp,S12mp,S2mp
 #elif (defined(SU3QUAD) || defined(SU3QUAD_GNU))
+REAL(KIND=16) :: coeffq,S11q,S12q,S2q,coeffmp,S11mp,S12mp,S2mp
+#elif (defined(SU3MP) || defined(SU3MP_GNU))
 REAL(KIND=16) :: coeffq,S11q,S12q,S2q
+TYPE(mp_real) :: coeffmp,S11mp,S12mp,S2mp
 #endif
-INTEGER :: lambda,mu,epsilon,MLambda2p,p,q,a4,LmM,LpM,LmMp,gamma,NLambda2p,k2L,kkappa,alpha,&
+INTEGER :: lambda,mu,epsilon,MLambda2p,p,q,a4,LmM,LpM,LmMp,gama,NLambda2p,k2L,kkappa,alpha,&
            alphamin,alphamax,alphaminS2,alphamaxS2,LambdaM,MNLambda2p,LambdapMp,x,y,xm,xn,&
            aux1,ind1,aux2,ind2,aux3,ind3,aux4,xpys,lambdas,aux5
 INTEGER(KIND=8) :: p8
@@ -90,38 +95,42 @@ aux3=LmM*(LmM+1)/2
 aux4=LpM*(LpM+1)/2+LmMp
 aux5=k2L*(k2L+1)/2+k2L-q-(lambda+M+Lambda2p+Mp)/2-alphaminS2
 
-IF(lambda+mu+L<=17)THEN
+DO
+  IF(MAX(Lambda2p,2*L,lambda+mu+1)>upbound_binom)THEN
+    CALL reallocate_binom(50)
+  ELSE
+    EXIT
+  END IF
+END DO
+DO
+  IF(MAX(lambda,2*MIN(xm,xn+p)-xm+p)>upbound_I)THEN
+    CALL reallocate_I(50)
+  ELSE
+    EXIT
+  END IF
+END DO
+DO
+  IF(kkappa>upbound_S.OR.k2L-kkappa>upbound_S)THEN
+    CALL reallocate_S(50)
+  ELSE
+    EXIT
+  END IF
+END DO
+
+IF(lambda+mu+L<=17)THEN ! Double precision is used.
 coeff=0.D0
 
-DO gamma=0,p
+DO gama=0,p
   MNLambda2p=MNLambda2p-1
   xn=xn+1
   aux1=aux1+xn
 
-  IF(lambda-gamma>=gamma)THEN ! S12=I(lambda-gamma,gamma,LambdaM)
-    ind1=((lambda-gamma)**3+lambdas+gamma)/2+LambdaM
-    DO
-      IF(ind1>size_I)THEN
-        CALL reallocate_I(100)
-      ELSE
-        EXIT
-      END IF
-    END DO
-    S12=Ia(ind1)
+  IF(lambda-gama>=gama)THEN ! S12=I(lambda-gama,gama,LambdaM)
+    S12=Ia(((lambda-gama)**3+lambdas+gama)/2+LambdaM)
+  ELSE IF(BTEST(LambdaM,0))THEN ! S12=(-1)^(LambdaM)*I(lambda-gama,gama,LambdaM)
+    S12=-Ia((gama**3+lambdas+lambda-gama)/2+LambdaM)
   ELSE
-    ind1=(gamma**3+lambdas+lambda-gamma)/2+LambdaM
-    DO
-      IF(ind1>size_I)THEN
-        CALL reallocate_I(100)
-      ELSE
-        EXIT
-      END IF
-    END DO
-    IF(BTEST(LambdaM,0))THEN ! S12=(-1)^(LambdaM)*I(lambda-gamma,gamma,LambdaM)
-      S12=-Ia(ind1)
-    ELSE
-      S12=Ia(ind1)
-    END IF
+    S12=Ia((gama**3+lambdas+lambda-gama)/2+LambdaM)
   END IF
 ! S12 is the second S_1 in Eq.(26), where only alpha=0 contributes. CAUTION: There is a typo: it should be
 ! S_1(M_Lambda=Lambda,Lambda,N_Lambda,M), not S_1(N_Lambda,Lambda,M_Lambda=Lambda,M)
@@ -136,22 +145,6 @@ DO gamma=0,p
   xpys=(x+y)**2
   ind1=aux1+alphamin
   ind2=aux2-alphamin
-  a4=MAX(ind1+alphamax-alphamin,ind2)
-  DO
-    IF(a4>size_binom)THEN
-      CALL reallocate_binom(100)
-    ELSE
-      EXIT
-    END IF
-  END DO
-  a4=MAX(x+2*(alphamax-alphamin),y)
-  DO
-    IF(a4>upbound_I)THEN
-      CALL reallocate_I(100)
-    ELSE
-      EXIT
-    END IF
-  END DO
   DO alpha=alphamin,alphamax
     IF(MAX(0,LambdapMp-x)<=MIN(y,LambdapMp))THEN
       IF(x>=y)THEN
@@ -173,24 +166,8 @@ DO gamma=0,p
 
   S2=0.D0 ! S2 is S_2 is Eq.(26)
   a4=upbound_S*kkappa*(kkappa+upbound_S+2)/2+aux5
-  DO
-    IF(a4>size_S)THEN
-      CALL reallocate_S(100)
-      a4=upbound_S*kkappa*(kkappa+upbound_S+2)/2+aux5
-    ELSE
-      EXIT
-    END IF
-  END DO
   ind1=aux3+alphaminS2
   ind2=aux4-alphaminS2
-  x=MAX(ind1+alphamaxS2-alphaminS2+3,ind2)
-  DO
-    IF(x>size_binom)THEN
-      CALL reallocate_binom(100)
-    ELSE
-      EXIT
-    END IF
-  END DO
   IF(BTEST(alphaminS2,0))THEN ! if alphaminS2 is odd
     DO alpha=alphaminS2,alphamaxS2,2
       S2=S2-binom(ind1)*binom(ind2)*Sa(a4)
@@ -221,13 +198,6 @@ DO gamma=0,p
     END IF
   END IF
   IF(S2/=0.D0)THEN
-    DO
-      IF(ind3>size_binom)THEN
-        CALL reallocate_binom(100)
-      ELSE
-        EXIT
-      END IF
-    END DO
     coeff=coeff+binom(ind3)*S11*S12*S2/DFLOAT(k2L+1)
   END IF
 
@@ -237,32 +207,18 @@ DO gamma=0,p
   aux5=aux5-k2L
   k2L=k2L-1
   kkappa=kkappa-1
-  aux2=aux2-p+gamma
+  aux2=aux2-p+gama
   ind3=ind3+1
 END DO
 
 IF(coeff/=0.D0)THEN
 ! Factor (2*L+1)/(2**p) appears in C in Eq.(26) as squared but that is a typo: (2L+1) should not be squared!
   aux1=lambda+mu+1
-  aux1=aux1*(aux1+1)/2+q
   aux2=p+mu+1
-  aux2=aux2*(aux2+1)/2+q
   aux3=2*L*(L+1)
-  aux4=aux3-Mp
-  aux3=aux3-M
-  ind1=(lambdas+lambda)/2+p
-  ind2=mu*(mu+1)/2+q
-  ind3=(Lambda2p*(Lambda2p+2)+MLambda2p)/2
-  aux5=MAX(aux1,aux2,aux3,aux4,ind1,ind2,ind3)
-  DO
-    IF(aux5>size_binom)THEN
-      CALL reallocate_binom(100)
-    ELSE
-      EXIT
-    END IF
-  END DO
-  S2=DFLOAT(2*L+1)*DSQRT((binom(ind1)/binom(aux4))*(binom(ind2)/binom(ind3))&
-    *(binom(aux1)/binom(aux2))*binom(aux3))/DFLOAT(4**p8)
+  S2=DFLOAT(2*L+1)*DSQRT((binom((lambdas+lambda)/2+p)/binom(aux3-Mp))*(binom(mu*(mu+1)/2+q)&
+    /binom((Lambda2p*(Lambda2p+2)+MLambda2p)/2))&
+    *(binom(aux1*(aux1+1)/2+q)/binom(aux2*(aux2+1)/2+q))*binom(aux3-M))/DFLOAT(4**p8)
 ! S2 is C
   IF(BTEST(L-p,0))S2=-S2
   coeff=coeff*S2
@@ -270,38 +226,25 @@ ELSE
   RETURN
 END IF
 
-ELSE ! lambda+mu+L>17
-coeffq=0.Q0
+ELSE IF(lambda+m+L<600)THEN ! If 17<lambda+mu+L<60, quad precision is used.
 
-DO gamma=0,p
+#if defined(SU3DBL)
+  coeffq=0.D0
+#elif (defined(SU3QUAD) || defined(SU3QUAD_GNU) || defined(SU3MP) || defined(SU3MP_GNU))
+  coeffq=0.Q0
+#endif
+
+DO gama=0,p
   MNLambda2p=MNLambda2p-1
   xn=xn+1
   aux1=aux1+xn
 
-  IF(lambda-gamma>=gamma)THEN ! S12=I(lambda-gamma,gamma,LambdaM)
-    ind1=((lambda-gamma)**3+lambdas+gamma)/2+LambdaM
-    DO
-      IF(ind1>size_I)THEN
-        CALL reallocate_I(100)
-      ELSE
-        EXIT
-      END IF
-    END DO
-    S12q=Ia(ind1)
+  IF(lambda-gama>=gama)THEN ! S12=I(lambda-gama,gama,LambdaM)
+    S12q=Ia_quad(((lambda-gama)**3+lambdas+gama)/2+LambdaM)
+  ELSE IF(BTEST(LambdaM,0))THEN ! S12=(-1)^(LambdaM)*I(lambda-gama,gama,LambdaM)
+    S12q=-Ia_quad((gama**3+lambdas+lambda-gama)/2+LambdaM)
   ELSE
-    ind1=(gamma**3+lambdas+lambda-gamma)/2+LambdaM
-    DO
-      IF(ind1>size_I)THEN
-        CALL reallocate_I(100)
-      ELSE
-        EXIT
-      END IF
-    END DO
-    IF(BTEST(LambdaM,0))THEN ! S12=(-1)^(LambdaM)*I(lambda-gamma,gamma,LambdaM)
-      S12q=-Ia(ind1)
-    ELSE
-      S12q=Ia(ind1)
-    END IF
+    S12q=Ia_quad((gama**3+lambdas+lambda-gama)/2+LambdaM)
   END IF
 ! S12 is the second S_1 in Eq.(26), where only alpha=0 contributes. CAUTION:
 ! There is a typo: it should be
@@ -310,7 +253,7 @@ DO gamma=0,p
 
 #if defined(SU3DBL)
   IF(S12q/=0.D0)THEN
-#elif (defined(SU3QUAD) || defined(SU3QUAD_GNU))
+#elif (defined(SU3QUAD) || defined(SU3QUAD_GNU) || defined(SU3MP) || defined(SU3MP_GNU))
   IF(S12q/=0.Q0)THEN
 #endif
 
@@ -318,7 +261,7 @@ DO gamma=0,p
   alphamax=MIN(xm,xn) ! alphamin is the upper bound for alpha in the first S_1 in Eq.(26)
 #if defined(SU3DBL)
   S11q=0.D0 ! S11 is the first S_1 in Eq.(26)
-#elif (defined(SU3QUAD) || defined(SU3QUAD_GNU))
+#elif (defined(SU3QUAD) || defined(SU3QUAD_GNU) || defined(SU3MP) || defined(SU3MP_GNU))
   S11q=0.Q0
 #endif
   x=2*alphamin+MNLambda2p
@@ -326,30 +269,14 @@ DO gamma=0,p
   xpys=(x+y)**2
   ind1=aux1+alphamin
   ind2=aux2-alphamin
-  a4=MAX(ind1+alphamax-alphamin,ind2)
-  DO
-    IF(a4>size_binom)THEN
-      CALL reallocate_binom(100)
-    ELSE
-      EXIT
-    END IF
-  END DO
-  a4=MAX(x+2*(alphamax-alphamin),y)
-  DO
-    IF(a4>upbound_I)THEN
-      CALL reallocate_I(100)
-    ELSE
-      EXIT
-    END IF
-  END DO
   DO alpha=alphamin,alphamax
     IF(MAX(0,LambdapMp-x)<=MIN(y,LambdapMp))THEN
       IF(x>=y)THEN
-        S11q=S11q+binom_quad(ind1)*binom_quad(ind2)*Ia((x**3+xpys+y)/2+LambdapMp)
+        S11q=S11q+binom_quad(ind1)*binom_quad(ind2)*Ia_quad((x**3+xpys+y)/2+LambdapMp)
       ELSE IF(BTEST(LambdapMp,0))THEN
-        S11q=S11q-binom_quad(ind1)*binom_quad(ind2)*Ia((y**3+xpys+x)/2+LambdapMp)
+        S11q=S11q-binom_quad(ind1)*binom_quad(ind2)*Ia_quad((y**3+xpys+x)/2+LambdapMp)
       ELSE
-        S11q=S11q+binom_quad(ind1)*binom_quad(ind2)*Ia((y**3+xpys+x)/2+LambdapMp)
+        S11q=S11q+binom_quad(ind1)*binom_quad(ind2)*Ia_quad((y**3+xpys+x)/2+LambdapMp)
       END IF
     ELSE
       EXIT
@@ -363,75 +290,66 @@ DO gamma=0,p
 #if defined(SU3DBL)
   IF(S11q/=0.D0)THEN
   S2q=0.D0 ! S2 is S_2 is Eq.(26)
-#elif (defined(SU3QUAD) || defined(SU3QUAD_GNU))
+#elif (defined(SU3QUAD) || defined(SU3QUAD_GNU) || defined(SU3MP) || defined(SU3MP_GNU))
   IF(S11q/=0.Q0)THEN
   S2q=0.Q0
 #endif
+
   a4=upbound_S*kkappa*(kkappa+upbound_S+2)/2+aux5
-  DO
-    IF(a4>size_S)THEN
-      CALL reallocate_S(100)
-      a4=upbound_S*kkappa*(kkappa+upbound_S+2)/2+aux5
-    ELSE
-      EXIT
-    END IF
-  END DO
   ind1=aux3+alphaminS2
   ind2=aux4-alphaminS2
-  x=MAX(ind1+alphamaxS2-alphaminS2+3,ind2)
-  DO
-    IF(x>size_binom)THEN
-      CALL reallocate_binom(100)
-    ELSE
-      EXIT
-    END IF
-  END DO
   IF(BTEST(alphaminS2,0))THEN ! if alphaminS2 is odd
     DO alpha=alphaminS2,alphamaxS2,2
-      S2q=S2q-binom_quad(ind1)*binom_quad(ind2)*Sa(a4)
-      S2q=S2q+binom_quad(ind1+1)*binom_quad(ind2-1)*Sa(a4-1)
+      S2q=S2q-binom_quad(ind1)*binom_quad(ind2)*Sa_quad(a4)
+      S2q=S2q+binom_quad(ind1+1)*binom_quad(ind2-1)*Sa_quad(a4-1)
       a4=a4-2
       ind1=ind1+2
       ind2=ind2-2
     END DO
     IF(BTEST(alphamaxS2,0))THEN
-      S2q=S2q-binom_quad(ind1)*binom_quad(ind2)*Sa(a4)
+      S2q=S2q-binom_quad(ind1)*binom_quad(ind2)*Sa_quad(a4)
     ELSE
-      S2q=S2q-binom_quad(ind1)*binom_quad(ind2)*Sa(a4)
-      S2q=S2q+binom_quad(ind1+1)*binom_quad(ind2-1)*Sa(a4-1)
+      S2q=S2q-binom_quad(ind1)*binom_quad(ind2)*Sa_quad(a4)
+      S2q=S2q+binom_quad(ind1+1)*binom_quad(ind2-1)*Sa_quad(a4-1)
     END IF
   ELSE
     DO alpha=alphaminS2,alphamaxS2,2
-      S2q=S2q+binom_quad(ind1)*binom_quad(ind2)*Sa(a4)
-      S2q=S2q-binom_quad(ind1+1)*binom_quad(ind2-1)*Sa(a4-1)
+      S2q=S2q+binom_quad(ind1)*binom_quad(ind2)*Sa_quad(a4)
+      S2q=S2q-binom_quad(ind1+1)*binom_quad(ind2-1)*Sa_quad(a4-1)
       a4=a4-2
       ind1=ind1+2
       ind2=ind2-2
     END DO
     IF(BTEST(alphamaxS2,0))THEN
-      S2q=S2q+binom_quad(ind1)*binom_quad(ind2)*Sa(a4)
-      S2q=S2q-binom_quad(ind1+1)*binom_quad(ind2-1)*Sa(a4-1)
+      S2q=S2q+binom_quad(ind1)*binom_quad(ind2)*Sa_quad(a4)
+      S2q=S2q-binom_quad(ind1+1)*binom_quad(ind2-1)*Sa_quad(a4-1)
     ELSE
-      S2q=S2q+binom_quad(ind1)*binom_quad(ind2)*Sa(a4)
+      S2q=S2q+binom_quad(ind1)*binom_quad(ind2)*Sa_quad(a4)
     END IF
   END IF
+
+!do alpha=alphaminS2,alphamaxS2+2
+!  if(2*(alpha/2)==alpha)then
+!    S2q=S2q+binom_quad((L-M)*(L-M+1)/2+alpha)*binom_quad((L+M)*(L+M+1)/2+L-Mp-alpha)&
+!!        *Sa((upbound_S*(p+q-gama)*(p+q-gama+upbound_S+2)+(p+q-gama+lambda+mu+L-p-q)*(p+q-gama+lambda+mu+L-p-q+1))/2&
+!!            +(lambda-M)/2+mu+L-q-(Lambda2p+Mp)/2-alpha)
+!        *Sfu(p+q-gama,lambda+mu+L-p-q,(lambda-M)/2+mu+L-q-(Lambda2p+Mp)/2-alpha)
+!  else
+!    S2q=S2q-binom_quad((L-M)*(L-M+1)/2+alpha)*binom_quad((L+M)*(L+M+1)/2+L-Mp-alpha)&
+!!        *Sa((upbound_S*(p+q-gama)*(p+q-gama+upbound_S+2)+(p+q-gama+lambda+mu+L-p-q)*(p+q-gama+lambda+mu+L-p-q+1))/2&
+!!            +(lambda-M)/2+mu+L-q-(Lambda2p+Mp)/2-alpha)
+!        *Sfu(p+q-gama,lambda+mu+L-p-q,(lambda-M)/2+mu+L-q-(Lambda2p+Mp)/2-alpha)
+!  end if
+!end do
+
 #if defined(SU3DBL)
   IF(S2q/=0.D0)THEN
-#elif (defined(SU3QUAD) || defined(SU3QUAD_GNU))
+    coeffq=coeffq+binom_quad(ind3)*S11q*S12q*S2q/DFLOAT(k2L+1)
+#elif (defined(SU3QUAD) || defined(SU3MP))
   IF(S2q/=0.Q0)THEN
-#endif
-    DO
-      IF(ind3>size_binom)THEN
-        CALL reallocate_binom(100)
-      ELSE
-        EXIT
-      END IF
-    END DO
-#if defined(SU3DBL)
-    coeffq=coeffq+binom(ind3)*S11q*S12q*S2q/DFLOAT(k2L+1)
-#elif defined(SU3QUAD)
     coeffq=coeffq+binom_quad(ind3)*S11q*S12q*S2q/QFLOAT(k2L+1)
-#elif defined(SU3QUAD_GNU)
+#elif (defined(SU3QUAD_GNU) || defined(SU3MP_GNU))
+  IF(S2q/=0.Q0)THEN
     coeffq=coeffq+binom_quad(ind3)*S11q*S12q*S2q/REAL(k2L+1,16)
 #endif
   END IF
@@ -442,50 +360,206 @@ DO gamma=0,p
   aux5=aux5-k2L
   k2L=k2L-1
   kkappa=kkappa-1
-  aux2=aux2-p+gamma
+  aux2=aux2-p+gama
   ind3=ind3+1
 END DO
 
 #if defined(SU3DBL)
 IF(coeffq/=0.D0)THEN
-#elif (defined(SU3QUAD) || defined(SU3QUAD_GNU))
+#elif (defined(SU3QUAD) || defined(SU3QUAD_GNU) || defined(SU3MP) || defined(SU3MP_GNU))
 IF(coeffq/=0.Q0)THEN
 #endif
 ! Factor (2*L+1)/(2**p) appears in C in Eq.(26) as squared but that is a typo:
 ! (2L+1) should not be squared!
   aux1=lambda+mu+1
-  aux1=aux1*(aux1+1)/2+q
   aux2=p+mu+1
-  aux2=aux2*(aux2+1)/2+q
   aux3=2*L*(L+1)
-  aux4=aux3-Mp
-  aux3=aux3-M
-  ind1=(lambdas+lambda)/2+p
-  ind2=mu*(mu+1)/2+q
-  ind3=(Lambda2p*(Lambda2p+2)+MLambda2p)/2
-  aux5=MAX(aux1,aux2,aux3,aux4,ind1,ind2,ind3)
-  DO
-    IF(aux5>size_binom)THEN
-      CALL reallocate_binom(100)
-    ELSE
-      EXIT
-    END IF
-  END DO
 #if defined(SU3DBL)
-  S2q=DFLOAT(2*L+1)*DSQRT((binom(ind1)/binom(aux4))*(binom(ind2)/binom(ind3))&
-    *(binom(aux1)/binom(aux2))*binom(aux3))/(4.D0**DFLOAT(p))
-#elif defined(SU3QUAD)
-  S2q=QFLOAT(2*L+1)*QSQRT((binom_quad(ind1)/binom_quad(aux4))*(binom_quad(ind2)/binom_quad(ind3))&
-    *(binom_quad(aux1)/binom_quad(aux2))*binom_quad(aux3))/(4.Q0**QFLOAT(p))
-#elif defined(SU3QUAD_GNU)
-  S2q=REAL(2*L+1,16)*SQRT((binom_quad(ind1)/binom_quad(aux4))*(binom_quad(ind2)/binom_quad(ind3))&
-    *(binom_quad(aux1)/binom_quad(aux2))*binom_quad(aux3))/(4.Q0**REAL(p,16))
+  S2q=DFLOAT(2*L+1)*DSQRT((binom_quad((lambdas+lambda)/2+p)/binom_quad(aux3-Mp))*(binom_quad(mu*(mu+1)/2+q)&
+    /binom_quad((Lambda2p*(Lambda2p+2)+MLambda2p)/2))&
+    *(binom_quad(aux1*(aux1+1)/2+q)/binom_quad(aux2*(aux2+1)/2+q))*binom_quad(aux3-M))/(4.D0**DFLOAT(p))
+#elif (defined(SU3QUAD) || defined(SU3MP))
+  S2q=QFLOAT(2*L+1)*QSQRT((binom_quad((lambdas+lambda)/2+p)/binom_quad(aux3-Mp))*(binom_quad(mu*(mu+1)/2+q)&
+    /binom_quad((Lambda2p*(Lambda2p+2)+MLambda2p)/2))&
+    *(binom_quad(aux1*(aux1+1)/2+q)/binom_quad(aux2*(aux2+1)/2+q))*binom_quad(aux3-M))/(4.Q0**QFLOAT(p))
+#elif (defined(SU3QUAD_GNU) || defined(SU3MP_GNU))
+  S2q=REAL(2*L+1,16)*SQRT((binom_quad((lambdas+lambda)/2+p)/binom_quad(aux3-Mp))*(binom_quad(mu*(mu+1)/2+q)&
+    /binom_quad((Lambda2p*(Lambda2p+2)+MLambda2p)/2))&
+    *(binom_quad(aux1*(aux1+1)/2+q)/binom_quad(aux2*(aux2+1)/2+q))*binom_quad(aux3-M))/(4.Q0**REAL(p,16))
 #endif
 ! S2q is C
   IF(BTEST(L-p,0))THEN
     coeff=-coeffq*S2q
   ELSE
     coeff=coeffq*S2q
+  END IF
+ELSE
+  coeff=0.D0
+  RETURN
+END IF
+
+ELSE ! If lambda+mu+L>..., multi precision is used.
+
+#if defined(SU3DBL)
+  coeffmp=0.D0
+#elif (defined(SU3QUAD) || defined(SU3QUAD_GNU))
+  coeffmp=0.Q0
+#elif(defined(SU3MP) || defined(SU3MP_GNU))
+  coeffmp=mpreal(0.D0,nwds)
+#endif
+
+DO gama=0,p
+  MNLambda2p=MNLambda2p-1
+  xn=xn+1
+  aux1=aux1+xn
+
+  IF(lambda-gama>=gama)THEN ! S12=I(lambda-gama,gama,LambdaM)
+    S12mp=Ia_mp(((lambda-gama)**3+lambdas+gama)/2+LambdaM)
+  ELSE IF(BTEST(LambdaM,0))THEN ! S12=(-1)^(LambdaM)*I(lambda-gama,gama,LambdaM)
+    S12mp=-Ia_mp((gama**3+lambdas+lambda-gama)/2+LambdaM)
+  ELSE
+    S12mp=Ia_mp((gama**3+lambdas+lambda-gama)/2+LambdaM)
+  END IF
+! S12 is the second S_1 in Eq.(26), where only alpha=0 contributes. CAUTION:
+! There is a typo: it should be
+! S_1(M_Lambda=Lambda,Lambda,N_Lambda,M), not
+! S_1(N_Lambda,Lambda,M_Lambda=Lambda,M)
+
+#if (defined(SU3DBL) || defined(SU3MP) || defined(SU3MP_GNU))
+  IF(S12mp/=0.D0)THEN
+#elif (defined(SU3QUAD) || defined(SU3QUAD_GNU))
+  IF(S12mp/=0.Q0)THEN
+#endif
+
+  alphamin=MAX(0,-MNLambda2p) ! alphamin is the lower bound for alpha in the first S_1 in Eq.(26)
+  alphamax=MIN(xm,xn) ! alphamin is the upper bound for alpha in the first S_1 in Eq.(26)
+#if defined(SU3DBL)
+  S11mp=0.D0 ! S11 is the first S_1 in Eq.(26)
+#elif (defined(SU3QUAD) || defined(SU3QUAD_GNU))
+  S11mp=0.Q0
+#elif(defined(SU3MP) || defined(SU3MP_GNU))
+  S11mp=mpreal(0.D0,nwds)
+#endif
+  x=2*alphamin+MNLambda2p
+  y=Lambda2p-x
+  xpys=(x+y)**2
+  ind1=aux1+alphamin
+  ind2=aux2-alphamin
+  DO alpha=alphamin,alphamax
+    IF(MAX(0,LambdapMp-x)<=MIN(y,LambdapMp))THEN
+      IF(x>=y)THEN
+        S11mp=S11mp+binom_mp(ind1)*binom_mp(ind2)*Ia_mp((x**3+xpys+y)/2+LambdapMp)
+      ELSE IF(BTEST(LambdapMp,0))THEN
+        S11mp=S11mp-binom_mp(ind1)*binom_mp(ind2)*Ia_mp((y**3+xpys+x)/2+LambdapMp)
+      ELSE
+        S11mp=S11mp+binom_mp(ind1)*binom_mp(ind2)*Ia_mp((y**3+xpys+x)/2+LambdapMp)
+      END IF
+    ELSE
+      EXIT
+    END IF
+    x=x+2
+    y=y-2
+    ind1=ind1+1
+    ind2=ind2-1
+  END DO
+
+#if defined(SU3DBL)
+  IF(S11mp/=0.D0)THEN
+  S2mp=0.D0 ! S2 is S_2 is Eq.(26)
+#elif (defined(SU3QUAD) || defined(SU3QUAD_GNU))
+  IF(S11mp/=0.Q0)THEN
+  S2mp=0.Q0
+#elif(defined(SU3MP) || defined(SU3MP_GNU))
+  IF(S11mp/=0.D0)THEN
+  S2mp=mpreal(0.D0,nwds)
+#endif
+  a4=upbound_S*kkappa*(kkappa+upbound_S+2)/2+aux5
+  ind1=aux3+alphaminS2
+  ind2=aux4-alphaminS2
+  IF(BTEST(alphaminS2,0))THEN ! if alphaminS2 is odd
+    DO alpha=alphaminS2,alphamaxS2,2
+      S2mp=S2mp-binom_mp(ind1)*binom_mp(ind2)*Sa_mp(a4)
+      S2mp=S2mp+binom_mp(ind1+1)*binom_mp(ind2-1)*Sa_mp(a4-1)
+      a4=a4-2
+      ind1=ind1+2
+      ind2=ind2-2
+    END DO
+    IF(BTEST(alphamaxS2,0))THEN
+      S2mp=S2mp-binom_mp(ind1)*binom_mp(ind2)*Sa_mp(a4)
+    ELSE
+      S2mp=S2mp-binom_mp(ind1)*binom_mp(ind2)*Sa_mp(a4)
+      S2mp=S2mp+binom_mp(ind1+1)*binom_mp(ind2-1)*Sa_mp(a4-1)
+    END IF
+  ELSE
+    DO alpha=alphaminS2,alphamaxS2,2
+      S2mp=S2mp+binom_mp(ind1)*binom_mp(ind2)*Sa_mp(a4)
+      S2mp=S2mp-binom_mp(ind1+1)*binom_mp(ind2-1)*Sa_mp(a4-1)
+      a4=a4-2
+      ind1=ind1+2
+      ind2=ind2-2
+    END DO
+    IF(BTEST(alphamaxS2,0))THEN
+      S2mp=S2mp+binom_mp(ind1)*binom_mp(ind2)*Sa_mp(a4)
+      S2mp=S2mp-binom_mp(ind1+1)*binom_mp(ind2-1)*Sa_mp(a4-1)
+    ELSE
+      S2mp=S2mp+binom_mp(ind1)*binom_mp(ind2)*Sa_mp(a4)
+    END IF
+  END IF
+
+#if (defined(SU3DBL) || defined(SU3MP) || defined(SU3MP_GNU))
+  IF(S2mp/=0.D0)THEN
+    coeffmp=coeffmp+binom_mp(ind3)*S11mp*S12mp*S2mp/DFLOAT(k2L+1)
+#elif defined(SU3QUAD)
+  IF(S2mp/=0.Q0)THEN
+    coeffmp=coeffmp+binom_mp(ind3)*S11mp*S12mp*S2mp/QFLOAT(k2L+1)
+#elif defined(SU3QUAD_GNU)
+  IF(S2mp/=0.Q0)THEN
+    coeffmp=coeffmp+binom_mp(ind3)*S11mp*S12mp*S2mp/REAL(k2L+1,16)
+#endif
+  END IF
+
+  END IF
+  END IF
+
+  aux5=aux5-k2L
+  k2L=k2L-1
+  kkappa=kkappa-1
+  aux2=aux2-p+gama
+  ind3=ind3+1
+END DO
+
+#if (defined(SU3DBL) || defined(SU3MP) || defined(SU3MP_GNU))
+IF(coeffmp/=0.D0)THEN
+#elif (defined(SU3QUAD) || defined(SU3QUAD_GNU))
+IF(coeffmp/=0.Q0)THEN
+#endif
+! Factor (2*L+1)/(2**p) appears in C in Eq.(26) as squared but that is a typo:
+! (2L+1) should not be squared!
+  aux1=lambda+mu+1
+  aux2=p+mu+1
+  aux3=2*L*(L+1)
+#if defined(SU3DBL)
+  S2mp=DFLOAT(2*L+1)*DSQRT((binom_mp((lambdas+lambda)/2+p)/binom_mp(aux3-Mp))*(binom_mp(mu*(mu+1)/2+q)&
+    /binom_mp((Lambda2p*(Lambda2p+2)+MLambda2p)/2))&
+    *(binom_mp(aux1*(aux1+1)/2+q)/binom_mp(aux2*(aux2+1)/2+q))*binom_mp(aux3-M))/(4.D0**DFLOAT(p))
+#elif defined(SU3QUAD)
+  S2mp=QFLOAT(2*L+1)*QSQRT((binom_mp((lambdas+lambda)/2+p)/binom_mp(aux3-Mp))*(binom_mp(mu*(mu+1)/2+q)&
+    /binom_mp((Lambda2p*(Lambda2p+2)+MLambda2p)/2))&
+    *(binom_mp(aux1*(aux1+1)/2+q)/binom_mp(aux2*(aux2+1)/2+q))*binom_mp(aux3-M))/(4.Q0**QFLOAT(p))
+#elif defined(SU3QUAD_GNU)
+  S2mp=REAL(2*L+1,16)*SQRT((binom_mp((lambdas+lambda)/2+p)/binom_mp(aux3-Mp))*(binom_mp(mu*(mu+1)/2+q)&
+    /binom_mp((Lambda2p*(Lambda2p+2)+MLambda2p)/2))&
+    *(binom_mp(aux1*(aux1+1)/2+q)/binom_mp(aux2*(aux2+1)/2+q))*binom_mp(aux3-M))/(4.Q0**REAL(p,16))
+#elif (defined(SU3MP) || defined(SU3MP_GNU))
+  S2mp=DFLOAT(2*L+1)*SQRT((binom_mp((lambdas+lambda)/2+p)/binom_mp(aux3-Mp))*(binom_mp(mu*(mu+1)/2+q)&
+    /binom_mp((Lambda2p*(Lambda2p+2)+MLambda2p)/2))&
+    *(binom_mp(aux1*(aux1+1)/2+q)/binom_mp(aux2*(aux2+1)/2+q))*binom_mp(aux3-M))/(4.D0**DFLOAT(p))
+#endif
+! S2q is C
+  IF(BTEST(L-p,0))THEN
+    coeff=-coeffmp*S2mp
+  ELSE
+    coeff=coeffmp*S2mp
   END IF
 ELSE
   coeff=0.D0
