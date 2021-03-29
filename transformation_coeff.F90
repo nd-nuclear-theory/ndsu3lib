@@ -103,7 +103,7 @@ DO
   END IF
 END DO
 DO
-  IF(MAX(lambda,2*MIN(xm,xn+p)-xm+p)>upbound_I)THEN
+  IF(MAX(lambda,2*MIN(xm,xn+p+1)-xm+p)>upbound_I)THEN
     CALL reallocate_I(50)
   ELSE
     EXIT
