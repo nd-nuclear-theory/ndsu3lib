@@ -1,6 +1,6 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! Z_coeff.f90 -- SU(3) Z-recoupling coefficients
+! calculate_Z_coeff.F90 -- SU(3) Z recoupling coefficients
 !
 ! Jakub Herko
 ! University of Notre Dame
@@ -8,8 +8,8 @@
 ! SPDX-License-Identifier: MIT
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-SUBROUTINE Z_coeff(lambda2,mu2,lambda1,mu1,lambda,mu,lambda3,mu3,lambda12,mu12,lambda13,mu13,&
-                   rhomaxa,rhomaxb,rhomaxc,rhomaxd,Zcoeff,ldb,info)
+SUBROUTINE calculate_Z_coeff(lambda2,mu2,lambda1,mu1,lambda,mu,lambda3,mu3,lambda12,mu12,lambda13,mu13,&
+                             rhomaxa,rhomaxb,rhomaxc,rhomaxd,Zcoeff,ldb,info)
 !---------------------------------------------------------------------------------------------------------------------------
 ! Calsulates SU(3) recoupling coefficients
 ! Z((lambda2,mu2)(lambda1,mu1)(lambda,mu)(lambda3,mu3);(lambda12,mu12)rhoa,rhob(lambda13,mu13)rhoc,rhod)
@@ -32,14 +32,19 @@ SUBROUTINE Z_coeff(lambda2,mu2,lambda1,mu1,lambda,mu,lambda3,mu3,lambda12,mu12,l
 ! info=0 if dgesv ran without errors
 !---------------------------------------------------------------------------------------------------------------------------
 IMPLICIT NONE
-REAL(KIND=8),EXTERNAL :: su2racah ! TO DO: Replace DRR3
+#if defined(NDSU3LIB_RACAH_GSL)
+REAL(KIND=8),EXTERNAL :: su2racah
+#elif defined(NDSU3LIB_RACAH_WIGXJPF)
+REAL(KIND=8),EXTERNAL :: fwig6jj
+REAL(KIND=8) :: su2racah
+#endif
 INTEGER,INTENT(IN) :: lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,lambda13,mu13,rhomaxa,rhomaxb,rhomaxc,rhomaxd,ldb
 INTEGER,INTENT(OUT) :: info
 INTEGER :: rhomaxabc,numbahw,numbalw,numbb,numbd,i,indd,p2,q2,indb,p12,p3,q3,epsilon,epsilon12,Lambda122,Lambda32,&
-           p1,pq1,n,rhoa,rhob,rhoc,expp,Lambda22,LLambda12,p1min,aux1,mu1mpq1,aux3,aux4,lambdammu12,&
+           p1,pq1,n,rhoa,rhob,rhoc,expp,Lambda22,LLambda12,p1min,aux1,mu1mpq1,aux3,aux4,lambdammu12,phase,&
            aux5,aux6,inddmin,epsilon1lwpepsilon2,epsilonmepsilon3lw,epsilon12lw,lambdamlambda13,pqdima,pqdimb,pqdimd
 REAL(KIND=8) :: factor1,factor2,factor3
-REAL(KIND=8),DIMENSION(:,:),INTENT(OUT) :: Zcoeff ! Dimensions are at least rhomaxd and rhomaxa*rhomaxb*rhomaxc
+REAL(KIND=8),DIMENSION(:,:),INTENT(OUT) :: Zcoeff ! Sizes are at least rhomaxd and rhomaxa*rhomaxb*rhomaxc
 REAL(KIND=8),ALLOCATABLE,DIMENSION(:,:) :: matrix
 REAL(KIND=8),ALLOCATABLE,DIMENSION(:,:,:,:) :: wignerahw,wigneralw,wignerb,wignerc,wignerd,wigner
 INTEGER,ALLOCATABLE,DIMENSION(:) :: p1aa,p2aa,q2aa,p1ab,p2ab,q2ab,p2ad,q2ad
@@ -100,7 +105,7 @@ inddmin=numbd-rhomaxd+1
 
 ! Construction of matrix
 i=0
-DO indd=inddmin,numbd ! This is a loop over Lambda2
+DO indd=inddmin,numbd ! loop over Lambda2
   p2=p2ad(indd)
   q2=q2ad(indd)
   i=i+1
@@ -109,7 +114,7 @@ END DO
 
 ! Construction of RHS
 Zcoeff(1:rhomaxd,1:rhomaxabc)=0.D0
-DO indb=1,numbb ! This is a loop over epsilon1,epsilon3,epsilon12,Lambda3,Lambda12
+DO indb=1,numbb ! loop over epsilon1,epsilon3,epsilon12,Lambda3,Lambda12
   p12=p1ab(indb)
   p3=p2ab(indb)
   q3=q2ab(indb)
@@ -119,9 +124,11 @@ DO indb=1,numbb ! This is a loop over epsilon1,epsilon3,epsilon12,Lambda3,Lambda
   aux1=lambdamlambda13-Lambda122
 
   IF(2*epsilon12<=lambdammu12)THEN
-    CALL wigner_canonical(lambda1,mu1,lambda2,mu2,lambda12,mu12,epsilon12,Lambda122,1,rhomaxa,numbahw,wignerahw,wigner,p1aa,p2aa,q2aa)
+    CALL wigner_canonical(lambda1,mu1,lambda2,mu2,lambda12,mu12,epsilon12,Lambda122,1,&
+                          rhomaxa,numbahw,wignerahw,wigner,p1aa,p2aa,q2aa)
   ELSE
-    CALL wigner_canonical(lambda1,mu1,lambda2,mu2,lambda12,mu12,epsilon12,Lambda122,0,rhomaxa,numbalw,wigneralw,wigner,p1aa,p2aa,q2aa)
+    CALL wigner_canonical(lambda1,mu1,lambda2,mu2,lambda12,mu12,epsilon12,Lambda122,0,&
+                          rhomaxa,numbalw,wigneralw,wigner,p1aa,p2aa,q2aa)
   END IF
 
   factor1=DSQRT(DFLOAT((Lambda122+1)*(lambda13+1)))
@@ -134,7 +141,7 @@ DO indb=1,numbb ! This is a loop over epsilon1,epsilon3,epsilon12,Lambda3,Lambda
   aux6=Lambda122+mu1mpq1
 
   i=0
-  DO indd=inddmin,numbd ! This is a loop over Lambda2
+  DO indd=inddmin,numbd ! loop over Lambda2
     i=i+1
     p2=p2ad(indd)
     q2=q2ad(indd)
@@ -149,19 +156,26 @@ DO indb=1,numbb ! This is a loop over epsilon1,epsilon3,epsilon12,Lambda3,Lambda
       factor2=factor1
     END IF
     DO p1=p1min,MIN((Lambda22+aux5)/2,aux3)
-! Lower and upper bounds on p1 are such that:
-! 1) 0<=q1<=mu1, where q1=pq1-p1
-! 2) ABS(LLambda12-Lambda22)<=Lambda122<=LLambda12+Lambda22, where LLambda12=mu1+p1-q1=mu1-pq1+2*p1
-! 3) ABS(LLambda12-Lambda32)<=lambda13<=LLambda12+Lambda32
+    ! Lower and upper bounds on p1 are such that:
+    ! 1) 0<=q1<=mu1, where q1=pq1-p1
+    ! 2) ABS(LLambda12-Lambda22)<=Lambda122<=LLambda12+Lambda22, where LLambda12=mu1+p1-q1=mu1-pq1+2*p1
+    ! 3) ABS(LLambda12-Lambda32)<=lambda13<=LLambda12+Lambda32
       
       factor2=-factor2
+#if defined(NDSU3LIB_RACAH_GSL)
       factor3=factor2*su2racah(Lambda22,LLambda12,lambda,Lambda32,Lambda122,lambda13)
+#elif defined(NDSU3LIB_RACAH_WIGXJPF)
+      su2racah=fwig6jj(Lambda22,LLambda12,Lambda122,Lambda32,lambda,lambda13)
+      phase=Lambda22+LLambda12+Lambda32+lambda
+      IF((phase/4)*4/=phase)su2racah=-su2racah
+      factor3=factor2*su2racah
+#endif
 
       n=0
       DO rhoc=1,rhomaxc
         DO rhob=1,rhomaxb
           DO rhoa=1,rhomaxa
-!            n=rhoa+rhomaxa*(rhob-1)+rhomaxa*rhomaxb*(rhoc-1)
+            ! n=rhoa+rhomaxa*(rhob-1)+rhomaxa*rhomaxb*(rhoc-1)
             n=n+1
             Zcoeff(i,n)=Zcoeff(i,n)+factor3*wignerc(p1,p3,q3,rhoc)&
                         *wigner(p1,p2,q2,rhoa)*wignerb(p12,p3,q3,rhob)
@@ -171,9 +185,7 @@ DO indb=1,numbb ! This is a loop over epsilon1,epsilon3,epsilon12,Lambda3,Lambda
 
       LLambda12=LLambda12+2
     END DO
-
   END DO
-
 END DO
 
 ! Solution of system of linear equations
@@ -185,5 +197,4 @@ END IF
 
 DEALLOCATE(matrix,wignerahw,wigneralw,wignerb,wignerc,wignerd,wigner,p1aa,p2aa,q2aa,p1ab,p2ab,q2ab,p2ad,q2ad)
 
-RETURN
-END SUBROUTINE Z_coeff
+END SUBROUTINE calculate_Z_coeff

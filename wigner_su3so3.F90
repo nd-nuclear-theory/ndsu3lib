@@ -1,6 +1,6 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! wigner_physical.f90 -- SU(3)-SO(3) coupling coefficients
+! wigner_su3so3.F90 -- SU(3)-SO(3) reduced Wigner coefficients
 !
 ! Jakub Herko
 ! University of Notre Dame
@@ -8,8 +8,8 @@
 ! SPDX-License-Identifier: MIT
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-SUBROUTINE wigner_physical(I1,J1,lambda1,mu1,L1,kappa1max,matrix1,I2,J2,lambda2,mu2,L2,kappa2max,matrix2,&
- I3,lambda3,mu3,L3,kappa3max,matrix3,rhomax,numb,wigner_can,p1a,p2a,q2a,wigner_phys)
+SUBROUTINE wigner_su3so3(I1,J1,lambda1,mu1,L1,kappa1max,matrix1,I2,J2,lambda2,mu2,L2,kappa2max,matrix2,&
+                         I3,lambda3,mu3,L3,kappa3max,matrix3,rhomax,numb,wigner_can,p1a,p2a,q2a,wigner_phys)
 !---------------------------------------------------------------------------------------------------------------------------------
 ! Calculates reduced SU(3)-SO(3) Wigner coefficients <(lambda1,mu1)kappa1,L1;(lambda2,mu2)kappa2,L2||(lambda3,mu3)kappa3,L3>_rho
 ! for given lambda1,mu1,L1,lambda2,mu2,L2,lambda3,mu3,L3 using equations (31),(25),(5) in the reference.
@@ -34,22 +34,52 @@ SUBROUTINE wigner_physical(I1,J1,lambda1,mu1,L1,kappa1max,matrix1,I2,J2,lambda2,
 !
 ! Note: triangular inequality for L1,L2,L3 is not checked.
 !---------------------------------------------------------------------------------------------------------------------------------
+#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+USE mpmodule
+#endif
 IMPLICIT NONE
-REAL(KIND=8),EXTERNAL :: DWR3,transformation_coeff ! DWR3 need to be replaced
+#if (defined(NDSU3LIB_DBL) || defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
+REAL(KIND=8),DIMENSION(:,:),INTENT(IN) :: matrix1,matrix2
+#elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+CLASS(*),DIMENSION(:,:),INTENT(IN) :: matrix1,matrix2
+#endif
+REAL(KIND=8),DIMENSION(:,:),INTENT(IN) :: matrix3
+#if defined(NDSU3LIB_WSO3_GSL)
+REAL(KIND=8),EXTERNAL :: clebsch_gordan
+#elif defined(NDSU3LIB_WSO3_WIGXJPF)
+REAL(KIND=8),EXTERNAL :: fwig3jj
+#endif
 INTEGER,INTENT(IN) :: I1,J1,lambda1,mu1,L1,kappa1max,I2,J2,lambda2,mu2,L2,kappa2max,I3,lambda3,mu3,L3,kappa3max,rhomax,numb
 INTEGER :: kappa1,kappa2,kappa3,rho,K1,K2,K3,K32,M1p,M2p,L12,L22,L32,i,M1pmin,epsilon1,epsilon2,epsilon3,&
            Lambda12,Lambda22,MLambda12,MLambda22,j,K1min,K2min,MLambda12min,MLambda32,Lambda32,K3minm2,MLambda12max,&
-           p1,p2,q1,q2,hovadina,Lambda12pM1p,Lambda22pM2p,phase331a,phase332a,phase331b,phase332b
+           p1,p2,q1,q2,hovadina,Lambda12pM1p,Lambda22pM2p,phase331a,phase332a,phase331b,phase332b,phase
 INTEGER,DIMENSION(:),INTENT(IN) :: p1a,p2a,q2a
-REAL(KIND=8),DIMENSION(:,:),INTENT(IN) :: matrix1,matrix2,matrix3
 REAL(KIND=8),DIMENSION(0:,0:,0:,1:),INTENT(IN) :: wigner_can
 REAL(KIND=8),DIMENSION(:,:,:,:),INTENT(OUT) :: wigner_phys
-!REAL(KIND=8),DIMENSION(kappa1max) :: transcoeff1
-!REAL(KIND=8),DIMENSION(kappa2max) :: transcoeff2
-REAL(KIND=8) :: cg1,cg2,fact,aux
-
 REAL(KIND=8),ALLOCATABLE,DIMENSION(:) :: transcoeff1,transcoeff2
+REAL(KIND=8) :: cg1,cg2,fact,cg,coeff
+#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+TYPE(mp_real) :: coeffmp
+TYPE(mp_real),ALLOCATABLE,DIMENSION(:) :: transcoeff1mp,transcoeff2mp
+#endif
+
+INTERFACE
+  SUBROUTINE transformation_coeff(I,J,lambdax,mux,epsilonx,Lambda2p,MLambda2px,M,L,Mp,coeff)
+    IMPLICIT NONE
+#if (defined(NDSU3LIB_DBL) || defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
+    REAL(KIND=8),INTENT(OUT) :: coeff
+#elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+    CLASS(*),INTENT(OUT) :: coeff
+#endif
+    INTEGER,INTENT(IN) :: I,J,lambdax,mux,epsilonx,Lambda2p,MLambda2px,M,L,Mp
+  END SUBROUTINE transformation_coeff
+END INTERFACE
+
+#if (defined(NDSU3LIB_DBL) || defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
 ALLOCATE(transcoeff1(kappa1max),transcoeff2(kappa2max))
+#elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+ALLOCATE(transcoeff1(kappa1max),transcoeff2(kappa2max),transcoeff1mp(kappa1max),transcoeff2mp(kappa2max))
+#endif
 
 wigner_phys(1:kappa1max,1:kappa2max,1:kappa3max,1:rhomax)=0.D0
 
@@ -116,7 +146,6 @@ DO i=1,numb ! sum over epsilon1,Lambda_1,epsilon2,Lambda_2
     K32=K32+4 ! K32 is 2*K_3
     M1pmin=MAX(-L1,K3-L2,-Lambda12,K3-Lambda22) ! M1pmin is the minimal M'_1
     IF(BTEST(Lambda12+M1pmin,0))M1pmin=M1pmin+1 ! M'_1 has to have the same parity as Lambda12 for <G_1|(G_1E)K1,L1,M'1> to be nonzero.
-!    IF(BTEST(Lambda22+M2p,0))EXIT ! This might not be necessary, because the condition is probably never satisfied.
 
     M2p=K3-M1pmin ! M2p is M'_2
     Lambda12pM1p=Lambda12+M1pmin
@@ -126,15 +155,20 @@ DO i=1,numb ! sum over epsilon1,Lambda_1,epsilon2,Lambda_2
     ! as Lambda12 and abs(M1p) has to be less than or equal to Lambda12.
     ! This is taken care of in the lower and upper bounds on M1p.
 
-!    M2p=K3-M1p ! M2p is M'_2.
     ! For <G_2|(G_2E)K2,L2,M'2> to be nonzero, M2p has to have the same parity
     ! as Lambda22 and abs(M2p) has to be less than or equal to Lambda22.
     ! This is taken care of in the lower and upper bounds on M1p.
 
-    !Lambda12pM1p=Lambda12+M1p
-    !Lambda22pM2p=Lambda22+M2p
+    ! Lambda12pM1p=Lambda12+M1p
+    ! Lambda22pM2p=Lambda22+M2p
 
-      cg1=DWR3(L12,L22,L32,2*M1p,2*M2p,K32) ! cg1 is <L1 M'_1;L2 M'_2|L3 K3>
+#if defined(NDSU3LIB_WSO3_GSL)
+      cg1=clebsch_gordan(L12,2*M1p,L22,2*M2p,L32,K32) ! cg1 is <L1 M'_1;L2 M'_2|L3 K3>
+#elif defined(NDSU3LIB_WSO3_WIGXJPF)
+      cg1=fwig3jj(L12,L22,L32,2*M1p,2*M2p,-K32)*DSQRT(DFLOAT(L32+1))
+      phase=L12-L22+K32
+      IF((phase/4)*4/=phase)cg1=-cg1
+#endif
 
       DO MLambda12=MLambda12min,MLambda12max,2 ! MLambda12 is 2*M_Lambda_1
  
@@ -162,8 +196,13 @@ DO i=1,numb ! sum over epsilon1,Lambda_1,epsilon2,Lambda_2
 
         ! Calculation of <G_1|(G_1E)K1,L1,M'1> = transcoeff1(kappa1)
         K1=K1min
+#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+        SELECT TYPE(matrix1)
+        TYPE IS (REAL(KIND=8))
+#endif
         DO kappa1=1,kappa1max
-          transcoeff1(kappa1)=transformation_coeff(I1,J1,lambda1,mu1,epsilon1,Lambda12,MLambda12,K1,L1,M1p)
+          CALL transformation_coeff(I1,J1,lambda1,mu1,epsilon1,Lambda12,MLambda12,K1,L1,M1p,coeff)
+          transcoeff1(kappa1)=coeff
           K1=K1+2
         END DO
         DO kappa1=kappa1max,1,-1
@@ -172,11 +211,32 @@ DO i=1,numb ! sum over epsilon1,Lambda_1,epsilon2,Lambda_2
             transcoeff1(kappa1)=transcoeff1(kappa1)+matrix1(kappa1,j)*transcoeff1(j)
           END DO
         END DO
+#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+        CLASS IS (mp_real)
+        DO kappa1=1,kappa1max
+          CALL transformation_coeff(I1,J1,lambda1,mu1,epsilon1,Lambda12,MLambda12,K1,L1,M1p,coeffmp)
+          transcoeff1mp(kappa1)=coeffmp
+          K1=K1+2
+        END DO
+        DO kappa1=kappa1max,1,-1
+          transcoeff1mp(kappa1)=matrix1(kappa1,kappa1)*transcoeff1mp(kappa1)
+          DO j=1,kappa1-1
+            transcoeff1mp(kappa1)=transcoeff1mp(kappa1)+matrix1(kappa1,j)*transcoeff1mp(j)
+          END DO
+          transcoeff1(kappa1)=transcoeff1mp(kappa1)
+        END DO
+        END SELECT
+#endif
 
         ! Calculation of <G_2|(G_2E)K2,L2,M'2> = transcoeff2(kappa2)
         K2=K2min
+#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+        SELECT TYPE(matrix2)
+        TYPE IS (REAL(KIND=8))
+#endif
         DO kappa2=1,kappa2max
-          transcoeff2(kappa2)=transformation_coeff(I2,J2,lambda2,mu2,epsilon2,Lambda22,MLambda22,K2,L2,M2p)
+          CALL transformation_coeff(I2,J2,lambda2,mu2,epsilon2,Lambda22,MLambda22,K2,L2,M2p,coeff)
+          transcoeff2(kappa2)=coeff
           K2=K2+2
         END DO
         DO kappa2=kappa2max,1,-1
@@ -185,18 +245,40 @@ DO i=1,numb ! sum over epsilon1,Lambda_1,epsilon2,Lambda_2
             transcoeff2(kappa2)=transcoeff2(kappa2)+matrix2(kappa2,j)*transcoeff2(j)
           END DO
         END DO
+#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+        CLASS IS (mp_real)
+        DO kappa2=1,kappa2max
+          CALL transformation_coeff(I2,J2,lambda2,mu2,epsilon2,Lambda22,MLambda22,K2,L2,M2p,coeffmp)
+          transcoeff2mp(kappa2)=coeffmp
+          K2=K2+2
+        END DO
+        DO kappa2=kappa2max,1,-1
+          transcoeff2mp(kappa2)=matrix2(kappa2,kappa2)*transcoeff2mp(kappa2)
+          DO j=1,kappa2-1
+            transcoeff2mp(kappa2)=transcoeff2mp(kappa2)+matrix2(kappa2,j)*transcoeff2mp(j)
+          END DO
+          transcoeff2(kappa2)=transcoeff2mp(kappa2)
+        END DO
+        END SELECT
+#endif
 
-        cg2=cg1*DWR3(Lambda12,Lambda22,Lambda32,-MLambda12,-MLambda22,-MLambda32) ! Neviem, preco su v DWR3 tie minusy
+#if defined(NDSU3LIB_WSO3_GSL)
+        cg2=cg1*clebsch_gordan(Lambda12,-MLambda12,Lambda22,-MLambda22,Lambda32,-MLambda32)
+#elif defined(NDSU3LIB_WSO3_WIGXJPF)
+        cg=fwig3jj(Lambda12,Lambda22,Lambda32,-MLambda12,-MLambda22,MLambda32)*DSQRT(DFLOAT(Lambda32+1))
+        phase=Lambda12-Lambda22-MLambda32
+        IF((phase/4)*4/=phase)cg=-cg
+        cg2=cg1*cg
+#endif
 
         DO kappa1=1,kappa1max
           fact=transcoeff1(kappa1)*cg2
           DO kappa2=1,kappa2max
-             
             wigner_phys(kappa1,kappa2,kappa3,1:rhomax)=wigner_phys(kappa1,kappa2,kappa3,1:rhomax)&
-                                                    +transcoeff2(kappa2)*fact*wigner_can(p1,p2,q2,1:rhomax)
-
+                                           +transcoeff2(kappa2)*fact*wigner_can(p1,p2,q2,1:rhomax)
           END DO
         END DO
+
       END DO
       M2p=M2p-2
       Lambda12pM1p=Lambda12pM1p+2
@@ -218,7 +300,11 @@ DO kappa1=1,kappa1max
   END DO
 END DO
 
+#if (defined(NDSU3LIB_DBL) || defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
 DEALLOCATE(transcoeff1,transcoeff2)
+#elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+DEALLOCATE(transcoeff1,transcoeff2,transcoeff1mp,transcoeff2mp)
+#endif
 
 CONTAINS
   FUNCTION Kmin(lambda,mu,L) RESULT(res) ! This function calculates the lowest K for given lambda,mu,L as given by Eq.(4a) in the reference.
@@ -227,6 +313,6 @@ CONTAINS
     INTEGER :: res
     res=MAX(0,L-mu)
     res=res+MOD(res+lambda,2) ! K and lambda must have the same parity.
-    IF(res==0)res=res+MOD(L+mu,2)*2 ! If K=0, L and mu must have the same parity.
+    IF(res==0)res=MOD(L+mu,2)*2 ! If K=0, L and mu must have the same parity.
   END FUNCTION Kmin
-END SUBROUTINE wigner_physical
+END SUBROUTINE wigner_su3so3
