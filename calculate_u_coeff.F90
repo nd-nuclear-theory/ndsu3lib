@@ -1,6 +1,6 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! calculate_U_coeff.F90 -- SU(3) U recoupling coefficients
+! calculate_u_coeff.F90 -- SU(3) U recoupling coefficients
 !
 ! Jakub Herko
 ! University of Notre Dame
@@ -8,7 +8,7 @@
 ! SPDX-License-Identifier: MIT
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-SUBROUTINE calculate_U_coeff(lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,lambda23,mu23,&
+SUBROUTINE calculate_u_coeff(lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,lambda23,mu23,&
                              rhomaxa,rhomaxb,rhomaxc,rhomaxd,rac,ldb,info)
 !---------------------------------------------------------------------------------------------------------------------------
 ! Calsulates SU(3) recoupling coefficients
@@ -175,4 +175,4 @@ CONTAINS
     INTEGER :: dm
     dm=(lambdax+1)*(mux+1)*(lambdax+mux+2)/2
   END FUNCTION dimen
-END SUBROUTINE calculate_U_coeff
+END SUBROUTINE calculate_u_coeff

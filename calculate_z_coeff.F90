@@ -1,6 +1,6 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! calculate_Z_coeff.F90 -- SU(3) Z recoupling coefficients
+! calculate_z_coeff.F90 -- SU(3) Z recoupling coefficients
 !
 ! Jakub Herko
 ! University of Notre Dame
@@ -8,7 +8,7 @@
 ! SPDX-License-Identifier: MIT
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-SUBROUTINE calculate_Z_coeff(lambda2,mu2,lambda1,mu1,lambda,mu,lambda3,mu3,lambda12,mu12,lambda13,mu13,&
+SUBROUTINE calculate_z_coeff(lambda2,mu2,lambda1,mu1,lambda,mu,lambda3,mu3,lambda12,mu12,lambda13,mu13,&
                              rhomaxa,rhomaxb,rhomaxc,rhomaxd,Zcoeff,ldb,info)
 !---------------------------------------------------------------------------------------------------------------------------
 ! Calsulates SU(3) recoupling coefficients
@@ -197,4 +197,4 @@ END IF
 
 DEALLOCATE(matrix,wignerahw,wigneralw,wignerb,wignerc,wignerd,wigner,p1aa,p2aa,q2aa,p1ab,p2ab,q2ab,p2ad,q2ad)
 
-END SUBROUTINE calculate_Z_coeff
+END SUBROUTINE calculate_z_coeff

@@ -36,14 +36,14 @@ REAL(KIND=8),ALLOCATABLE,DIMENSION(:,:) :: Zcoeff
 INTEGER :: rhomaxabc,rhoabc,rhod,ind
 
 INTERFACE
-  SUBROUTINE calculate_Z_coeff(lambda2,mu2,lambda1,mu1,lambda,mu,lambda3,mu3,lambda12,mu12,lambda13,mu13,&
+  SUBROUTINE calculate_z_coeff(lambda2,mu2,lambda1,mu1,lambda,mu,lambda3,mu3,lambda12,mu12,lambda13,mu13,&
                                rhomaxa,rhomaxb,rhomaxc,rhomaxd,Zcoeff,ldb,info)
     IMPLICIT NONE
     INTEGER,INTENT(IN) :: lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,&
                           lambda13,mu13,rhomaxa,rhomaxb,rhomaxc,rhomaxd,ldb
     INTEGER,INTENT(OUT) :: info
     REAL(KIND=8),DIMENSION(:,:),INTENT(OUT) :: Zcoeff
-  END SUBROUTINE calculate_Z_coeff
+  END SUBROUTINE calculate_z_coeff
 END INTERFACE
 
 rhomaxabc=rhomaxa*rhomaxb*rhomaxc

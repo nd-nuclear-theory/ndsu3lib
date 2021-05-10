@@ -36,14 +36,14 @@ REAL(KIND=8),ALLOCATABLE,DIMENSION(:,:) :: rac
 INTEGER :: rhomaxabc,rhoabc,rhod,ind
 
 INTERFACE
-  SUBROUTINE calculate_U_coeff(lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,lambda23,mu23,&
+  SUBROUTINE calculate_u_coeff(lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,lambda23,mu23,&
                                rhomaxa,rhomaxb,rhomaxc,rhomaxd,rac,ldb,info)
     IMPLICIT NONE
     INTEGER,INTENT(IN) :: lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,lambda23,mu23,&
                           rhomaxa,rhomaxb,rhomaxc,rhomaxd,ldb
     INTEGER,INTENT(OUT) :: info
     REAL(KIND=8),DIMENSION(:,:),INTENT(OUT) :: rac
-  END SUBROUTINE calculate_U_coeff
+  END SUBROUTINE calculate_u_coeff
 END INTERFACE
 
 rhomaxabc=rhomaxa*rhomaxb*rhomaxc
