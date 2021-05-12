@@ -48,7 +48,7 @@ END INTERFACE
 
 rhomaxabc=rhomaxa*rhomaxb*rhomaxc
 ALLOCATE(rac(rhomaxd,rhomaxabc))
-CALL calculate_U_coeff(lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,&
+CALL calculate_u_coeff(lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,&
                        lambda23,mu23,rhomaxa,rhomaxb,rhomaxc,rhomaxd,rac,rhomaxd,info)
 ind=0
 DO rhod=1,rhomaxd

@@ -24,9 +24,8 @@ USE mpmodule
 #endif
 IMPLICIT NONE
 INTEGER,INTENT(IN) :: lambda1,mu1,L1,kappa1max,lambda2,mu2,L2,kappa2max,lambda3,mu3,L3,kappa3max,rhomax
-INTEGER :: I1,J1,I2,J2,I3,J3,numb,indicator1,indicator2,sum1,sum2
+INTEGER :: I1,J1,I2,J2,I3,J3,numb,indicator1,indicator2,sum1,sum2,pqdim
 REAL(KIND=8),DIMENSION(:,:,:,:),INTENT(OUT) :: wigner_phys ! The indeces are kappa1,kappa2,kappa3,rho, respectively.
-INTEGER :: pqdim
 REAL(KIND=8),ALLOCATABLE,DIMENSION(:,:,:,:) :: wigner_can
 REAL(KIND=8),ALLOCATABLE,DIMENSION(:,:) :: matrix1,matrix2,matrix3
 #if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))

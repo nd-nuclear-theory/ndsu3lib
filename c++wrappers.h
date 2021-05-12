@@ -91,7 +91,7 @@ namespace ndsu3lib
   //         ind=i+numb*(rho-1)
   //         0<=i<=numb-1
 
-  void calculate_U_coeff(int lambda1, int mu1, int lambda2, int mu2, int lambda, int mu, int lambda3, int mu3, int lambda12, int mu12, int lambda23, int mu23, int rhomaxa, int rhomaxb, int rhomaxc, int rhomaxd, int dimen, double rac[], int& info);
+  void calculate_u_coeff(int lambda1, int mu1, int lambda2, int mu2, int lambda, int mu, int lambda3, int mu3, int lambda12, int mu12, int lambda23, int mu23, int rhomaxa, int rhomaxb, int rhomaxc, int rhomaxd, int dimen, double rac[], int& info);
   // Calculates SU(3) U-recoupling coefficients
   // U[(lambda1,mu1)(lambda2,mu2)(lambda,mu)(lambda3,mu3)rhoa,rhob(lambda12,mu12)(lambda23,mu23)rhoc,rhod]
   //
@@ -108,7 +108,7 @@ namespace ndsu3lib
   // ind = rhoa+rhomaxa*(rhob-1)+rhomaxa*rhomaxb*(rhoc-1)+rhomaxa*rhomaxb*rhomaxc*(rhod-1)-1
   // info = 0 if MKL subroutine dgesv ran withou errors
 
-  void calculate_Z_coeff(int lambda2, int mu2, int lambda1, int mu1, int lambda, int mu, int lambda3, int mu3, int lambda12, int mu12, int lambda13, int mu13, int rhomaxa, int rhomaxb, int rhomaxc, int rhomaxd, int dimen, double Zcoeff[], int& info);
+  void calculate_z_coeff(int lambda2, int mu2, int lambda1, int mu1, int lambda, int mu, int lambda3, int mu3, int lambda12, int mu12, int lambda13, int mu13, int rhomaxa, int rhomaxb, int rhomaxc, int rhomaxd, int dimen, double Zcoeff[], int& info);
   // Calculates SU(3) Z-recoupling coefficients
   // Z[(lambda2,mu2)(lambda1,mu1)(lambda,mu)(lambda3,mu3)rhoa,rhob(lambda12,mu12)(lambda13,mu13)rhoc,rhod]
   //

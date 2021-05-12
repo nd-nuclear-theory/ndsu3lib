@@ -48,7 +48,7 @@ END INTERFACE
 
 rhomaxabc=rhomaxa*rhomaxb*rhomaxc
 ALLOCATE(Zcoeff(rhomaxd,rhomaxabc))
-CALL calculate_Z_coeff(lambda2,mu2,lambda1,mu1,lambda,mu,lambda3,mu3,lambda12,mu12,lambda13,mu13,&
+CALL calculate_z_coeff(lambda2,mu2,lambda1,mu1,lambda,mu,lambda3,mu3,lambda12,mu12,lambda13,mu13,&
                        rhomaxa,rhomaxb,rhomaxc,rhomaxd,Zcoeff,rhomaxd,info)
 ind=0
 DO rhod=1,rhomaxd

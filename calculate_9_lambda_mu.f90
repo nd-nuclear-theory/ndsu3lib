@@ -46,22 +46,22 @@ INTEGER :: lambda0,mu0,rho132,rho04,rho123,rhomax132,rhomax04,rhomax123,rho12,rh
 REAL(KIND=8),ALLOCATABLE,DIMENSION(:,:) :: U1,Z,U2
 
 INTERFACE
-  SUBROUTINE calculate_U_coeff(lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,lambda23,mu23,&
+  SUBROUTINE calculate_u_coeff(lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,lambda23,mu23,&
                                rhomaxa,rhomaxb,rhomaxc,rhomaxd,rac,ldb,info)
     IMPLICIT NONE
     INTEGER,INTENT(IN) :: lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,&
                           lambda23,mu23,rhomaxa,rhomaxb,rhomaxc,rhomaxd,ldb
     INTEGER,INTENT(OUT) :: info
     REAL(KIND=8),DIMENSION(:,:),INTENT(OUT) :: rac
-  END SUBROUTINE calculate_U_coeff
-  SUBROUTINE calculate_Z_coeff(lambda2,mu2,lambda1,mu1,lambda,mu,lambda3,mu3,lambda12,mu12,lambda13,mu13,&
+  END SUBROUTINE calculate_u_coeff
+  SUBROUTINE calculate_z_coeff(lambda2,mu2,lambda1,mu1,lambda,mu,lambda3,mu3,lambda12,mu12,lambda13,mu13,&
                                rhomaxa,rhomaxb,rhomaxc,rhomaxd,Zcoeff,ldb,info)
     IMPLICIT NONE
     INTEGER,INTENT(IN) :: lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,&
                           lambda13,mu13,rhomaxa,rhomaxb,rhomaxc,rhomaxd,ldb
     INTEGER,INTENT(OUT) :: info
     REAL(KIND=8),DIMENSION(:,:),INTENT(OUT) :: Zcoeff
-  END SUBROUTINE calculate_Z_coeff
+  END SUBROUTINE calculate_z_coeff
 END INTERFACE
 
 ninelm=0.D0
@@ -79,19 +79,19 @@ DO lambda0=0,MIN(lambda13+lambda2+MIN(mu2,lambda13+mu13),lambda12+lambda3+MIN(mu
     ALLOCATE(U1(rhomax1324,rhomax132*rhomax04*rhomax24),Z(rhomax132,rhomax12*rhomax123*rhomax13),&
              U2(rhomax1234,rhomax123*rhomax04*rhomax34))
 
-    CALL calculate_U_coeff(lambda13,mu13,lambda2,mu2,lambda,mu,lambda4,mu4,lambda0,mu0,lambda24,mu24,&
+    CALL calculate_u_coeff(lambda13,mu13,lambda2,mu2,lambda,mu,lambda4,mu4,lambda0,mu0,lambda24,mu24,&
                  rhomax132,rhomax04,rhomax24,rhomax1324,U1,rhomax1324,info)
     IF(info/=0)THEN
       DEALLOCATE(U1,Z,U2)
       RETURN
     END IF
-    CALL calculate_Z_coeff(lambda2,mu2,lambda1,mu1,lambda0,mu0,lambda3,mu3,lambda12,mu12,lambda13,mu13,&
+    CALL calculate_z_coeff(lambda2,mu2,lambda1,mu1,lambda0,mu0,lambda3,mu3,lambda12,mu12,lambda13,mu13,&
                  rhomax12,rhomax123,rhomax13,rhomax132,Z,rhomax132,info)
     IF(info/=0)THEN
       DEALLOCATE(U1,Z,U2)
       RETURN
     END IF
-    CALL calculate_U_coeff(lambda12,mu12,lambda3,mu3,lambda,mu,lambda4,mu4,lambda0,mu0,lambda34,mu34,&
+    CALL calculate_u_coeff(lambda12,mu12,lambda3,mu3,lambda,mu,lambda4,mu4,lambda0,mu0,lambda34,mu34,&
                  rhomax123,rhomax04,rhomax34,rhomax1234,U2,rhomax1234,info)
     IF(info/=0)THEN
       DEALLOCATE(U1,Z,U2)

@@ -58,12 +58,12 @@ namespace ndsu3lib
     fortran::calculate_wigner_canonical_(lambda1, mu1, lambda2, mu2, lambda3, mu3, epsilon3, Lambda32, dimpq, dimw, rhomax, numb, wigner, p1a, p2a, q2a);
   }
 
-  void calculate_U_coeff(int lambda1, int mu1, int lambda2, int mu2, int lambda, int mu, int lambda3, int mu3, int lambda12, int mu12, int lambda23, int mu23, int rhomaxa, int rhomaxb, int rhomaxc, int rhomaxd, int dimen, double rac[], int& info)
+  void calculate_u_coeff(int lambda1, int mu1, int lambda2, int mu2, int lambda, int mu, int lambda3, int mu3, int lambda12, int mu12, int lambda23, int mu23, int rhomaxa, int rhomaxb, int rhomaxc, int rhomaxd, int dimen, double rac[], int& info)
   {
     fortran::u_coeff_wrapper_(lambda1, mu1, lambda2, mu2, lambda, mu, lambda3, mu3, lambda12, mu12, lambda23, mu23, rhomaxa, rhomaxb, rhomaxc, rhomaxd, dimen, rac, info);
   }
 
-  void calculate_Z_coeff(int lambda2, int mu2, int lambda1, int mu1, int lambda, int mu, int lambda3, int mu3, int lambda12, int mu12, int lambda13, int mu13, int rhomaxa, int rhomaxb, int rhomaxc, int rhomaxd, int dimen, double Zcoeff[], int& info)
+  void calculate_z_coeff(int lambda2, int mu2, int lambda1, int mu1, int lambda, int mu, int lambda3, int mu3, int lambda12, int mu12, int lambda13, int mu13, int rhomaxa, int rhomaxb, int rhomaxc, int rhomaxd, int dimen, double Zcoeff[], int& info)
   {
     fortran::z_coeff_wrapper_(lambda2, mu2, lambda1, mu1, lambda, mu, lambda3, mu3, lambda12, mu12, lambda13, mu13, rhomaxa, rhomaxb, rhomaxc, rhomaxd, dimen, Zcoeff, info);
   }
