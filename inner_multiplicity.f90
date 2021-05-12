@@ -9,6 +9,9 @@
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 FUNCTION inner_multiplicity(lambda,mu,L) RESULT(kappamax)
+!-------------------------------------------------------
+! Inner multiplicity of L within SU(3) irrep (lambda,mu)
+!-------------------------------------------------------
 IMPLICIT NONE
 INTEGER,INTENT(IN) :: lambda,mu,L
 INTEGER :: kappamax

@@ -42,10 +42,9 @@ INTEGER,INTENT(IN) :: lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu1
 INTEGER,INTENT(OUT) :: info
 INTEGER :: epsilon23,rhomaxabc,numba,numbb,numbc,numbd,i1,i2,inda,indd,i,&
            Lambda122,epsilon2,Lambda22,p3,q3,n,rhoa,rhob,rhoc,I23,phase,&
-           Lambda232,Lambda32,p23,q23,p12,q12,p2,q2,m,noname3,epsilon2max,aux,p3min
+           Lambda232,Lambda32,p23,q23,p12,q12,p2,q2,m,noname3,epsilon2max,aux,p3min,pqdima,pqdimc,pqdimd
 REAL(KIND=8) :: factor1,factor2,factor3
 REAL(KIND=8),DIMENSION(:,:),INTENT(OUT) :: rac ! Sizes are at least rhomaxd and rhomaxa*rhomaxb*rhomaxc
-INTEGER :: pqdima,pqdimc,pqdimd
 REAL(KIND=8),ALLOCATABLE,DIMENSION(:,:) :: matrix ! Sizes are at least rhomaxd and rhomaxd.
 REAL(KIND=8),ALLOCATABLE,DIMENSION(:,:,:,:) :: wignera,wignerb,wignerc,wignerd,wigner
 INTEGER,ALLOCATABLE,DIMENSION(:) :: p1aa,p2aa,q2aa,p1ac,p2ac,q2ac,p2ad,q2ad
@@ -164,6 +163,7 @@ IF(rhomaxd>1)THEN
   CALL dgesv(rhomaxd,rhomaxabc,matrix,rhomaxd,p2aa,rac,ldb,info)
 ELSE
   rac(1,1:rhomaxabc)=rac(1,1:rhomaxabc)/matrix(1,1)
+  info=0
 END IF
 
 DEALLOCATE(matrix,wignera,wignerb,wignerc,wignerd,wigner,p1aa,p2aa,q2aa,p1ac,p2ac,q2ac,p2ad,q2ad)
