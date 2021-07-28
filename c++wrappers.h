@@ -8,35 +8,35 @@
  SPDX-License-Identifier: MIT
 
 ***************************************************************/
-
 namespace ndsu3lib
 {
-
-  namespace fortran
+  extern "C"
   {
-    // Fortran subroutines and functions
-    extern "C"
+    typedef struct {
+      int lambda, mu;
+    } su3irrep;
+    namespace fortran
     {
-      extern int outer_multiplicity_(const int&, const int&, const int&, const int&, const int&, const int&);
-      extern int inner_multiplicity_(const int&, const int&, const int&);
-      extern void ndsu3lib_init_(const bool&, const int&);
-      extern void ndsu3lib_free_(const bool&);
-      extern void calculate_wigner_canonical_(const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, int&, double[], int[], int[], int[]);
-      extern void u_coeff_wrapper_(const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, double[], int&);
-      extern void z_coeff_wrapper_(const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, double[], int&);
-      extern void nine_lambda_mu_wrapper_(const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, double[], int&);
-      extern void wigner_su3so3_wrapper_(const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, double[]);
+    // Fortran subroutines and functions
+      extern int outer_multiplicity(const su3irrep&, const su3irrep&, const su3irrep&);
+      extern int inner_multiplicity(const su3irrep&, const int&);
+      extern void ndsu3lib_init(const bool&, const int&);
+      extern void ndsu3lib_free(const bool&);
+      extern void calculate_wigner_canonical(const su3irrep&, const su3irrep&, const su3irrep&, const int&, const int&, const int&, const int&, const int&, int&, double[], int[], int[], int[]);
+      extern void u_coeff_wrapper(const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const int&, const int&, const int&, const int&, const int&, double[], int&);
+      extern void z_coeff_wrapper(const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const int&, const int&, const int&, const int&, const int&, double[], int&);
+      extern void nine_lambda_mu_wrapper(const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, double[], int&);
+      extern void wigner_su3so3_wrapper(const su3irrep&, const int&, const su3irrep&, const int&, const su3irrep&, const int&, const int&, const int&, const int&, const int&, const int&, double[]);
     }
-
   }
 
-  int outer_multiplicity(int lambda1, int mu1, int lambda2, int mu2, int lambda3, int mu3);
+  int outer_multiplicity(su3irrep irrep1, su3irrep irrep2, su3irrep irrep3);
   // Multiplicity of SU(3) coupling (lambda1,mu1)x(lambda2,mu2)->(lambda3,mu3)
-  // Input arguments: lambda1,mu1,lambda2,mu2,lambda3,mu3
+  // Input arguments: irrep1, irrep2, irrep3
 
-  int inner_multiplicity(int lambda, int mu, int L);
+  int inner_multiplicity(su3irrep irrep, int L);
   // Inner multiplicity of L within SU(3) irrep (lambda,mu)
-  // Input arguments: lambda,mu,L
+  // Input arguments: irrep,L
 
   void ndsu3lib_init(bool wso3, int j2max);
   // ndsu3lib initialization subroutine
@@ -66,12 +66,12 @@ namespace ndsu3lib
   // wso3 should be true if ndsu3lib_init was called with the first argument
   // being true.
 
-  void calculate_wigner_canonical(int lambda1, int mu1, int lambda2, int mu2, int lambda3, int mu3, int epsilon3, int Lambda32, int dimpq, int dimw, int rhomax, int& numb, double wigner[], int p1a[], int p2a[], int q2a[], int& info);
+  void calculate_wigner_canonical(su3irrep irrep1, su3irrep irrep2, su3irrep irrep3, int epsilon3, int Lambda32, int dimpq, int dimw, int rhomax, int& numb, double wigner[], int p1a[], int p2a[], int q2a[], int& info);
   // Calculates all SU(3)-SU(2)xU(1) reduced Wigner coefficients
   // <(lambda1,mu1)epsilon1,Lambda1;(lambda2,mu2)epsilon2,Lambda2||(lambda3,mu3)epsilon3,Lambda3>_rho
   // for given lambda1,mu1,lambda2,mu2,lambda3,mu3,epsilon3,Lambda3=Lambda32/2
   //
-  // Input arguments: lambda1,mu1,lambda2,mu2,lambda3,mu3,epsilon3,Lambda32,dimpq,dimw,rhomax
+  // Input arguments: irrep1,irrep2,irrep3,epsilon3,Lambda32,dimpq,dimw,rhomax
   // Output arguments: numb,wigner,p1a,p2a,q2a,info
   //
   // rmomax is multiplicity of coupling (lambda1,mu1)x(lambda2,mu2)->(lambda3,mu3)
@@ -91,12 +91,11 @@ namespace ndsu3lib
   //         ind=i+numb*(rho-1)
   //         0<=i<=numb-1
 
-  void calculate_u_coeff(int lambda1, int mu1, int lambda2, int mu2, int lambda, int mu, int lambda3, int mu3, int lambda12, int mu12, int lambda23, int mu23, int rhomaxa, int rhomaxb, int rhomaxc, int rhomaxd, int dimen, double rac[], int& info);
+  void calculate_u_coeff(su3irrep irrep1, su3irrep irrep2, su3irrep irrep, su3irrep irrep3, su3irrep irrep12, su3irrep irrep23, int rhomaxa, int rhomaxb, int rhomaxc, int rhomaxd, int dimen, double rac[], int& info);
   // Calculates SU(3) U-recoupling coefficients
   // U[(lambda1,mu1)(lambda2,mu2)(lambda,mu)(lambda3,mu3)rhoa,rhob(lambda12,mu12)(lambda23,mu23)rhoc,rhod]
   //
-  // Input arguments: lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,lambda23,mu23,
-  //                  rhomaxa,rhomaxb,rhomaxc,rhomaxd,dimen
+  // Input arguments: irrep1,irrep2,irrep,irrep3,irrep12,irrep23,rhomaxa,rhomaxb,rhomaxc,rhomaxd,dimen
   // Output argumrnts: rac,info
   //
   // rhomaxa is multiplicity of coupling (lambda1,mu1)x(lambda2,mu2)->(lambda12,mu12)
@@ -108,12 +107,11 @@ namespace ndsu3lib
   // ind = rhoa+rhomaxa*(rhob-1)+rhomaxa*rhomaxb*(rhoc-1)+rhomaxa*rhomaxb*rhomaxc*(rhod-1)-1
   // info = 0 if MKL subroutine dgesv ran withou errors
 
-  void calculate_z_coeff(int lambda2, int mu2, int lambda1, int mu1, int lambda, int mu, int lambda3, int mu3, int lambda12, int mu12, int lambda13, int mu13, int rhomaxa, int rhomaxb, int rhomaxc, int rhomaxd, int dimen, double Zcoeff[], int& info);
+  void calculate_z_coeff(su3irrep irrep2, su3irrep irrep1, su3irrep irrep, su3irrep irrep3, su3irrep irrep12, su3irrep irrep13, int rhomaxa, int rhomaxb, int rhomaxc, int rhomaxd, int dimen, double Zcoeff[], int& info);
   // Calculates SU(3) Z-recoupling coefficients
   // Z[(lambda2,mu2)(lambda1,mu1)(lambda,mu)(lambda3,mu3)rhoa,rhob(lambda12,mu12)(lambda13,mu13)rhoc,rhod]
   //
-  // Input arguments: lambda2,mu2,lambda1,mu1,lambda,mu,lambda3,mu3,lambda12,mu12,lambda13,mu13,
-  //                  rhomaxa,rhomaxb,rhomaxc,rhomaxd,dimen
+  // Input arguments: irrep2,irrep1,irrep,irrep3,irrep12,irrep13,rhomaxa,rhomaxb,rhomaxc,rhomaxd,dimen
   // Output argumrnts: Zcoeff,info
   //
   // rhomaxa is multiplicity of coupling (lambda1,mu1)x(lambda2,mu2)->(lambda12,mu12)
@@ -125,7 +123,7 @@ namespace ndsu3lib
   // ind = rhoa+rhomaxa*(rhob-1)+rhomaxa*rhomaxb*(rhoc-1)+rhomaxa*rhomaxb*rhomaxc*(rhod-1)-1
   // info = 0 if MKL subroutine dgesv ran withou errors
 
-  void calculate_9_lambda_mu(int lambda1, int mu1, int lambda2, int mu2, int lambda12, int mu12, int lambda3, int mu3, int lambda4, int mu4, int lambda34, int mu34, int lambda13, int mu13, int lambda24, int mu24, int lambda, int mu, int rhomax12, int rhomax34, int rhomax1234, int rhomax13, int rhomax24, int rhomax1324, int dimen, double ninelm[], int& info);
+  void calculate_9_lambda_mu(su3irrep irrep1, su3irrep irrep2, su3irrep irrep12, su3irrep irrep3, su3irrep irrep4, su3irrep irrep34, su3irrep irrep13, su3irrep irrep24, su3irrep irrep, int rhomax12, int rhomax34, int rhomax1234, int rhomax13, int rhomax24, int rhomax1324, int dimen, double ninelm[], int& info);
   // Calculates 9-(lambda,mu) coefficients
   //
   // | (lambda1,mu1)   (lambda2,mu2)  (lambda12,mu12)  rho12 |
@@ -133,8 +131,8 @@ namespace ndsu3lib
   // |(lambda13,mu13) (lambda24,mu24)   (lambda,mu)   rho1324|
   // |     rho13           rho24          rho1234            |
   //
-  // Input arguments: lambda1,mu1,lambda2,mu2,lambda12,mu12,lambda3,mu3,lambda4,mu4,lambda34,mu34,lambda13,mu13,
-  //                  lambda24,mu24,lambda,mu,rhomax12,rhomax34,rhomax1234,rhomax13,rhomax24,rhomax1324,dimen
+  // Input arguments: irrep1,irrep2,irrep12,irrep3,irrep4,irrep34,irrep13,irrep24,irrep,
+  //                  rhomax12,rhomax34,rhomax1234,rhomax13,rhomax24,rhomax1324,dimen
   // Output arguments: ninelm,info
   //
   // rhomax12 is multiplicity of coupling (lambda1,mu1)x(lambda2,mu2)->(lambda12,mu12)
@@ -149,11 +147,11 @@ namespace ndsu3lib
   //       +rhomax12*rhomax34*rhomax1234*rhomax13*(rho24-1)+rhomax12*rhomax34*rhomax1234*rhomax13*rhomax24*(rho1324-1)-1
   // info = 0 if MKL subroutine dgesv ran without errors
 
-  void calculate_wigner_su3so3(int lambda1, int mu1, int L1, int lambda2, int mu2, int L2, int lambda3, int mu3, int L3, int kappa1max, int kappa2max, int kappa3max, int rhomax, int dimen, double wigner[]);
+  void calculate_wigner_su3so3(su3irrep irrep1, int L1, su3irrep irrep2, int L2, su3irrep irrep3, int L3, int kappa1max, int kappa2max, int kappa3max, int rhomax, int dimen, double wigner[]);
   // Calculates reduced SU(3)-SO(3) Wigner coefficients
   // <(lambda1,mu1)kappa1,L1;(lambda2,mu2)kappa2,L2||(lambda3,mu3)kappa3,L3>_rho
   //
-  // Input arguments: lambda1,mu1,L1,lambda2,mu2,L2,lambda3,mu3,L3,kappa1max,kappa2max,kappa3max,rhomax,dimen
+  // Input arguments: irrep1,L1,irrep2,L2,irrep3,L3,kappa1max,kappa2max,kappa3max,rhomax,dimen
   // Output argument: wigner
   //
   // kappa1max is inner multiplicity of L1 within (lambda1,mu1)
