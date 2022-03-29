@@ -5,11 +5,11 @@ $(eval $(begin-module))
 ################################################################
 
 # module_units_h := 
-# module_units_cpp-h := 
-module_units_f := binomial_coeff clebsch_gordan I_S_module orthonormalization_matrix outer_multiplicity \
-    racah su2racah transformation_coeff wigner_canonical_extremal wigner_canonical wigner_physical wigner_physical_wrap Z_coeff
-# module_programs_cpp :=
-# module_programs_f :=
+module_units_cpp-h := c++wrappers
+module_units_f := ndsu3lib_recoupling ndsu3lib_wigner_canonical ndsu3lib_wigner_su3so3
+module_programs_cpp := ndsu3lib_example
+module_programs_f := ndsu3lib_example 
+# module_programs_f_test := # DOES NOT EXIST YET
 # module_generated :=
 
 ################################################################
