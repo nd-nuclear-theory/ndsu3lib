@@ -37,6 +37,9 @@ LDLIBS += -lgsl
 LDLIBS += -lgslcblas
 CPPFLAGS += -DHAVE_INLINE
 
+# ndsu3lib
+CPPFLAGS += -DNDSU3LIB_DBL -DNDSU3LIB_RACAH_GSL -DNDSU3LIB_WSO3_GSL
+
 ################################
 # "neighboring" libraries
 ################################

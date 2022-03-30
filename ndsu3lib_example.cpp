@@ -1,6 +1,6 @@
 /***************************************************************
  
- ndsu3lib_example_c++.cpp -- simple program demonstrating usage of C++ wrappers
+ ndsu3lib_example.cpp -- simple program demonstrating usage of C++ wrappers
 
  Jakub Herko
  University of Notre Dame
