@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.15)
 
-# Determine if am is built as a subproject (using add_subdirectory) or if it is
-# the master project.
+# Determine if am is built as a subproject (using add_subdirectory)
+#  or if it is the master project.
 if(NOT DEFINED NDSU3LIB_MASTER_PROJECT)
   set(NDSU3LIB_MASTER_PROJECT OFF)
   if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
@@ -10,79 +10,94 @@ if(NOT DEFINED NDSU3LIB_MASTER_PROJECT)
   endif()
 endif()
 
-project(ndsu3lib Fortran)
+project(ndsu3lib LANGUAGES Fortran CXX)
 
 if(NDSU3LIB_MASTER_PROJECT AND NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
-# ##############################################################################
-# find external projects/dependencies
-# ##############################################################################
+###############################################################################
+# Find external projects/dependencies
+###############################################################################
 set(SO3COEF_LIBRARY_OPTIONS "wigxjpf" "gsl")
 set(SO3COEF_LIBRARY "gsl" CACHE STRING "SO(3) coefficient library to use")
 set_property(CACHE SO3COEF_LIBRARY PROPERTY STRINGS ${SO3COEF_LIBRARY_OPTIONS})
 
+include(retrieve.cmake)
+
 if(SO3COEF_LIBRARY STREQUAL "wigxjpf")
-  find_package(wigxjpf REQUIRED)
+  retrieve_package(wigxjpf::wigxjpf wigxjpf)
+
 elseif(SO3COEF_LIBRARY STREQUAL "gsl")
   find_package(GSL REQUIRED)
+
 else()
   message(FATAL_ERROR "Unknown SO(3) coefficient library ${SO3COEF_LIBRARY}")
-endif()
-message(STATUS "Found SO(3) coefficient library:  ${SO3COEF_LIBRARY}")
 
-
-# ##############################################################################
-# add sources
-# ##############################################################################
-
-set(ndsu3lib_sources
-  ndsu3lib_recoupling.F90
-  ndsu3lib_wigner_canonical.F90
-  ndsu3lib_wigner_su3so3.F90
-  c++wrappers.cpp
-  c++wrappers.h
-)
-
-# construct lists of headers and sources
-# define ndsu3lib library and add source files
-add_library(ndsu3lib ${ndsu3lib_sources})
-add_library(ndsu3lib::ndsu3lib ALIAS ndsu3lib)
-
-# ##############################################################################
-# configure options
-# ##############################################################################
-
-option(NDSU3LIB_OPENMP "Make ndsu3lib safe for use in OpenMP parallel regions" ON)
-
-if(${NDSU3LIB_OPENMP})
-  find_package(OpenMP REQUIRED)
-  target_link_libraries(ndsu3lib OpenMP::OpenMP_Fortran)
 endif()
 
+message(STATUS "Using SO(3) coefficient library:  ${SO3COEF_LIBRARY}")
 
-## What is NDSU3LIB_QUAD?  Is it the intel compiler quad?
-#
-## define options 
+###############################################################################
+# Set precision
+###############################################################################
 set(NDSU3LIB_PRECISION_OPTIONS "double" "quad" "multi")
 set(NDSU3LIB_PRECISION "double" CACHE STRING "NDSU3LIB numerical precision")
 set_property(CACHE NDSU3LIB_PRECISION PROPERTY STRINGS ${NDSU3LIB_PRECISION_OPTIONS})
 
+## mpfun20-fortran
+if(${NDSU3LIB_PRECISION} STREQUAL "multi")
+  retrieve_package(mpfun20:mpfun20 mpfun20)
+endif()
+
+###############################################################################
+# Add library
+###############################################################################
+set(ndsu3lib_sources_F
+  ndsu3lib_recoupling.F90
+  ndsu3lib_wigner_canonical.F90
+  ndsu3lib_wigner_su3so3.F90
+)
+set(ndsu3lib_sources_CPP c++wrappers.cpp c++wrappers.h)
+set(ndsu3lib_sources ${ndsu3lib_sources_F} ${ndsu3lib_sources_CPP})
+
+add_library(ndsu3lib ${ndsu3lib_sources})
+add_library(ndsu3lib::ndsu3lib ALIAS ndsu3lib)
+
+## MKL
+find_package(BLAS)
+target_link_libraries(ndsu3lib PUBLIC BLAS::BLAS)
+###############################################################################
+#configure options
+###############################################################################
+if(${SO3COEF_LIBRARY} STREQUAL "gsl")
+  target_compile_definitions(ndsu3lib PRIVATE NDSU3LIB_RACAH_GSL)
+  target_compile_definitions(ndsu3lib PRIVATE NDSU3LIB_WSO3_GSL)
+  target_link_libraries(ndsu3lib PUBLIC GSL::gsl)
+
+elseif(${SO3COEF_LIBRARY} STREQUAL "wigxjpf")
+  target_compile_definitions(ndsu3lib PRIVATE NDSU3LIB_RACAH_WIGXJPF)
+  target_compile_definitions(ndsu3lib PRIVATE NDSU3LIB_WSO3_WIGXJPF)
+  target_link_libraries(ndsu3lib PUBLIC wigxjpf::wigxjpf)
+
+endif()
+
 ## set precision 
 if(${NDSU3LIB_PRECISION} STREQUAL "double")
   target_compile_definitions(ndsu3lib PRIVATE NDSU3LIB_DBL)
-## [TODO: check correct] Assumes only use gsl quad precision if using gsl library for so3coefs 
+
 elseif(${NDSU3LIB_PRECISION} STREQUAL "quad")
-  if(SO3COEF_LIBRARY STREQUAL "gsl")
+  
+  if(CMAKE_Fortran_COMPILER_ID STREQUAL GNU)
     target_compile_definitions(ndsu3lib PRIVATE NDSU3LIB_QUAD_GNU)
   else()
     target_compile_definitions(ndsu3lib PRIVATE NDSU3LIB_QUAD)
   endif()
 
-## [TODO: check correct] Assumes only use gsl multi precision if using gsl library for so3coefs 
 elseif(${NDSU3LIB_PRECISION} STREQUAL "multi")
-  if(SO3COEF_LIBRARY STREQUAL "gsl")
+  target_link_libraries(ndsu3lib PUBLIC mpfun20::mpfun20)
+
+  if(CMAKE_Fortran_COMPILER_ID STREQUAL GNU)
     target_compile_definitions(ndsu3lib PRIVATE NDSU3LIB_MP_GNU)
   else()
     target_compile_definitions(ndsu3lib PRIVATE NDSU3LIB_MP)
@@ -90,18 +105,43 @@ elseif(${NDSU3LIB_PRECISION} STREQUAL "multi")
   
 else()
   message(FATAL_ERROR "Precision option ${NDSU3LIB_PRECISION} not recognized")
+
+endif()
+
+message(STATUS "Precision: ${NDSU3LIB_PRECISION}")
+
+
+## OpenMP Not currently implemented? 
+option(NDSU3LIB_OPENMP "Make ndsu3lib safe for use in OpenMP parallel regions" ON)
+
+if(${NDSU3LIB_OPENMP})
+  find_package(OpenMP REQUIRED)
+  target_link_libraries(ndsu3lib PUBLIC OpenMP::OpenMP_Fortran)
 endif()
 
 
-# ##############################################################################
-# define installation rules
-# ##############################################################################
+###############################################################################
+#define include directory
+###############################################################################
+target_include_directories(
+  ndsu3lib
+  PUBLIC 
+  $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
+  $<INSTALL_INTERFACE:include/ndsu3lib>
+)
 
+###############################################################################
+#define installation rules
+###############################################################################
 install(
   TARGETS ndsu3lib
   DESTINATION lib
   EXPORT ndsu3libTargets
 )
+
+# Copy .mod files to include directory
+file(GLOB mod_list ${PROJECT_BINARY_DIR}/*.mod)
+install(FILES ${mod_list} DESTINATION include/ndsu3lib)
 
 install(
   EXPORT ndsu3libTargets
@@ -136,3 +176,22 @@ export(
   NAMESPACE ndsu3lib::
   FILE "${CMAKE_CURRENT_BINARY_DIR}/ndsu3libTargets.cmake"
 )
+
+###############################################################################
+#define tests
+###############################################################################
+add_executable(ndsu3lib_example ndsu3lib_example.f90)
+target_link_libraries(ndsu3lib_example ndsu3lib::ndsu3lib)
+set_target_properties(ndsu3lib_example PROPERTIES LINKER_LANGUAGE Fortran)
+
+add_executable(ndsu3lib_example_cpp ndsu3lib_example.cpp)
+target_link_libraries(ndsu3lib_example_cpp ndsu3lib::ndsu3lib)
+set_target_properties(ndsu3lib_example_cpp PROPERTIES LINKER_LANGUAGE CXX)
+
+
+if(NDSU3LIB_MASTER_PROJECT)
+  add_custom_target(tests)
+  add_dependencies(tests ndsu3lib_example)
+  add_dependencies(tests ndsu3lib_example_cpp)
+endif()
+
