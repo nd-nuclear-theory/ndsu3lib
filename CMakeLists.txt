@@ -26,14 +26,24 @@ set(SO3COEF_LIBRARY_OPTIONS "wigxjpf" "gsl")
 set(SO3COEF_LIBRARY "gsl" CACHE STRING "SO(3) coefficient library to use")
 set_property(CACHE SO3COEF_LIBRARY PROPERTY STRINGS ${SO3COEF_LIBRARY_OPTIONS})
 
-if(NDSU3LIB_MASTER_PROJECT)
-  include(retrieve.cmake)
-endif()
+
+include(fetch_declarations.cmake)
+
 
 if(SO3COEF_LIBRARY STREQUAL "wigxjpf")
-  retrieve_package(wigxjpf::wigxjpf wigxjpf)
+  message(STATUS "Building ndsu3lib with wigxjpf support")
+  
+  if(NOT TARGET wigxjpf::wigxjpf)
+    find_package(wigxjpf)    
+  endif()
+  ## If still not found, fetch
+  if(NOT TARGET wigxjpf::wigxjpf)
+    message(STATUS "Package wigxjpf not found. Fetching...")
+    FetchContent_MakeAvailable(wigxjpf) 
+  endif()
 
 elseif(SO3COEF_LIBRARY STREQUAL "gsl")
+  message(STATUS "Building ndsu3lib with gsl support")
   find_package(GSL REQUIRED)
 
 else()
@@ -52,7 +62,15 @@ set_property(CACHE NDSU3LIB_PRECISION PROPERTY STRINGS ${NDSU3LIB_PRECISION_OPTI
 
 ## mpfun20-fortran
 if(${NDSU3LIB_PRECISION} STREQUAL "multi")
-  retrieve_package(mpfun20:mpfun20 mpfun20)
+  message(STATUS "Building ndsu3lib with mpfun2020 support")
+  if(NOT TARGET mpfun20:mpfun20)
+    find_package(mpfun20)
+  endif()
+  ## If still not found, fetch
+  if(NOT TARGET mpfun20:mpfun20)
+    message(STATUS "Package mpfun20 not found. Fetching...")
+    FetchContent_MakeAvailable(mpfun20) 
+  endif()
 endif()
 
 ###############################################################################
@@ -150,16 +168,9 @@ install(
   EXPORT ndsu3libTargets
 )
 
-
-
-
 # Copy .mod files to include directory
-file(GLOB mod_list ${CMAKE_Fortran_MODULE_DIRECTORY}/ndsu3lib*.mod)
-foreach(mod IN LISTS mod_list)
-  install(FILES ${CMAKE_Fortran_MODULE_DIRECTORY}/mod DESTINATION include/ndsu3lib)
-endforeach()
-
-
+install(DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY}/mod DESTINATION include/ndsu3lib FILES_MATCHING PATTERN "*.mod")
+# Copy header to include directory
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/c++wrappers.h DESTINATION include/ndsu3lib)
 
 install(

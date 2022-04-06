@@ -29,21 +29,3 @@ FetchContent_Declare(
   GIT_TAG        master #0628af82d02c2e07e1e24f8b6005aef3c58b6cd1
   GIT_SHALLOW    TRUE
 )
-
-###########################################################################
-# Retrieval function
-###########################################################################
-function(retrieve_package target package_name)
-  if(NOT TARGET ${target})
-    message(STATUS "Looking for package ${package_name}...")
-    find_package(${package_name})
-  endif()
-  ## if still not found, fetch
-  if(NOT TARGET ${target})
-    message(STATUS "Package ${package_name} not found. Fetching...")
-    
-    FetchContent_MakeAvailable(${package_name})
-  endif()
-endfunction()
-
-
