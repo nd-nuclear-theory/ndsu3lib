@@ -16,6 +16,9 @@ if(NDSU3LIB_MASTER_PROJECT AND NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
+
+# define module directory
+set(CMAKE_Fortran_MODULE_DIRECTORY ${PROJECT_BINARY_DIR}/mod)
 ###############################################################################
 # Find external projects/dependencies
 ###############################################################################
@@ -23,7 +26,9 @@ set(SO3COEF_LIBRARY_OPTIONS "wigxjpf" "gsl")
 set(SO3COEF_LIBRARY "gsl" CACHE STRING "SO(3) coefficient library to use")
 set_property(CACHE SO3COEF_LIBRARY PROPERTY STRINGS ${SO3COEF_LIBRARY_OPTIONS})
 
-include(retrieve.cmake)
+if(NDSU3LIB_MASTER_PROJECT)
+  include(retrieve.cmake)
+endif()
 
 if(SO3COEF_LIBRARY STREQUAL "wigxjpf")
   retrieve_package(wigxjpf::wigxjpf wigxjpf)
@@ -58,15 +63,20 @@ set(ndsu3lib_sources_F
   ndsu3lib_wigner_canonical.F90
   ndsu3lib_wigner_su3so3.F90
 )
-set(ndsu3lib_sources_CPP c++wrappers.cpp c++wrappers.h)
+set(ndsu3lib_sources_HEADERS  c++wrappers.h)
+set(ndsu3lib_sources_CPP c++wrappers.cpp)
 set(ndsu3lib_sources ${ndsu3lib_sources_F} ${ndsu3lib_sources_CPP})
 
 add_library(ndsu3lib ${ndsu3lib_sources})
 add_library(ndsu3lib::ndsu3lib ALIAS ndsu3lib)
 
+target_sources(ndsu3lib INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/c++wrappers.h>)
+
 ## MKL
 find_package(BLAS)
 target_link_libraries(ndsu3lib PUBLIC BLAS::BLAS)
+
+
 ###############################################################################
 #configure options
 ###############################################################################
@@ -127,6 +137,7 @@ target_include_directories(
   ndsu3lib
   PUBLIC 
   $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
+  $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/mod>
   $<INSTALL_INTERFACE:include/ndsu3lib>
 )
 
@@ -139,9 +150,17 @@ install(
   EXPORT ndsu3libTargets
 )
 
+
+
+
 # Copy .mod files to include directory
-file(GLOB mod_list ${PROJECT_BINARY_DIR}/*.mod)
-install(FILES ${mod_list} DESTINATION include/ndsu3lib)
+file(GLOB mod_list ${CMAKE_Fortran_MODULE_DIRECTORY}/ndsu3lib*.mod)
+foreach(mod IN LISTS mod_list)
+  install(FILES ${CMAKE_Fortran_MODULE_DIRECTORY}/mod DESTINATION include/ndsu3lib)
+endforeach()
+
+
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/c++wrappers.h DESTINATION include/ndsu3lib)
 
 install(
   EXPORT ndsu3libTargets
