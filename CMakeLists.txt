@@ -18,7 +18,7 @@ endif()
 
 
 # define module directory
-set(CMAKE_Fortran_MODULE_DIRECTORY ${PROJECT_BINARY_DIR}/mod)
+set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/mod)
 ###############################################################################
 # Find external projects/dependencies
 ###############################################################################
@@ -154,8 +154,8 @@ endif()
 target_include_directories(
   ndsu3lib
   PUBLIC 
-  $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
-  $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/mod>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+  $<BUILD_INTERFACE:${CMAKE_Fortran_MODULE_DIRECTORY}>
   $<INSTALL_INTERFACE:include/ndsu3lib>
 )
 
@@ -169,7 +169,7 @@ install(
 )
 
 # Copy .mod files to include directory
-install(DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY}/mod DESTINATION include/ndsu3lib FILES_MATCHING PATTERN "*.mod")
+install(DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY} DESTINATION include/ndsu3lib FILES_MATCHING PATTERN "*.mod")
 # Copy header to include directory
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/c++wrappers.h DESTINATION include/ndsu3lib)
 
