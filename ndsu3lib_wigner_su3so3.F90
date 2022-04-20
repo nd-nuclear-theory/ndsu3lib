@@ -9,6 +9,11 @@
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 MODULE ndsu3lib_wigner_su3so3
+!-----------------------------------------------------------------------------
+! Note: In subroutines with polymorphic interface below, SELECT TYPE cannot be
+! used to identify sequence type mp_real. This is solved using pointers - see
+! https://www.nag.com/nagware/np/r62_doc/manual/compiler_9_2.html
+!------------------------------------------------------------------------------
 USE ndsu3lib_wigner_canonical
 IMPLICIT NONE
 CONTAINS
