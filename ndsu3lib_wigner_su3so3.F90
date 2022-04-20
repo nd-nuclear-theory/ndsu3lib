@@ -63,7 +63,8 @@ IMPLICIT NONE
 #if (defined(NDSU3LIB_DBL) || defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
 REAL(KIND=8),INTENT(OUT) :: coeff
 #elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
-CLASS(*),INTENT(OUT) :: coeff
+CLASS(*),TARGET,INTENT(OUT) :: coeff
+TYPE(mp_real),POINTER :: point
 #endif
 TYPE(su3irrep),INTENT(IN) :: irrep
 INTEGER,INTENT(IN) :: I,J,epsilonx,Lambda2p,MLambda2px,M,L,Mp
@@ -398,9 +399,10 @@ END IF
 IF(I/=J.AND.BTEST(LambdaM,0))coeff=-coeff
 
 #if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
-CLASS IS (mp_real)
+CLASS DEFAULT ! CLASS IS (mp_real)
+point=>coeff
 
-coeff=mpreal(0.D0,nwds)
+point=mpreal(0.D0,nwds) ! coeff=mpreal(0.D0,nwds)
 DO gama=0,p
   MNLambda2p=MNLambda2p-1
   xn=xn+1
@@ -478,7 +480,7 @@ DO gama=0,p
         END IF
       END IF
 
-      IF(S2mp/=0.D0)coeff=coeff+binom_mp(ind3)*S11mp*S12mp*S2mp/DFLOAT(k2L+1)
+      IF(S2mp/=0.D0)point=point+binom_mp(ind3)*S11mp*S12mp*S2mp/DFLOAT(k2L+1) ! coeff=coeff+binom_mp(ind3)*S11mp*S12mp*S2mp/DFLOAT(k2L+1)
 
     END IF
   END IF
@@ -490,7 +492,7 @@ DO gama=0,p
   ind3=ind3+1
 END DO
 
-IF(coeff/=0.D0)THEN
+IF(point/=0.D0)THEN ! IF(coeff/=0.D0)THEN
 ! Factor (2*L+1)/(2**p) appears in C in Eq.(26) as squared but that is a typo: (2L+1) should not be squared!
   aux1=lambda+mu+1
   aux2=p+mu+1
@@ -500,16 +502,16 @@ IF(coeff/=0.D0)THEN
     *(binom_mp(aux1*(aux1+1)/2+q)/binom_mp(aux2*(aux2+1)/2+q))*binom_mp(aux3-M))/(4.D0**DFLOAT(p))
   ! S2mp is C
   IF(BTEST(L-p,0))THEN
-    coeff=-coeff*S2mp
+    p=-p*S2mp ! coeff=-coeff*S2mp
   ELSE
-    coeff=coeff*S2mp
+    p=p*S2mp ! coeff=coeff*S2mp
   END IF
 ELSE
   RETURN
 END IF
-! Now coeff is the coefficient for E=HW. For E=HW' there is additinal phase
+! Now coeff (or point) is the coefficient for E=HW. For E=HW' there is additinal phase
 ! factor of (-1)^((lambda+M)/2) according to Eq.(33,6B), therefore:
-IF(I/=J.AND.BTEST(LambdaM,0))coeff=-coeff
+IF(I/=J.AND.BTEST(LambdaM,0))p=-p ! coeff=-coeff
 
 END SELECT
 #endif
@@ -540,7 +542,8 @@ IMPLICIT NONE
 #if (defined(NDSU3LIB_DBL) || defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
 REAL(KIND=8),DIMENSION(:,:),INTENT(OUT) :: matrix
 #elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
-CLASS(*),DIMENSION(:,:),INTENT(OUT) :: matrix
+CLASS(*),TARGET,DIMENSION(:,:),INTENT(OUT) :: matrix
+TYPE(mp_real),POINTER,DIMENSION(:,:) :: point
 #endif
 TYPE(su3irrep),INTENT(IN) :: irrep
 INTEGER,INTENT(IN) :: I,J,L,kappamax
@@ -616,7 +619,8 @@ DO jj=1,kappamax-1 ! loop over columns
 END DO
 
 #if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
-CLASS IS (mp_real)
+CLASS DEFAULT ! CLASS IS (mp_real)
+point=>matrix
 
 ! First, the upper triangle is calculated including the diagonal.
 DO ii=1,kappamax ! loop over columns
@@ -626,17 +630,17 @@ DO ii=1,kappamax ! loop over columns
     Kj=Kj+2 ! Kj is K_j in Eq.(6b)
     summp=mpreal(0.D0,nwds)
     DO k=1,jj-1
-      summp=summp+matrix(k,jj)*matrix(k,ii) ! sum is the sum in Eq.(6b)
+      summp=summp+point(k,jj)*point(k,ii) ! summp=summp+matrix(k,jj)*matrix(k,ii) ! sum is the sum in Eq.(6b)
     END DO
     CALL transformation_coeff(I,J,irrep,epsilon,Lambda2,MLambda2,Ki,L,Kj,coeffmp)
-    matrix(jj,ii)=matrix(jj,jj)*(coeffmp-summp) ! Eq.(6b)
+    point(jj,ii)=point(jj,jj)*(coeffmp-summp) ! matrix(jj,ii)=matrix(jj,jj)*(coeffmp-summp) ! Eq.(6b)
   END DO
   summp=mpreal(0.D0,nwds)
   DO jj=1,ii-1
-    summp=summp+matrix(jj,ii)*matrix(jj,ii) ! sum is the sum in Eq.(6a)
+    summp=summp+point(jj,ii)*point(jj,ii) ! summp=summp+matrix(jj,ii)*matrix(jj,ii) ! sum is the sum in Eq.(6a)
   END DO
   CALL transformation_coeff(I,J,irrep,epsilon,Lambda2,MLambda2,Ki,L,Ki,coeffmp)
-  matrix(ii,ii)=1.D0/SQRT(coeffmp-summp) ! Eq.(6a)
+  point(ii,ii)=1.D0/SQRT(coeffmp-summp) ! matrix(ii,ii)=1.D0/SQRT(coeffmp-summp) ! Eq.(6a)
 END DO
 
 ! Now, the bottom triangle is calculated.
@@ -644,9 +648,9 @@ DO jj=1,kappamax-1 ! loop over columns
   DO ii=jj+1,kappamax ! loop over rows
     summp=mpreal(0.D0,nwds)
     DO k=jj,ii-1
-      summp=summp+matrix(k,jj)*matrix(k,ii) ! sum is the sum in Eq.(6c)
+      summp=summp+point(k,jj)*point(k,ii) ! summp=summp+matrix(k,jj)*matrix(k,ii) ! sum is the sum in Eq.(6c)
     END DO
-    matrix(ii,jj)=-matrix(ii,ii)*summp ! Eq.(6c)
+    point(ii,jj)=-point(ii,ii)*summp ! matrix(ii,jj)=-matrix(ii,ii)*summp ! Eq.(6c)
   END DO
 END DO
 
@@ -713,7 +717,8 @@ IMPLICIT NONE
 #if (defined(NDSU3LIB_DBL) || defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
 REAL(KIND=8),DIMENSION(:,:),INTENT(IN) :: matrix1,matrix2
 #elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
-CLASS(*),DIMENSION(:,:),INTENT(IN) :: matrix1,matrix2
+CLASS(*),TARGET,DIMENSION(:,:),INTENT(IN) :: matrix1,matrix2
+TYPE(mp_real),POINTER,DIMENSION(:,:) :: point1,point2
 #endif
 REAL(KIND=8),DIMENSION(:,:),INTENT(IN) :: matrix3
 #if defined(NDSU3LIB_WSO3_WIGXJPF)
@@ -884,16 +889,19 @@ DO i=1,numb ! sum over epsilon1,Lambda_1,epsilon2,Lambda_2
           END DO
         END DO
 #if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
-        CLASS IS (mp_real)
+        CLASS DEFAULT ! CLASS IS (mp_real)
+        point1=>matrix1
         DO kappa1=1,kappa1max
           CALL transformation_coeff(I1,J1,irrep1,epsilon1,Lambda12,MLambda12,K1,L1,M1p,coeffmp)
           transcoeff1mp(kappa1)=coeffmp
           K1=K1+2
         END DO
         DO kappa1=kappa1max,1,-1
-          transcoeff1mp(kappa1)=matrix1(kappa1,kappa1)*transcoeff1mp(kappa1)
+          !transcoeff1mp(kappa1)=matrix1(kappa1,kappa1)*transcoeff1mp(kappa1)
+          transcoeff1mp(kappa1)=point1(kappa1,kappa1)*transcoeff1mp(kappa1)
           DO j=1,kappa1-1
-            transcoeff1mp(kappa1)=transcoeff1mp(kappa1)+matrix1(kappa1,j)*transcoeff1mp(j)
+            !transcoeff1mp(kappa1)=transcoeff1mp(kappa1)+matrix1(kappa1,j)*transcoeff1mp(j)
+            transcoeff1mp(kappa1)=transcoeff1mp(kappa1)+point1(kappa1,j)*transcoeff1mp(j)
           END DO
           transcoeff1(kappa1)=transcoeff1mp(kappa1)
         END DO
@@ -918,16 +926,19 @@ DO i=1,numb ! sum over epsilon1,Lambda_1,epsilon2,Lambda_2
           END DO
         END DO
 #if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
-        CLASS IS (mp_real)
+        CLASS DEFAULT ! CLASS IS (mp_real)
+        point2=>matrix2
         DO kappa2=1,kappa2max
           CALL transformation_coeff(I2,J2,irrep2,epsilon2,Lambda22,MLambda22,K2,L2,M2p,coeffmp)
           transcoeff2mp(kappa2)=coeffmp
           K2=K2+2
         END DO
         DO kappa2=kappa2max,1,-1
-          transcoeff2mp(kappa2)=matrix2(kappa2,kappa2)*transcoeff2mp(kappa2)
+          !transcoeff2mp(kappa2)=matrix2(kappa2,kappa2)*transcoeff2mp(kappa2)
+          transcoeff2mp(kappa2)=point2(kappa2,kappa2)*transcoeff2mp(kappa2)
           DO j=1,kappa2-1
-            transcoeff2mp(kappa2)=transcoeff2mp(kappa2)+matrix2(kappa2,j)*transcoeff2mp(j)
+            !transcoeff2mp(kappa2)=transcoeff2mp(kappa2)+matrix2(kappa2,j)*transcoeff2mp(j)
+            transcoeff2mp(kappa2)=transcoeff2mp(kappa2)+point2(kappa2,j)*transcoeff2mp(j)
           END DO
           transcoeff2(kappa2)=transcoeff2mp(kappa2)
         END DO
