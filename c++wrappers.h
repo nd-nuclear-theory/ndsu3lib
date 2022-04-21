@@ -66,7 +66,12 @@ namespace ndsu3lib
   // wso3 should be true if ndsu3lib_init was called with the first argument
   // being true.
 
-  void calculate_wigner_canonical(su3irrep irrep1, su3irrep irrep2, su3irrep irrep3, int epsilon3, int Lambda32, int dimpq, int dimw, int rhomax, int& numb, double wigner[], int p1a[], int p2a[], int q2a[], int& info);
+  void calculate_wigner_canonical(
+      su3irrep irrep1, su3irrep irrep2, su3irrep irrep3,
+      int epsilon3, int Lambda32, int dimpq, int dimw, int rhomax,
+      int& numb, double wigner[],
+      int p1a[], int p2a[], int q2a[], int& info
+    );
   // Calculates all SU(3)-SU(2)xU(1) reduced Wigner coefficients
   // <(lambda1,mu1)epsilon1,Lambda1;(lambda2,mu2)epsilon2,Lambda2||(lambda3,mu3)epsilon3,Lambda3>_rho
   // for given lambda1,mu1,lambda2,mu2,lambda3,mu3,epsilon3,Lambda3=Lambda32/2
@@ -91,7 +96,12 @@ namespace ndsu3lib
   //         ind=i+numb*(rho-1)
   //         0<=i<=numb-1
 
-  void calculate_u_coeff(su3irrep irrep1, su3irrep irrep2, su3irrep irrep, su3irrep irrep3, su3irrep irrep12, su3irrep irrep23, int rhomaxa, int rhomaxb, int rhomaxc, int rhomaxd, int dimen, double rac[], int& info);
+  void calculate_u_coeff(
+      su3irrep irrep1, su3irrep irrep2, su3irrep irrep, su3irrep irrep3, su3irrep irrep12, su3irrep irrep23,
+      int rhomaxa, int rhomaxb, int rhomaxc, int rhomaxd, int dimen,
+      double rac[],
+      int& info
+    );
   // Calculates SU(3) U-recoupling coefficients
   // U[(lambda1,mu1)(lambda2,mu2)(lambda,mu)(lambda3,mu3)rhoa,rhob(lambda12,mu12)(lambda23,mu23)rhoc,rhod]
   //
@@ -107,7 +117,12 @@ namespace ndsu3lib
   // ind = rhoa+rhomaxa*(rhob-1)+rhomaxa*rhomaxb*(rhoc-1)+rhomaxa*rhomaxb*rhomaxc*(rhod-1)-1
   // info = 0 if MKL subroutine dgesv ran withou errors
 
-  void calculate_z_coeff(su3irrep irrep2, su3irrep irrep1, su3irrep irrep, su3irrep irrep3, su3irrep irrep12, su3irrep irrep13, int rhomaxa, int rhomaxb, int rhomaxc, int rhomaxd, int dimen, double Zcoeff[], int& info);
+  void calculate_z_coeff(
+      su3irrep irrep2, su3irrep irrep1, su3irrep irrep, su3irrep irrep3, su3irrep irrep12, su3irrep irrep13, int rhomaxa,
+      int rhomaxb, int rhomaxc, int rhomaxd, int dimen,
+      double Zcoeff[],
+      int& info
+    );
   // Calculates SU(3) Z-recoupling coefficients
   // Z[(lambda2,mu2)(lambda1,mu1)(lambda,mu)(lambda3,mu3)rhoa,rhob(lambda12,mu12)(lambda13,mu13)rhoc,rhod]
   //
@@ -123,7 +138,16 @@ namespace ndsu3lib
   // ind = rhoa+rhomaxa*(rhob-1)+rhomaxa*rhomaxb*(rhoc-1)+rhomaxa*rhomaxb*rhomaxc*(rhod-1)-1
   // info = 0 if MKL subroutine dgesv ran withou errors
 
-  void calculate_9_lambda_mu(su3irrep irrep1, su3irrep irrep2, su3irrep irrep12, su3irrep irrep3, su3irrep irrep4, su3irrep irrep34, su3irrep irrep13, su3irrep irrep24, su3irrep irrep, int rhomax12, int rhomax34, int rhomax1234, int rhomax13, int rhomax24, int rhomax1324, int dimen, double ninelm[], int& info);
+  void calculate_9_lambda_mu(
+      su3irrep irrep1, su3irrep irrep2, su3irrep irrep12,
+      su3irrep irrep3, su3irrep irrep4, su3irrep irrep34,
+      su3irrep irrep13, su3irrep irrep24, su3irrep irrep,
+      int rhomax12, int rhomax34, int rhomax1234,
+      int rhomax13, int rhomax24, int rhomax1324,
+      int dimen,
+      double ninelm[],
+      int& info
+    );
   // Calculates 9-(lambda,mu) coefficients
   //
   // | (lambda1,mu1)   (lambda2,mu2)  (lambda12,mu12)  rho12 |
@@ -147,7 +171,11 @@ namespace ndsu3lib
   //       +rhomax12*rhomax34*rhomax1234*rhomax13*(rho24-1)+rhomax12*rhomax34*rhomax1234*rhomax13*rhomax24*(rho1324-1)-1
   // info = 0 if MKL subroutine dgesv ran without errors
 
-  void calculate_wigner_su3so3(su3irrep irrep1, int L1, su3irrep irrep2, int L2, su3irrep irrep3, int L3, int kappa1max, int kappa2max, int kappa3max, int rhomax, int dimen, double wigner[]);
+  void calculate_wigner_su3so3(
+      su3irrep irrep1, int L1, su3irrep irrep2, int L2, su3irrep irrep3, int L3,
+      int kappa1max, int kappa2max, int kappa3max, int rhomax, int dimen,
+      double wigner[]
+    );
   // Calculates reduced SU(3)-SO(3) Wigner coefficients
   // <(lambda1,mu1)kappa1,L1;(lambda2,mu2)kappa2,L2||(lambda3,mu3)kappa3,L3>_rho
   //
