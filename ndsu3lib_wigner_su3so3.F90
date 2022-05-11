@@ -119,27 +119,55 @@ CONTAINS
     aux4=LpM*(LpM+1)/2+LmMp
     aux5=k2L*(k2L+1)/2+k2L-q-(lambda+M+Lambda2p+Mp)/2-alphaminS2
 
-    DO
-       IF(MAX(Lambda2p,2*L,lambda+mu+1)>upbound_binom)THEN
-          CALL reallocate_binom(50)
-       ELSE
-          EXIT
+#if defined(NDSU3LIB_OMP)
+    CALL lock%reader_lock()
+    DO WHILE(MAX(Lambda2p,2*L,lambda+mu+1)>upbound_binom)
+       IF(.NOT.lock%writer_lock(.TRUE.))THEN
+          CALL lock%reader_unlock()
+          CALL lock%reader_lock()
+          !$omp flush acquire
+          CYCLE
        END IF
+       !$omp flush acquire
+       CALL reallocate_binom(50)
+       !$omp flush release
+       CALL lock%writer_unlock(.TRUE.)
     END DO
-    DO
-       IF(MAX(lambda,2*MIN(xm,xn+p+1)-xm+p)>upbound_I)THEN
-          CALL reallocate_I(50)
-       ELSE
-          EXIT
+    DO WHILE(MAX(lambda,2*MIN(xm,xn+p+1)-xm+p)>upbound_I)
+       IF(.NOT.lock%writer_lock(.TRUE.))THEN
+          CALL lock%reader_unlock()
+          CALL lock%reader_lock()
+          !$omp flush acquire
+          CYCLE
        END IF
+       !$omp flush acquire
+       CALL reallocate_I(50)
+       !$omp flush release
+       CALL lock%writer_unlock(.TRUE.)
     END DO
-    DO
-       IF(kkappa>upbound_S.OR.k2L-kkappa>upbound_S)THEN
-          CALL reallocate_S(50)
-       ELSE
-          EXIT
+    DO WHILE(kkappa>upbound_S.OR.k2L-kkappa>upbound_S)
+       IF(.NOT.lock%writer_lock(.TRUE.))THEN
+          CALL lock%reader_unlock()
+          CALL lock%reader_lock()
+          !$omp flush acquire
+          CYCLE
        END IF
+       !$omp flush acquire
+       CALL reallocate_S(50)
+       !$omp flush release
+       CALL lock%writer_unlock(.TRUE.)
     END DO
+#else
+    DO WHILE(MAX(Lambda2p,2*L,lambda+mu+1)>upbound_binom)
+       CALL reallocate_binom(50)
+    END DO
+    DO WHILE(MAX(lambda,2*MIN(xm,xn+p+1)-xm+p)>upbound_I)
+       CALL reallocate_I(50)
+    END DO
+    DO WHILE(kkappa>upbound_S.OR.k2L-kkappa>upbound_S)
+       CALL reallocate_S(50)
+    END DO
+#endif
 
 #if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
     SELECT TYPE(coeff)
@@ -507,18 +535,22 @@ CONTAINS
                *(binom_mp(aux1*(aux1+1)/2+q)/binom_mp(aux2*(aux2+1)/2+q))*binom_mp(aux3-M))/(4.D0**DFLOAT(p))
           ! S2mp is C
           IF(BTEST(L-p,0))THEN
-             p=-p*S2mp ! coeff=-coeff*S2mp
+             point=-point*S2mp ! coeff=-coeff*S2mp
           ELSE
-             p=p*S2mp ! coeff=coeff*S2mp
+             point=point*S2mp ! coeff=coeff*S2mp
           END IF
        ELSE
           RETURN
        END IF
        ! Now coeff (or point) is the coefficient for E=HW. For E=HW' there is additinal phase
        ! factor of (-1)^((lambda+M)/2) according to Eq.(33,6B), therefore:
-       IF(I/=J.AND.BTEST(LambdaM,0))p=-p ! coeff=-coeff
+       IF(I/=J.AND.BTEST(LambdaM,0))point=-point ! coeff=-coeff
 
     END SELECT
+#endif
+
+#if defined(NDSU3LIB_OMP)
+    CALL lock%reader_unlock()
 #endif
 
   END SUBROUTINE transformation_coeff
