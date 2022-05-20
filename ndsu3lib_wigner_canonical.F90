@@ -13,6 +13,9 @@ MODULE ndsu3lib_wigner_canonical
 #if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
   USE mpmodule
 #endif
+#if defined(NDSU3LIB_OMP)
+  USE rwlock
+#endif
   IMPLICIT NONE
   TYPE,BIND(C) :: su3irrep
      INTEGER(C_INT) :: lambda,mu
@@ -40,6 +43,9 @@ MODULE ndsu3lib_wigner_canonical
 #elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
   REAL(KIND=16),ALLOCATABLE,DIMENSION(:) :: binom_quad,Ia_quad,Sa_quad
   TYPE(mp_real),ALLOCATABLE,DIMENSION(:) :: binom_mp,Ia_mp,Sa_mp
+#endif
+#if defined(NDSU3LIB_OMP)
+  TYPE(ReadWriteLock_t) :: lock
 #endif
 
 CONTAINS
@@ -145,9 +151,24 @@ CONTAINS
     INTEGER,INTENT(IN) :: upboundI
     INTEGER :: p,q,sigma,ind1,ind2,aux
     upbound_I=upboundI
+#if defined(NDSU3LIB_OMP)
+    CALL lock%reader_lock()
+    DO WHILE(upbound_I>upbound_binom)
+       IF(.NOT.lock%writer_lock(.TRUE.))THEN
+          CALL lock%reader_unlock()
+          CALL lock%reader_lock()
+          CYCLE
+       END IF
+       !$omp flush acquire
+       CALL reallocate_binom(upbound_I-upbound_binom)
+       !$omp flush release
+       CALL lock%writer_unlock(.TRUE.)
+    END DO
+#else
     IF(upbound_I>upbound_binom)THEN
        CALL reallocate_binom(upbound_I-upbound_binom)
     END IF
+#endif
     ind1=(upbound_I**3+(2*upbound_I)**2+upbound_I)/2+2*upbound_I
 #if defined(NDSU3LIB_DBL)
     ALLOCATE(Ia(0:ind1))
@@ -173,6 +194,9 @@ CONTAINS
           ind2=ind2+1 ! ind2=p*(p+1)/2+sigma
        END DO
     END DO
+#if defined(NDSU3LIB_OMP)
+    CALL lock%reader_unlock()
+#endif
     Ia(3)=Ia(0)
     Ia(4)=0.D0
     Ia(5)=-Ia(0)
@@ -251,9 +275,25 @@ CONTAINS
     INTEGER,INTENT(IN) :: upboundS
     INTEGER :: p,q,sigma,ind1,ind2,aux,ind3,n,ind4,ind5,nmax,aux2,aux3
     upbound_S=upboundS
+#if defined(NDSU3LIB_OMP)
+    CALL lock%reader_lock()
+    DO WHILE(2*upbound_S>upbound_binom)
+       IF(.NOT.lock%writer_lock(.TRUE.))THEN
+          CALL lock%reader_unlock()
+          CALL lock%reader_lock()
+          !$omp flush acquire
+          CYCLE
+       END IF
+       !$omp flush acquire
+       CALL reallocate_binom(2*upbound_S-upbound_binom)
+       !$omp flush release
+       CALL lock%writer_unlock(.TRUE.)
+    END DO
+#else
     IF(2*upbound_S>upbound_binom)THEN
        CALL reallocate_binom(2*upbound_S-upbound_binom)
     END IF
+#endif
     n=(upbound_S*upbound_S*(2*upbound_S+2)+2*upbound_S*(2*upbound_S+1))/2+2*upbound_S
 #if defined(NDSU3LIB_DBL)
     ALLOCATE(Sa(0:n))
@@ -387,6 +427,9 @@ CONTAINS
 #endif
        ind1=ind1+1
     END DO
+#if defined(NDSU3LIB_OMP)
+    CALL lock%reader_unlock()
+#endif
   END SUBROUTINE allocate_S
 
   SUBROUTINE deallocate_I
@@ -476,6 +519,10 @@ CONTAINS
     CALL fwig_table_init(j2max,3)
     CALL fwig_temp_init(j2max)
 #endif
+#if defined(NDSU3LIB_OMP)
+    CALL lock%init()
+#endif
+
   END SUBROUTINE ndsu3lib_init
 
   SUBROUTINE ndsu3lib_free(wso3) BIND(C)
@@ -568,7 +615,7 @@ CONTAINS
     !
     ! Note: There are typos in Eq.(18),(20) in [1]. There are 4 expressions for X in Eq.(18).
     !       The 3rd one is for X(Lambda1+1/2,Lambda2-1/2), not X(Lambda1-1/2,Lambda2-1/2).
-    !       In Eq.(20), there should be \bar{lambda2} instead of lambda 2 in a,b,c,d.
+    !       In Eq.(20), there should be \bar{lambda2} instead of lambda2 in a,b,c,d.
     !------------------------------------------------------------------------------------------------------------
     IMPLICIT NONE
     TYPE(su3irrep),INTENT(IN) :: irrep1,irrep2,irrep3
@@ -608,17 +655,28 @@ CONTAINS
        irrep3a%mu=mu3
     END IF
 
-
     wigner(0:lambda1,0:lambda2,0:mu2,1:rhomax)=0.D0
     Lambda22max=0
 
-    DO
-       IF(MAX(mu2,(lambda1+lambda2-lambda3+2*(mu1+mu2-mu3))/3+1+lambda2)>upbound_binom)THEN
-          CALL reallocate_binom(50)
-       ELSE
-          EXIT
+#if defined(NDSU3LIB_OMP)
+    CALL lock%reader_lock()
+    DO WHILE(MAX(mu2,(lambda1+lambda2-lambda3+2*(mu1+mu2-mu3))/3+1+lambda2)>upbound_binom)
+       IF(.NOT.lock%writer_lock(.TRUE.))THEN
+          CALL lock%reader_unlock()
+          CALL lock%reader_lock()
+          !$omp flush acquire
+          CYCLE
        END IF
+       !$omp flush acquire
+       CALL reallocate_binom(50)
+       !$omp flush release
+       CALL lock%writer_unlock(.TRUE.)
     END DO
+#else
+    DO WHILE(MAX(mu2,(lambda1+lambda2-lambda3+2*(mu1+mu2-mu3))/3+1+lambda2)>upbound_binom)
+       CALL reallocate_binom(50)
+    END DO
+#endif
 
     DO rho=1,rhomax
 
@@ -780,7 +838,7 @@ CONTAINS
              ! 2) 0<=q1<=mu1, where q1=(2*lambda1+mu1-epsilon1)/3-p1
              ! 3) 1<=Lambda12<=lambda1+mu1-1, where Lambda12=mu1+p1-q1
              Lambda12=Lambda12+2
-             IF(wigner(p1+1,lambda2-1,mu2-1,rho)/=0.D0)wigner(p1,lambda2,mu2,rho)=-DSQRT(DFLOAT(INT8((p1+1)&
+             IF(p1<lambda1.AND.wigner(p1+1,lambda2-1,mu2-1,rho)/=0.D0)wigner(p1,lambda2,mu2,rho)=-DSQRT(DFLOAT(INT8((p1+1)&
                   *(lambda1-p1))*(mu1+2+p1)*(lambda2+lambda3-Lambda12)*(lambda3+Lambda12-lambda2+2))&
                   /DFLOAT((Lambda12+2)*(Lambda12+1)))*wigner(p1+1,lambda2-1,mu2-1,rho)
              IF(wigner(p1,lambda2-1,mu2-1,rho)/=0.D0)wigner(p1,lambda2,mu2,rho)=wigner(p1,lambda2,mu2,rho)&
@@ -849,7 +907,7 @@ CONTAINS
                         +DSQRT(DFLOAT(INT8((Lambda22+1)*q1*(mu1+1-q1))*(lambda1+mu1+2-q1)*(Lambda12+Lambda22-lambda3+2)&
                         *(Lambda12+Lambda22+lambda3+4))/DFLOAT(INT8((Lambda12+1)*(Lambda22+2)*(p2+1))*(lambda2-p2)&
                         *(mu2+2+p2)*4*(Lambda12+2)))*wigner(p1,p2+1,q2,rho)
-                ELSE
+                ELSE IF(q2<mu2)THEN
                    IF(Lambda12>=1.AND.p1/=0)THEN
                       wigner(p1,p2,q2,rho)=-DSQRT(DFLOAT(INT8((Lambda22+1)*p1*(lambda1+1-p1))*(mu1+1+p1)&
                            *(Lambda12+Lambda22-lambda3)*(Lambda12+Lambda22+lambda3+2))/DFLOAT(INT8((Lambda12+1)&
@@ -881,6 +939,9 @@ CONTAINS
 
        ! Valid values of p1, p2 and q2 are elements of arrays p1a, p2a and q2a with indeces from 1 to i2.
     END DO ! End of the loop over rho
+#if defined(NDSU3LIB_OMP)
+    CALL lock%reader_unlock()
+#endif
     !**********************************************************************
     ! Orthonormalization according to (8) with alpha3=(epsilon3,Lambda3)=HW
     !**********************************************************************
@@ -1138,20 +1199,29 @@ CONTAINS
        END DO
 
     ELSE
-
+ 
+       wigner(0:irrep1%lambda,0:irrep2%lambda,0:irrep2%mu,1:rhomax)=0.D0
        epsilon3ex=2*irrep3%lambda+irrep3%mu
        epsilon2max=2*irrep2%lambda+irrep2%mu
        noname1=(epsilon2max-irrep1%lambda-2*irrep1%mu-epsilon3ex)/3
        noname2=(epsilon2max+2*irrep1%lambda+irrep1%mu-epsilon3ex)/3
-       DO p1=0,irrep1%lambda
-          DO p2=0,irrep2%lambda
-             DO q2=0,irrep2%mu
-                !       q1=(2*(lambda1+lambda2)+mu1+mu2-epsilon3max)/3-p1-p2-q2
-                q1=noname2-p1-p2-q2
-                wigner(p1,p2,q2,1:rhomax)=wignerex(irrep1%mu-q1,irrep2%mu-q2,irrep2%lambda-p2,1:rhomax)
-             END DO
-          END DO
+
+       DO s2=1,numb
+         p2=irrep2%lambda-q2a(s2)
+         q2=irrep2%mu-p2a(s2)
+         ! p1=noname2-q1-p2-q2=noname2-irrep1%mu+p1a(s2)-p2-q2
+         wigner(noname2-irrep1%mu+p1a(s2)-p2-q2,p2,q2,1:rhomax)=wignerex(p1a(s2),p2a(s2),q2a(s2),1:rhomax)
        END DO
+
+!       DO p1=0,irrep1%lambda
+!          DO p2=0,irrep2%lambda
+!             DO q2=0,irrep2%mu
+!                !       q1=(2*(lambda1+lambda2)+mu1+mu2-epsilon3max)/3-p1-p2-q2
+!                q1=noname2-p1-p2-q2
+!                wigner(p1,p2,q2,1:rhomax)=wignerex(irrep1%mu-q1,irrep2%mu-q2,irrep2%lambda-p2,1:rhomax)
+!             END DO
+!          END DO
+!       END DO
 
        IF(epsilon3==epsilon3ex)RETURN
 
