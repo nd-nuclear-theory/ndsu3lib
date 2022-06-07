@@ -44,23 +44,7 @@ CONTAINS
     IF(res==0)res=MOD(L+mu,2)*2 ! If K=0, L and mu must have the same parity.
   END FUNCTION Kmin
 
-  SUBROUTINE transformation_coeff(I,J,irrep,epsilonx,Lambda2p,MLambda2px,M,L,Mp,coeff)
-    !--------------------------------------------------------------------------------------------------------------
-    ! Calculates transformation coefficient for SU(3)-SO(3) reduction <G|(G_E)MLM'>, where
-    ! |G>=|(lambda,mu)epsilon,Lambda',M'_Lambda>, using equations (26),(32) and (33,6B) in the reference.
-    !
-    ! Reference: J.P.Draayer, Y.Akiyama, J.Math.Phys., Vol.14, No.12 (1973) 1904
-    !
-    ! Input parameters: (I,J)=(1,1) => E=HW, (I,J)=(1,0) => E=HW', (I,J)=(0,0) => E=LW, (I,J)=(0,1) => E=LW'
-    !                   irrep, epsilonx=epsilon, Lambda2p=2*Lambda', MLambda2px=2*M'_Lambda, Mp=M'
-    !
-    ! lambda=irrep%lambda, mu=irrep%mu
-    !
-    ! Note: There are 2 typos in equation (26):
-    !       1) In the overall factor C, the factor of (2L+1) should not be squared.
-    !       2) The second S_1 should be S_1(M_Lambda=Lambda,Lambda,N_Lambda,M) instead of
-    !          S_1(N_Lambda,Lambda,M_Lambda=Lambda,M).
-    !--------------------------------------------------------------------------------------------------------------
+  SUBROUTINE transformation_coeff_internal(lambda,mu,epsilon,Lambda2p,MLambda2p,M,L,Mp,p,q,coeff)
     !#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
     !USE mpmodule
     !#endif
@@ -71,8 +55,8 @@ CONTAINS
     CLASS(*),TARGET,INTENT(OUT) :: coeff
     TYPE(mp_real),POINTER :: point
 #endif
-    TYPE(su3irrep),INTENT(IN) :: irrep
-    INTEGER,INTENT(IN) :: I,J,epsilonx,Lambda2p,MLambda2px,M,L,Mp
+!    TYPE(su3irrep),INTENT(IN) :: irrep
+    INTEGER,INTENT(IN) :: lambda,mu,epsilon,Lambda2p,MLambda2p,M,L,Mp,p,q
     REAL(KIND=8) :: S11,S12,S2
 #if (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
     REAL(KIND=16) :: coeffq,S11q,S12q,S2q
@@ -80,25 +64,25 @@ CONTAINS
     REAL(KIND=16) :: coeffq,S11q,S12q,S2q
     TYPE(mp_real) :: S11mp,S12mp,S2mp
 #endif
-    INTEGER :: lambda,mu,epsilon,MLambda2p,p,q,a4,LmM,LpM,LmMp,gama,NLambda2p,k2L,kkappa,alpha,&
+    INTEGER :: a4,LmM,LpM,LmMp,gama,NLambda2p,k2L,kkappa,alpha,&
          alphamin,alphamax,alphaminS2,alphamaxS2,LambdaM,MNLambda2p,LambdapMp,x,y,xm,xn,&
          aux1,ind1,aux2,ind2,aux3,ind3,aux4,xpys,lambdas,aux5,indicator
 
-    IF(I==1)THEN
-       lambda=irrep%lambda
-       mu=irrep%mu
-       epsilon=epsilonx
-       MLambda2p=MLambda2px
-    ELSE ! See Eq.(32) and the text below it.
-       lambda=irrep%mu
-       mu=irrep%lambda
-       epsilon=-epsilonx
-       MLambda2p=-MLambda2px
-    ENDIF
+!    IF(I==1)THEN
+!       lambda=irrep%lambda
+!       mu=irrep%mu
+!       epsilon=epsilonx
+!       MLambda2p=MLambda2px
+!    ELSE ! See Eq.(32) and the text below it.
+!       lambda=irrep%mu
+!       mu=irrep%lambda
+!       epsilon=-epsilonx
+!       MLambda2p=-MLambda2px
+!    ENDIF
 
-    p=((2*(lambda-mu)-epsilon)/3+Lambda2p)/2
+!    p=((2*(lambda-mu)-epsilon)/3+Lambda2p)/2
     LambdapMp=(Lambda2p+Mp)/2
-    q=p+mu-Lambda2p
+!    q=p+mu-Lambda2p
     LmM=L-M
     LmMp=L-Mp
     alphaminS2=MAX(0,-Mp-M) ! alphaminS2 in the lower bound for alpha in S_2 in Eq.(26)
@@ -292,8 +276,8 @@ CONTAINS
              ELSE
                 coeff=coeff*S2
              END IF
-          ELSE
-             RETURN
+!          ELSE
+!             RETURN
           END IF
 
 #if (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU) || defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
@@ -420,7 +404,7 @@ CONTAINS
              END IF
           ELSE
              coeff=0.D0
-             RETURN
+!             RETURN
           END IF
 
        END IF
@@ -429,7 +413,7 @@ CONTAINS
 
        ! Now coeff is the coefficient for E=HW. For E=HW' there is additinal phase
        ! factor of (-1)^((lambda+M)/2) according to Eq.(33,6B), therefore:
-       IF(I/=J.AND.BTEST(LambdaM,0))coeff=-coeff
+!       IF(I/=J.AND.BTEST(LambdaM,0))coeff=-coeff
 
 #if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
     CLASS DEFAULT ! CLASS IS (mp_real)
@@ -539,12 +523,12 @@ CONTAINS
           ELSE
              point=point*S2mp ! coeff=coeff*S2mp
           END IF
-       ELSE
-          RETURN
+!       ELSE
+!          RETURN
        END IF
        ! Now coeff (or point) is the coefficient for E=HW. For E=HW' there is additinal phase
        ! factor of (-1)^((lambda+M)/2) according to Eq.(33,6B), therefore:
-       IF(I/=J.AND.BTEST(LambdaM,0))point=-point ! coeff=-coeff
+!       IF(I/=J.AND.BTEST(LambdaM,0))point=-point ! coeff=-coeff
 
     END SELECT
 #endif
@@ -553,6 +537,179 @@ CONTAINS
     CALL lock%reader_unlock()
 #endif
 
+  END SUBROUTINE transformation_coeff_internal
+
+  SUBROUTINE transformation_coeff(I,J,irrep,epsilonx,Lambda2p,MLambda2px,M,L,Mp,coeff)
+    !--------------------------------------------------------------------------------------------------------------
+    ! Calculates transformation coefficient for SU(3)-SO(3) reduction <G|(G_E)MLM'>, where
+    ! |G>=|(lambda,mu)epsilon,Lambda',M'_Lambda>, using equations (26),(32) and (33,6B) in the reference.
+    !
+    ! Reference: J.P.Draayer, Y.Akiyama, J.Math.Phys., Vol.14, No.12 (1973) 1904
+    !
+    ! Input parameters: (I,J)=(1,1) => E=HW, (I,J)=(1,0) => E=HW', (I,J)=(0,0) => E=LW, (I,J)=(0,1) => E=LW'
+    !                   irrep, epsilonx=epsilon, Lambda2p=2*Lambda', MLambda2px=2*M'_Lambda, Mp=M'
+    !
+    ! lambda=irrep%lambda, mu=irrep%mu
+    !
+    ! Note: There are 2 typos in equation (26):
+    !       1) In the overall factor C, the factor of (2L+1) should not be squared.
+    !       2) The second S_1 should be S_1(M_Lambda=Lambda,Lambda,N_Lambda,M) instead of
+    !          S_1(N_Lambda,Lambda,M_Lambda=Lambda,M).
+    !--------------------------------------------------------------------------------------------------------------
+#if defined(NDSU3LIB_CACHE_C)
+    USE ISO_C_BINDING
+#endif
+    IMPLICIT NONE
+#if (defined(NDSU3LIB_DBL) || defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
+    REAL(KIND=8),INTENT(OUT) :: coeff
+#elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+    CLASS(*),TARGET,INTENT(OUT) :: coeff
+    TYPE(mp_real),POINTER :: point
+#endif
+    TYPE(su3irrep),INTENT(IN) :: irrep
+#if defined(NDSU3LIB_CACHE_C)
+    INTEGER,INTENT(IN) :: I,J,epsilonx,Lambda2p,MLambda2px,Mp
+    INTEGER :: epsilon,MLambda2p
+    INTEGER(C_INT),INTENT(IN) :: M,L
+    INTEGER(C_INT) :: lambda,mu,p,q,absMLambda2p,absMp
+#else
+    INTEGER,INTENT(IN) :: I,J,epsilonx,Lambda2p,MLambda2px,M,L,Mp
+    INTEGER :: lambda,mu,epsilon,MLambda2p,p,q,absMLambda2p,absMp!,aux
+#endif
+#if defined(NDSU3LIB_CACHE)
+    INTEGER(KIND=8) :: key
+    REAL(KIND=8),POINTER :: point2
+#endif
+#if (defined(NDSU3LIB_CACHE) && (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU)))
+    TYPE(mp_real),POINTER :: point3
+#endif
+#if defined(NDSU3LIB_CACHE_C)
+    INTEGER(C_INT) :: search
+    INTERFACE
+      SUBROUTINE cache_search(lm,mu,p,q,absML,K,L,absM,search,coeff) BIND(C)
+        IMPORT C_INT,C_DOUBLE
+        INTEGER(C_INT),VALUE :: lm,mu,p,q,absML,K,L,absM
+        INTEGER(C_INT) :: search
+        REAL(C_DOUBLE) :: coeff
+      END SUBROUTINE cache_search
+      SUBROUTINE cache_insert(lm,mu,p,q,absML,K,L,absM,coeff) BIND(C)
+        IMPORT C_INT,C_DOUBLE
+        INTEGER(C_INT),VALUE :: lm,mu,p,q,absML,K,L,absM
+        REAL(C_DOUBLE),VALUE :: coeff
+      END SUBROUTINE cache_insert 
+    END INTERFACE
+#endif
+    IF(I==1)THEN
+       lambda=irrep%lambda
+       mu=irrep%mu
+       epsilon=epsilonx
+       MLambda2p=MLambda2px
+!       aux=0
+    ELSE ! See Eq.(32) and the text below it.
+       lambda=irrep%mu
+       mu=irrep%lambda
+       epsilon=-epsilonx
+       MLambda2p=-MLambda2px
+!       aux=lambda+mu
+    END IF
+    p=((2*(lambda-mu)-epsilon)/3+Lambda2p)/2
+    q=p+mu-Lambda2p
+#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+    SELECT TYPE(coeff)
+    TYPE IS (REAL(KIND=8))
+#endif
+#if defined(NDSU3LIB_CACHE_C)
+      absMLambda2p=ABS(MLambda2p)
+      absMp=ABS(Mp)
+      IF(lambda<256.AND.mu<256.AND.p<256.AND.q<256.AND.absMLambda2p<256.AND.M<256.AND.L<256.AND.absMp<256)THEN
+         CALL cache_search(lambda,mu,p,q,absMLambda2p,M,L,absMp,search,coeff)
+         IF(search==0)THEN
+            CALL transformation_coeff_internal(lambda,mu,epsilon,Lambda2p,absMLambda2p,M,L,absMp,p,q,coeff)
+            CALL cache_insert(lambda,mu,p,q,absMLambda2p,M,L,absMp,coeff)
+         END IF
+         IF(MLambda2p<0.AND.Mp>=0)THEN
+            IF(BTEST((Lambda2p+Mp)/2,0))coeff=-coeff
+         ELSE IF(MLambda2p>=0.AND.Mp<0)THEN
+!            IF(BTEST(q+(Lambda2p+MLambda2p)/2-aux+L+M,0))coeff=-coeff
+            IF(BTEST(q+(Lambda2p+MLambda2p)/2+L+M,0))coeff=-coeff
+         ELSE IF(MLambda2p<0.AND.Mp<0)THEN
+!            IF(BTEST(q+Lambda2p-aux+L+M+(MLambda2p-Mp)/2,0))coeff=-coeff
+            IF(BTEST(q+Lambda2p+L+M+(MLambda2p-Mp)/2,0))coeff=-coeff
+         END IF
+      ELSE
+         CALL transformation_coeff_internal(lambda,mu,epsilon,Lambda2p,MLambda2p,M,L,Mp,p,q,coeff)
+      END IF
+#elif defined(NDSU3LIB_CACHE)
+      absMLambda2p=ABS(MLambda2p)
+      absMp=ABS(Mp)
+      IF(lambda<256.AND.mu<256.AND.p<256.AND.q<256.AND.absMLambda2p<256.AND.M<256.AND.L<256.AND.absMp<256)THEN
+         key=IOR(ISHFT(INT8(IAND(lambda,255)),56),IOR(ISHFT(INT8(IAND(mu,255)),48),&
+             IOR(ISHFT(INT8(IAND(p,255)),40),IOR(ISHFT(INT8(IAND(q,255)),32),&
+             IOR(ISHFT(INT8(IAND(absMLambda2p,255)),24),IOR(ISHFT(INT8(IAND(M,255)),16),&
+             IOR(ISHFT(INT8(IAND(L,255)),8),INT8(IAND(absMp,255)))))))))
+         point2=>cache%Get(key)
+         IF(ASSOCIATED(point2))THEN
+            coeff=point2
+         ELSE
+            CALL transformation_coeff_internal(lambda,mu,epsilon,Lambda2p,absMLambda2p,M,L,absMp,p,q,coeff)
+            CALL cache%Set(key,coeff)
+         END IF
+         IF(MLambda2p<0.AND.Mp>=0)THEN
+            IF(BTEST((Lambda2p+Mp)/2,0))coeff=-coeff
+         ELSE IF(MLambda2p>=0.AND.Mp<0)THEN
+!            IF(BTEST(q+(Lambda2p+MLambda2p)/2-aux+L+M,0))coeff=-coeff
+            IF(BTEST(q+(Lambda2p+MLambda2p)/2+L+M,0))coeff=-coeff
+         ELSE IF(MLambda2p<0.AND.Mp<0)THEN
+!            IF(BTEST(q+Lambda2p-aux+L+M+(MLambda2p-Mp)/2,0))coeff=-coeff
+            IF(BTEST(q+Lambda2p+L+M+(MLambda2p-Mp)/2,0))coeff=-coeff
+         END IF
+      ELSE
+         CALL transformation_coeff_internal(lambda,mu,epsilon,Lambda2p,MLambda2p,M,L,Mp,p,q,coeff)
+      END IF
+#else
+      CALL transformation_coeff_internal(lambda,mu,epsilon,Lambda2p,MLambda2p,M,L,Mp,p,q,coeff)
+#endif
+      IF(I/=J.AND.BTEST((lambda+M)/2,0))coeff=-coeff
+#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+    CLASS DEFAULT ! CLASS IS (mp_real)
+#endif
+#if (defined(NDSU3LIB_CACHE) && (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU)))
+      absMLambda2p=ABS(MLambda2p)
+      absMp=ABS(Mp)
+      IF(lambda<256.AND.mu<256.AND.p<256.AND.q<256.AND.absMLambda2p<256.AND.M<256.AND.L<256.AND.absMp<256)THEN
+         key=IOR(ISHFT(INT8(IAND(lambda,255)),56),IOR(ISHFT(INT8(IAND(mu,255)),48),&
+             IOR(ISHFT(INT8(IAND(p,255)),40),IOR(ISHFT(INT8(IAND(q,255)),32),&
+             IOR(ISHFT(INT8(IAND(absMLambda2p,255)),24),IOR(ISHFT(INT8(IAND(M,255)),16),&
+             IOR(ISHFT(INT8(IAND(L,255)),8),INT8(IAND(absMp,255)))))))))
+         point3=>cache_mp%Get(key)
+         IF(ASSOCIATED(point3))THEN
+            coeff=point3
+         ELSE
+            CALL transformation_coeff_internal(lambda,mu,epsilon,Lambda2p,absMLambda2p,M,L,absMp,p,q,coeff)
+            CALL cache_mp%Set(key,coeff)
+         END IF
+         point=>coeff
+         IF(MLambda2p<0.AND.Mp>=0)THEN
+            IF(BTEST((Lambda2p+Mp)/2,0))point=-point
+         ELSE IF(MLambda2p>=0.AND.Mp<0)THEN
+!            IF(BTEST(q+(Lambda2p+MLambda2p)/2-aux+L+M,0))coeff=-coeff
+            IF(BTEST(q+(Lambda2p+MLambda2p)/2+L+M,0))point=-point
+         ELSE IF(MLambda2p<0.AND.Mp<0)THEN
+!            IF(BTEST(q+Lambda2p-aux+L+M+(MLambda2p-Mp)/2,0))coeff=-coeff
+            IF(BTEST(q+Lambda2p+L+M+(MLambda2p-Mp)/2,0))point=-point
+         END IF
+      ELSE
+         CALL transformation_coeff_internal(lambda,mu,epsilon,Lambda2p,MLambda2p,M,L,Mp,p,q,coeff)
+         point=>coeff
+      END IF
+#elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+      CALL transformation_coeff_internal(lambda,mu,epsilon,Lambda2p,MLambda2p,M,L,Mp,p,q,coeff)
+      point=>coeff
+#endif
+#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+      IF(I/=J.AND.BTEST((lambda+M)/2,0))point=-point
+    END SELECT
+#endif
   END SUBROUTINE transformation_coeff
 
   SUBROUTINE orthonormalization_matrix(I,J,irrep,L,kappamax,matrix)

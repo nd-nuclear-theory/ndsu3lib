@@ -9,9 +9,15 @@
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 MODULE ndsu3lib_wigner_canonical
-  USE,INTRINSIC :: iso_c_binding
+  USE,INTRINSIC :: ISO_C_BINDING
 #if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
   USE mpmodule
+#endif
+#if defined(NDSU3LIB_CACHE)
+  USE cache_module
+#endif
+#if (defined(NDSU3LIB_CACHE) && (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU)))
+  USE cache_mp_module
 #endif
 #if defined(NDSU3LIB_OMP)
   USE rwlock
@@ -157,6 +163,7 @@ CONTAINS
        IF(.NOT.lock%writer_lock(.TRUE.))THEN
           CALL lock%reader_unlock()
           CALL lock%reader_lock()
+          !$omp flush acquire
           CYCLE
        END IF
        !$omp flush acquire
@@ -507,10 +514,17 @@ CONTAINS
     IMPLICIT NONE
     LOGICAL,INTENT(IN) :: wso3
     INTEGER(C_INT),INTENT(IN) :: j2max
+    INTEGER :: i
     CALL allocate_binom(100)
     IF(wso3)THEN
        CALL allocate_I(50)
        CALL allocate_S(50)
+#if defined(NDSU3LIB_CACHE)
+       CALL cache%New(524288)
+#endif
+#if (defined(NDSU3LIB_CACHE) && (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU)))
+       CALL cache_mp%New(524288)
+#endif
     END IF
 #if defined(NDSU3LIB_RACAH_WIGXJPF)
     CALL fwig_table_init(j2max,6)
@@ -544,6 +558,12 @@ CONTAINS
     IF(wso3)THEN
        CALL deallocate_I
        CALL deallocate_S
+#if defined(NDSU3LIB_CACHE)
+       CALL cache%Delete()
+#endif
+#if (defined(NDSU3LIB_CACHE) && (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU)))
+       CALL cache_mp%Delete()
+#endif
     END IF
     CALL deallocate_binom
 #if (defined(NDSU3LIB_RACAH_WIGXJPF) || defined(NDSU3LIB_WSO3_WIGXJPF))
@@ -1200,28 +1220,35 @@ CONTAINS
 
     ELSE
  
-       wigner(0:irrep1%lambda,0:irrep2%lambda,0:irrep2%mu,1:rhomax)=0.D0
+!       wigner(0:irrep1%lambda,0:irrep2%lambda,0:irrep2%mu,1:rhomax)=0.D0
        epsilon3ex=2*irrep3%lambda+irrep3%mu
        epsilon2max=2*irrep2%lambda+irrep2%mu
        noname1=(epsilon2max-irrep1%lambda-2*irrep1%mu-epsilon3ex)/3
        noname2=(epsilon2max+2*irrep1%lambda+irrep1%mu-epsilon3ex)/3
 
-       DO s2=1,numb
-         p2=irrep2%lambda-q2a(s2)
-         q2=irrep2%mu-p2a(s2)
-         ! p1=noname2-q1-p2-q2=noname2-irrep1%mu+p1a(s2)-p2-q2
-         wigner(noname2-irrep1%mu+p1a(s2)-p2-q2,p2,q2,1:rhomax)=wignerex(p1a(s2),p2a(s2),q2a(s2),1:rhomax)
-       END DO
-
-!       DO p1=0,irrep1%lambda
-!          DO p2=0,irrep2%lambda
-!             DO q2=0,irrep2%mu
-!                !       q1=(2*(lambda1+lambda2)+mu1+mu2-epsilon3max)/3-p1-p2-q2
-!                q1=noname2-p1-p2-q2
-!                wigner(p1,p2,q2,1:rhomax)=wignerex(irrep1%mu-q1,irrep2%mu-q2,irrep2%lambda-p2,1:rhomax)
-!             END DO
-!          END DO
+!       DO s2=1,numb
+!         p2=irrep2%lambda-q2a(s2)
+!         q2=irrep2%mu-p2a(s2)
+!         ! p1=noname2-q1-p2-q2=noname2-irrep1%mu+p1a(s2)-p2-q2
+!         wigner(noname2-irrep1%mu+p1a(s2)-p2-q2,p2,q2,1:rhomax)=wignerex(p1a(s2),p2a(s2),q2a(s2),1:rhomax)
 !       END DO
+
+       DO p1=0,irrep1%lambda
+          DO p2=0,irrep2%lambda
+             DO q2=0,irrep2%mu
+                !       q1=(2*(lambda1+lambda2)+mu1+mu2-epsilon3max)/3-p1-p2-q2
+                q1=noname2-p1-p2-q2
+                DO rho=1,rhomax
+                   N3=wignerex(irrep1%mu-q1,irrep2%mu-q2,irrep2%lambda-p2,rho)
+                   IF(N3==N3)THEN
+                      wigner(p1,p2,q2,rho)=N3
+                   ELSE
+                      wigner(p1,p2,q2,rho)=0.D0
+                   END IF
+                END DO
+             END DO
+          END DO
+       END DO
 
        IF(epsilon3==epsilon3ex)RETURN
 
