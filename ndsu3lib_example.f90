@@ -145,7 +145,7 @@ SUBROUTINE tabulate_u_coeff
      WRITE(*,"(A,I2)")"calculate_u_coeff: MKL subroutine dgesv ran with error: info=",info
      DEALLOCATE(rac)
      RETURN
-  END ID
+  END IF
   WRITE(*,"(A)")"SU(3) recoupling coefficients U[(9,3)(1,1)(6,6)(2,2);(9,3)rhoa,rhob(3,3)rhoc,rhod]:"
   WRITE(*,"(A)")"rhoa  rhob  rhoc  rhod  coefficient"
   DO rhoa=1,rhomaxa
