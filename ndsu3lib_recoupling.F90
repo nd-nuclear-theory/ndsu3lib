@@ -443,7 +443,8 @@ CONTAINS
     INTEGER,INTENT(OUT) :: info
     REAL(KIND=8),DIMENSION(:,:,:,:,:,:),INTENT(OUT) :: ninelm
     TYPE(su3irrep) :: irrep0
-    INTEGER :: lambda0,mu0,rho132,rho04,rho123,rhomax132,rhomax04,rhomax123,rho12,rho34,rho13,rho24,rho1324,nU1,nZ,nU2,rhomax12304,i1,i2
+    INTEGER :: lambda0,mu0,rho132,rho04,rho123,rhomax132,rhomax04,rhomax123,rho12,rho34,rho13,rho24,rho1324,nU1,nZ,nU2,rhomax12304
+    INTEGER :: i1,i2
     REAL(KIND=8),ALLOCATABLE,DIMENSION(:,:) :: U1,Z,U2
 
     !INTERFACE
@@ -520,7 +521,8 @@ CONTAINS
                             DO rho34=1,rhomax34
                                nU2=nU2+rhomax12304 ! nU2=rho123+rhomax123*(rho04-1)+rhomax123*rhomax04*(rho34-1)
                                DO rho1324=1,rhomax1324
-                                  ninelm(rho12,rho34,1:rhomax1234,rho13,rho24,rho1324)=ninelm(rho12,rho34,1:rhomax1234,rho13,rho24,rho1324)&
+                                  ninelm(rho12,rho34,1:rhomax1234,rho13,rho24,rho1324)=&
+                                       ninelm(rho12,rho34,1:rhomax1234,rho13,rho24,rho1324)&
                                        +U1(rho1324,nU1)*Z(rho132,nZ)*U2(1:rhomax1234,nU2)
                                END DO
                             END DO
