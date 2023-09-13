@@ -214,7 +214,7 @@ add_executable(ndsu3lib_example ndsu3lib_example.f90)
 target_link_libraries(ndsu3lib_example ndsu3lib::ndsu3lib)
 set_target_properties(ndsu3lib_example PROPERTIES LINKER_LANGUAGE Fortran)
 
-add_executable(ndsu3lib_example_cpp ndsu3lib_example.cpp)
+add_executable(ndsu3lib_example_cpp ndsu3lib_example_cpp.cpp)
 target_link_libraries(ndsu3lib_example_cpp ndsu3lib::ndsu3lib)
 set_target_properties(ndsu3lib_example_cpp PROPERTIES LINKER_LANGUAGE CXX)
 
