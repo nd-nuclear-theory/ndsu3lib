@@ -596,7 +596,7 @@ CONTAINS
         IMPORT C_INT,C_DOUBLE
         INTEGER(C_INT),VALUE :: lm,mu,p,q,absML,K,L,absM
         REAL(C_DOUBLE),VALUE :: coeff
-      END SUBROUTINE cache_insert 
+      END SUBROUTINE cache_insert
     END INTERFACE
 #endif
     IF(I==1)THEN
@@ -1370,7 +1370,7 @@ CONTAINS
   END SUBROUTINE calculate_wigner_su3so3
 
   SUBROUTINE wigner_su3so3_wrapper(irrep1,L1,irrep2,L2,irrep3,L3,&
-       kappa1max,kappa2max,kappa3max,rhomax,dimen,wigner_phys_block) BIND(C)
+       kappa1max,kappa2max,kappa3max,rhomax,wigner_phys_ptr) BIND(C)
     !----------------------------------------------------------------------------------------------------------------
     ! Wrapper of the subroutine calculating reduced SU(3)-SO(3) Wigner coefficients
     ! <(lambda1,mu1)kappa1,L1;(lambda2,mu2)kappa2,L2||(lambda3,mu3)kappa3,L3>_rho
@@ -1390,10 +1390,9 @@ CONTAINS
     USE iso_c_binding
     IMPLICIT NONE
     TYPE(su3irrep),INTENT(IN) :: irrep1,irrep2,irrep3
-    INTEGER(C_INT),INTENT(IN) :: L1,L2,L3,kappa1max,kappa2max,kappa3max,rhomax,dimen
-    REAL(C_DOUBLE),DIMENSION(dimen),INTENT(OUT) :: wigner_phys_block
-    REAL(KIND=8),ALLOCATABLE,DIMENSION(:,:,:,:) :: wigner_phys
-    INTEGER :: ind,rho,kappa1,kappa2,kappa3
+    INTEGER(C_INT),INTENT(IN) :: L1,L2,L3,kappa1max,kappa2max,kappa3max,rhomax
+    TYPE(C_PTR),INTENT(IN),VALUE :: wigner_phys_ptr
+    REAL(KIND=8),POINTER,DIMENSION(:,:,:,:) :: wigner_phys
     !INTERFACE
     !  SUBROUTINE calculate_wigner_su3so3(irrep1,L1,kappa1max,irrep2,L2,kappa2max,irrep3,L3,kappa3max,rhomax,wigner_phys)
     !    IMPLICIT NONE
@@ -1403,19 +1402,8 @@ CONTAINS
     !  END SUBROUTINE calculate_wigner_su3so3
     !END INTERFACE
     ALLOCATE(wigner_phys(kappa1max,kappa2max,kappa3max,rhomax))
+    CALL C_F_POINTER(wigner_phys_ptr, wigner_phys, [kappa1max,kappa2max,kappa3max,rhomax])
     CALL calculate_wigner_su3so3(irrep1,L1,kappa1max,irrep2,L2,kappa2max,irrep3,L3,kappa3max,rhomax,wigner_phys)
-    ind=0
-    DO rho=1,rhomax
-       DO kappa3=1,kappa3max
-          DO kappa2=1,kappa2max
-             DO kappa1=1,kappa1max
-                ind=ind+1
-                wigner_phys_block(ind)=wigner_phys(kappa1,kappa2,kappa3,rho)
-             END DO
-          END DO
-       END DO
-    END DO
-    DEALLOCATE(wigner_phys)
   END SUBROUTINE wigner_su3so3_wrapper
 
 END MODULE ndsu3lib_wigner_su3so3

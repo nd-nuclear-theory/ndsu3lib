@@ -541,7 +541,7 @@ CONTAINS
   END SUBROUTINE calculate_9_lambda_mu
 
   SUBROUTINE u_coeff_wrapper(irrep1,irrep2,irrep,irrep3,irrep12,irrep23,&
-       rhomaxa,rhomaxb,rhomaxc,rhomaxd,dimen,racah_block,info) BIND(C)
+       rhomaxa,rhomaxb,rhomaxc,rhomaxd,racah_ptr,info) BIND(C)
     !------------------------------------------------------------------------------------------------------------------------
     ! Wrapper of the subroutine calculating SU(3) recoupling coefficients
     ! U[(lambda1,mu1)(lambda2,mu2)(lambda,mu)(lambda3,mu3)rhoa,rhob(lambda12,mu12)(lambda23,mu23)rhoc,rhod]
@@ -562,11 +562,11 @@ CONTAINS
     USE iso_c_binding
     IMPLICIT NONE
     TYPE(su3irrep),INTENT(IN) :: irrep1,irrep2,irrep,irrep3,irrep12,irrep23
-    INTEGER(C_INT),INTENT(IN) :: rhomaxa,rhomaxb,rhomaxc,rhomaxd,dimen
+    INTEGER(C_INT),INTENT(IN) :: rhomaxa,rhomaxb,rhomaxc,rhomaxd
+    TYPE(C_PTR),INTENT(IN),VALUE :: racah_ptr
     INTEGER(C_INT),INTENT(OUT) :: info
-    REAL(C_DOUBLE),DIMENSION(dimen),INTENT(OUT) :: racah_block
-    REAL(KIND=8),ALLOCATABLE,DIMENSION(:,:) :: rac
-    INTEGER :: rhomaxabc,rhoabc,rhod,ind
+    REAL(C_DOUBLE),POINTER,DIMENSION(:,:) :: rac
+    INTEGER :: rhomaxabc
     !INTERFACE
     !  SUBROUTINE calculate_u_coeff(irrep1,irrep2,irrep,irrep3,irrep12,irrep23,rhomaxa,rhomaxb,rhomaxc,rhomaxd,rac,ldb,info)
     !    IMPLICIT NONE
@@ -577,20 +577,12 @@ CONTAINS
     !  END SUBROUTINE calculate_u_coeff
     !END INTERFACE
     rhomaxabc=rhomaxa*rhomaxb*rhomaxc
-    ALLOCATE(rac(rhomaxd,rhomaxabc))
+    CALL C_F_POINTER(racah_ptr, rac, [rhomaxd,rhomaxabc])
     CALL calculate_u_coeff(irrep1,irrep2,irrep,irrep3,irrep12,irrep23,rhomaxa,rhomaxb,rhomaxc,rhomaxd,rac,rhomaxd,info)
-    ind=0
-    DO rhod=1,rhomaxd
-       DO rhoabc=1,rhomaxabc
-          ind=ind+1
-          racah_block(ind)=rac(rhod,rhoabc)
-       END DO
-    END DO
-    DEALLOCATE(rac)
   END SUBROUTINE u_coeff_wrapper
 
   SUBROUTINE z_coeff_wrapper(irrep2,irrep1,irrep,irrep3,irrep12,irrep13,&
-       rhomaxa,rhomaxb,rhomaxc,rhomaxd,dimen,Z_block,info) BIND(C)
+       rhomaxa,rhomaxb,rhomaxc,rhomaxd,Z_ptr,info) BIND(C)
     !---------------------------------------------------------------------------------------------------------------------
     ! Wrapper of the subroutine calculating SU(3) recoupling coefficients
     ! Z[(lambda2,mu2)(lambda1,mu1)(lambda,mu)(lambda3,mu3)rhoa,rhob(lambda12,mu12)(lambda13,mu13)rhoc,rhod]
@@ -603,19 +595,18 @@ CONTAINS
     ! rhomaxb is the multiplicity of coupling (lambda12,mu12)x(lambda3,mu3)->(lambda,mu).
     ! rhomaxc is the multiplicity of coupling (lambda1,mu1)x(lambda3,mu3)->(lambda13,mu13).
     ! rhomaxd is the multiplicity of coupling (lambda13,mu13)x(lambda2,mu2)->(lambda,mu).
-    ! dimen is the size of the array Z_block. It must be at least rhomaxa*rhomaxb*rhomaxc*rhomaxd.
-    ! Z_block(ind) = Z[(lambda2,mu2)(lambda1,mu1)(lambda,mu)(lambda3,mu3)rhoa,rhob(lambda12,mu12)(lambda13,mu13)rhoc,rhod]
+    ! Z_ptr(ind) = Z[(lambda2,mu2)(lambda1,mu1)(lambda,mu)(lambda3,mu3)rhoa,rhob(lambda12,mu12)(lambda13,mu13)rhoc,rhod]
     ! ind = rhoa+rhomaxa*(rhob-1)+rhomaxa*rhomaxb*(rhoc-1)+rhomaxa*rhomaxb*rhomaxc*(rhod-1)
     ! info = 0 if MKL subroutine dgesv called by calculate_z_coeff ran withou errors.
     !----------------------------------------------------------------------------------------------------------------------
     USE iso_c_binding
     IMPLICIT NONE
     TYPE(su3irrep),INTENT(IN) :: irrep1,irrep2,irrep,irrep3,irrep12,irrep13
-    INTEGER(C_INT),INTENT(IN) :: rhomaxa,rhomaxb,rhomaxc,rhomaxd,dimen
+    INTEGER(C_INT),INTENT(IN) :: rhomaxa,rhomaxb,rhomaxc,rhomaxd
     INTEGER(C_INT),INTENT(OUT) :: info
-    REAL(C_DOUBLE),DIMENSION(dimen),INTENT(OUT) :: Z_block
-    REAL(KIND=8),ALLOCATABLE,DIMENSION(:,:) :: Zcoeff
-    INTEGER :: rhomaxabc,rhoabc,rhod,ind
+    TYPE(C_PTR),INTENT(IN),VALUE ::  Z_ptr
+    REAL(KIND=8),POINTER,DIMENSION(:,:) :: Zcoeff
+    INTEGER :: rhomaxabc
     !INTERFACE
     !  SUBROUTINE calculate_z_coeff(irrep2,irrep1,irrep,irrep3,irrep12,irrep13,rhomaxa,rhomaxb,rhomaxc,rhomaxd,Zcoeff,ldb,info)
     !    IMPLICIT NONE
@@ -626,20 +617,12 @@ CONTAINS
     !  END SUBROUTINE calculate_z_coeff
     !END INTERFACE
     rhomaxabc=rhomaxa*rhomaxb*rhomaxc
-    ALLOCATE(Zcoeff(rhomaxd,rhomaxabc))
+    CALL C_F_POINTER(Z_ptr, Zcoeff, [rhomaxd,rhomaxabc])
     CALL calculate_z_coeff(irrep2,irrep1,irrep,irrep3,irrep12,irrep13,rhomaxa,rhomaxb,rhomaxc,rhomaxd,Zcoeff,rhomaxd,info)
-    ind=0
-    DO rhod=1,rhomaxd
-       DO rhoabc=1,rhomaxabc
-          ind=ind+1
-          Z_block(ind)=Zcoeff(rhod,rhoabc)
-       END DO
-    END DO
-    DEALLOCATE(Zcoeff)
   END SUBROUTINE z_coeff_wrapper
 
   SUBROUTINE nine_lambda_mu_wrapper(irrep1,irrep2,irrep12,irrep3,irrep4,irrep34,irrep13,irrep24,irrep,&
-       rhomax12,rhomax34,rhomax1234,rhomax13,rhomax24,rhomax1324,dimen,ninelm_block,info) BIND(C)
+       rhomax12,rhomax34,rhomax1234,rhomax13,rhomax24,rhomax1324,ninelm_ptr,info) BIND(C)
     !------------------------------------------------------------------------------------------------------------------------------------
     ! Wrapper of the subroutine calculating 9-(lambda,mu) coefficients
     !
@@ -668,11 +651,10 @@ CONTAINS
     USE iso_c_binding
     IMPLICIT NONE
     TYPE(su3irrep),INTENT(IN) :: irrep1,irrep2,irrep12,irrep3,irrep4,irrep34,irrep13,irrep24,irrep
-    INTEGER(C_INT),INTENT(IN) :: rhomax12,rhomax34,rhomax1234,rhomax13,rhomax24,rhomax1324,dimen
+    INTEGER(C_INT),INTENT(IN) :: rhomax12,rhomax34,rhomax1234,rhomax13,rhomax24,rhomax1324
     INTEGER(C_INT),INTENT(OUT) :: info
-    REAL(C_DOUBLE),DIMENSION(dimen),INTENT(OUT) :: ninelm_block
-    REAL(KIND=8),ALLOCATABLE,DIMENSION(:,:,:,:,:,:) :: ninelm
-    INTEGER :: ind,rho12,rho34,rho1234,rho13,rho24,rho1324
+    TYPE(C_PTR),INTENT(IN),VALUE :: ninelm_ptr
+    REAL(C_DOUBLE),POINTER,DIMENSION(:,:,:,:,:,:) :: ninelm
     !INTERFACE
     !  SUBROUTINE calculate_9_lambda_mu(irrep1,irrep2,irrep12,irrep3,irrep4,irrep34,irrep13,irrep24,irrep,&
     !                                   rhomax12,rhomax34,rhomax1234,rhomax13,rhomax24,rhomax1324,ninelm,info)
@@ -683,25 +665,9 @@ CONTAINS
     !    REAL(KIND=8),DIMENSION(:,:,:,:,:,:),INTENT(OUT) :: ninelm
     !  END SUBROUTINE calculate_9_lambda_mu
     !END INTERFACE
-    ALLOCATE(ninelm(rhomax12,rhomax34,rhomax1234,rhomax13,rhomax24,rhomax1324))
+    CALL C_F_POINTER(ninelm_ptr, ninelm, [rhomax12,rhomax34,rhomax1234,rhomax13,rhomax24,rhomax1324])
     CALL calculate_9_lambda_mu(irrep1,irrep2,irrep12,irrep3,irrep4,irrep34,irrep13,irrep24,irrep,&
          rhomax12,rhomax34,rhomax1234,rhomax13,rhomax24,rhomax1324,ninelm,info)
-    ind=0
-    DO rho1324=1,rhomax1324
-       DO rho24=1,rhomax24
-          DO rho13=1,rhomax13
-             DO rho1234=1,rhomax1234
-                DO rho34=1,rhomax34
-                   DO rho12=1,rhomax12
-                      ind=ind+1
-                      ninelm_block(ind)=ninelm(rho12,rho34,rho1234,rho13,rho24,rho1324)
-                   END DO
-                END DO
-             END DO
-          END DO
-       END DO
-    END DO
-    DEALLOCATE(ninelm)
   END SUBROUTINE nine_lambda_mu_wrapper
 
 END MODULE ndsu3lib_recoupling

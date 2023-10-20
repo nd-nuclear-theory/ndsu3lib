@@ -26,10 +26,10 @@ namespace ndsu3lib
       extern void initialize_ndsu3lib(const bool&, const int&);
       extern void finalize_ndsu3lib(const bool&);
       extern void calculate_wigner_canonical(const su3irrep&, const su3irrep&, const su3irrep&, const int&, const int&, const int&, const int&, const int&, int&, double[], int[], int[], int[], int&);
-      extern void u_coeff_wrapper(const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const int&, const int&, const int&, const int&, const int&, double[], int&);
-      extern void z_coeff_wrapper(const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const int&, const int&, const int&, const int&, const int&, double[], int&);
-      extern void nine_lambda_mu_wrapper(const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, double[], int&);
-      extern void wigner_su3so3_wrapper(const su3irrep&, const int&, const su3irrep&, const int&, const su3irrep&, const int&, const int&, const int&, const int&, const int&, const int&, double[]);
+      extern void u_coeff_wrapper(const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const int&, const int&, const int&, const int&, double*, int&);
+      extern void z_coeff_wrapper(const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const int&, const int&, const int&, const int&, double*, int&);
+      extern void nine_lambda_mu_wrapper(const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const int&, const int&, const int&, const int&, const int&, const int&, double*, int&);
+      extern void wigner_su3so3_wrapper(const su3irrep&, const int&, const su3irrep&, const int&, const su3irrep&, const int&, const int&, const int&, const int&, const int&, double*);
     }
   }
 
@@ -126,7 +126,7 @@ namespace ndsu3lib
   inline
   void calculate_u_coeff(
       su3irrep irrep1, su3irrep irrep2, su3irrep irrep, su3irrep irrep3, su3irrep irrep12, su3irrep irrep23,
-      int rhomaxa, int rhomaxb, int rhomaxc, int rhomaxd, int dimen,
+      int rhomaxa, int rhomaxb, int rhomaxc, int rhomaxd,
       double rac[],
       int& info
     )
@@ -145,13 +145,13 @@ namespace ndsu3lib
   // ind = rhoa+rhomaxa*(rhob-1)+rhomaxa*rhomaxb*(rhoc-1)+rhomaxa*rhomaxb*rhomaxc*(rhod-1)-1
   // info = 0 if MKL subroutine dgesv ran withou errors
   {
-    fortran::u_coeff_wrapper(irrep1, irrep2, irrep, irrep3, irrep12, irrep23, rhomaxa, rhomaxb, rhomaxc, rhomaxd, dimen, rac, info);
+    fortran::u_coeff_wrapper(irrep1, irrep2, irrep, irrep3, irrep12, irrep23, rhomaxa, rhomaxb, rhomaxc, rhomaxd, rac, info);
   }
 
   inline
   void calculate_z_coeff(
       su3irrep irrep2, su3irrep irrep1, su3irrep irrep, su3irrep irrep3, su3irrep irrep12, su3irrep irrep13, int rhomaxa,
-      int rhomaxb, int rhomaxc, int rhomaxd, int dimen,
+      int rhomaxb, int rhomaxc, int rhomaxd,
       double Zcoeff[],
       int& info
     )
@@ -170,7 +170,7 @@ namespace ndsu3lib
   // ind = rhoa+rhomaxa*(rhob-1)+rhomaxa*rhomaxb*(rhoc-1)+rhomaxa*rhomaxb*rhomaxc*(rhod-1)-1
   // info = 0 if MKL subroutine dgesv ran withou errors
   {
-    fortran::z_coeff_wrapper(irrep2, irrep1, irrep, irrep3, irrep12, irrep13, rhomaxa, rhomaxb, rhomaxc, rhomaxd, dimen, Zcoeff, info);
+    fortran::z_coeff_wrapper(irrep2, irrep1, irrep, irrep3, irrep12, irrep13, rhomaxa, rhomaxb, rhomaxc, rhomaxd, Zcoeff, info);
   }
 
   inline
@@ -180,7 +180,6 @@ namespace ndsu3lib
       su3irrep irrep13, su3irrep irrep24, su3irrep irrep,
       int rhomax12, int rhomax34, int rhomax1234,
       int rhomax13, int rhomax24, int rhomax1324,
-      int dimen,
       double ninelm[],
       int& info
     )
@@ -201,19 +200,19 @@ namespace ndsu3lib
   // rhomax13 is multiplicity of coupling (lambda1,mu1)x(lambda3,mu3)->(lambda13,mu13)
   // rhomax24 is multiplicity of coupling (lambda2,mu2)x(lambda4,mu4)->(lambda24,mu24)
   // rhomax1324 is multiplicity of coupling (lambda13,mu13)x(lambda24,mu24)->(lambda,mu)
-  // dimen is size of array ninelm, which must be at least rhomax12*rhomax34*rhomax1234*rhomax13*rhomax24*rhomax1324
   // ninelm(ind) is the 9-(lambda,mu) coefficient for given rho12,rho34,rho1234,rho13,rho24,rho1324
+  //     size must be at least rhomax12*rhomax34*rhomax1234*rhomax13*rhomax24*rhomax1324
   // ind = rho12+rhomax12*(rho34-1)+rhomax12*rhomax34*(rho1234-1)+rhomax12*rhomax34*rhomax1234*(rho13-1)
   //       +rhomax12*rhomax34*rhomax1234*rhomax13*(rho24-1)+rhomax12*rhomax34*rhomax1234*rhomax13*rhomax24*(rho1324-1)-1
   // info = 0 if MKL subroutine dgesv ran without errors
   {
-    fortran::nine_lambda_mu_wrapper(irrep1, irrep2, irrep12, irrep3, irrep4, irrep34, irrep13, irrep24, irrep, rhomax12, rhomax34, rhomax1234, rhomax13, rhomax24, rhomax1324, dimen, ninelm, info);
+    fortran::nine_lambda_mu_wrapper(irrep1, irrep2, irrep12, irrep3, irrep4, irrep34, irrep13, irrep24, irrep, rhomax12, rhomax34, rhomax1234, rhomax13, rhomax24, rhomax1324, ninelm, info);
   }
 
   inline
   void calculate_wigner_su3so3(
       su3irrep irrep1, int L1, su3irrep irrep2, int L2, su3irrep irrep3, int L3,
-      int kappa1max, int kappa2max, int kappa3max, int rhomax, int dimen,
+      int kappa1max, int kappa2max, int kappa3max, int rhomax,
       double wigner[]
     )
   // Calculates reduced SU(3)-SO(3) Wigner coefficients
@@ -230,7 +229,7 @@ namespace ndsu3lib
   // wigner(ind) = <(lambda1,mu1)kappa1,L1;(lambda2,mu2)kappa2,L2||(lambda3,mu3)kappa3,L3>_rho
   // ind = kappa1+kappa1max*(kappa2-1)+kappa1max*kappa2max*(kappa3-1)+kappa1max*kappa2max*kappa3max*(rho-1)-1
   {
-    fortran::wigner_su3so3_wrapper(irrep1, L1, irrep2, L2, irrep3, L3, kappa1max, kappa2max, kappa3max, rhomax, dimen, wigner);
+    fortran::wigner_su3so3_wrapper(irrep1, L1, irrep2, L2, irrep3, L3, kappa1max, kappa2max, kappa3max, rhomax, wigner);
   }
 
 }  // namespace ndsu3lib
