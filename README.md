@@ -29,7 +29,7 @@ The 9-(lambda,mu) coefficients are obtained by calling the subroutine calculate_
 
 Code of each subroutine is in a separate text file with the same name. At the beginning of each text file there are comments documenting the interface of the subroutine. All the subroutines except the first one require explicit interface. A simple program ndsu3lib_example demonstrating usage of the subroutines is provided.
 
-C++ wrappers of the Fortran subroutines are provided. Prototypes of the C++ functions are in the file c++wrappers.h along with interface documentation.
+C++ wrappers of the Fortran subroutines are provided. Prototypes of the C++ functions are in the file ndsu3lib.h along with interface documentation.
 
 4. Compilation
 ==============

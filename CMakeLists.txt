@@ -32,14 +32,14 @@ include(fetch_declarations.cmake)
 
 if(SO3COEF_LIBRARY STREQUAL "wigxjpf")
   message(STATUS "Building ndsu3lib with wigxjpf support")
-  
+
   if(NOT TARGET wigxjpf::wigxjpf)
-    find_package(wigxjpf)    
+    find_package(wigxjpf)
   endif()
   ## If still not found, fetch
   if(NOT TARGET wigxjpf::wigxjpf)
     message(STATUS "Package wigxjpf not found. Fetching...")
-    FetchContent_MakeAvailable(wigxjpf) 
+    FetchContent_MakeAvailable(wigxjpf)
   endif()
 
 elseif(SO3COEF_LIBRARY STREQUAL "gsl")
@@ -63,13 +63,13 @@ set_property(CACHE NDSU3LIB_PRECISION PROPERTY STRINGS ${NDSU3LIB_PRECISION_OPTI
 ## mpfun20-fortran
 if(${NDSU3LIB_PRECISION} STREQUAL "multi")
   message(STATUS "Building ndsu3lib with mpfun2020 support")
-  if(NOT TARGET mpfun20:mpfun20)
+  if(NOT TARGET mpfun20::mpfun20)
     find_package(mpfun20)
   endif()
   ## If still not found, fetch
-  if(NOT TARGET mpfun20:mpfun20)
+  if(NOT TARGET mpfun20::mpfun20)
     message(STATUS "Package mpfun20 not found. Fetching...")
-    FetchContent_MakeAvailable(mpfun20) 
+    FetchContent_MakeAvailable(mpfun20)
   endif()
 endif()
 
@@ -81,14 +81,13 @@ set(ndsu3lib_sources_F
   ndsu3lib_wigner_canonical.F90
   ndsu3lib_wigner_su3so3.F90
 )
-set(ndsu3lib_sources_HEADERS  c++wrappers.h)
-set(ndsu3lib_sources_CPP c++wrappers.cpp)
-set(ndsu3lib_sources ${ndsu3lib_sources_F} ${ndsu3lib_sources_CPP})
+set(ndsu3lib_sources_HEADERS  ndsu3lib.h)
+set(ndsu3lib_sources ${ndsu3lib_sources_F})
 
 add_library(ndsu3lib ${ndsu3lib_sources})
 add_library(ndsu3lib::ndsu3lib ALIAS ndsu3lib)
 
-target_sources(ndsu3lib INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/c++wrappers.h>)
+target_sources(ndsu3lib INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/ndsu3lib.h>)
 
 ## MKL
 find_package(BLAS)
@@ -110,12 +109,12 @@ elseif(${SO3COEF_LIBRARY} STREQUAL "wigxjpf")
 
 endif()
 
-## set precision 
+## set precision
 if(${NDSU3LIB_PRECISION} STREQUAL "double")
   target_compile_definitions(ndsu3lib PRIVATE NDSU3LIB_DBL)
 
 elseif(${NDSU3LIB_PRECISION} STREQUAL "quad")
-  
+
   if(CMAKE_Fortran_COMPILER_ID STREQUAL GNU)
     target_compile_definitions(ndsu3lib PRIVATE NDSU3LIB_QUAD_GNU)
   else()
@@ -130,7 +129,7 @@ elseif(${NDSU3LIB_PRECISION} STREQUAL "multi")
   else()
     target_compile_definitions(ndsu3lib PRIVATE NDSU3LIB_MP)
   endif()
-  
+
 else()
   message(FATAL_ERROR "Precision option ${NDSU3LIB_PRECISION} not recognized")
 
@@ -139,7 +138,7 @@ endif()
 message(STATUS "Precision: ${NDSU3LIB_PRECISION}")
 
 
-## OpenMP Not currently implemented? 
+## OpenMP Not currently implemented?
 option(NDSU3LIB_OPENMP "Make ndsu3lib safe for use in OpenMP parallel regions" ON)
 
 if(${NDSU3LIB_OPENMP})
@@ -153,7 +152,7 @@ endif()
 ###############################################################################
 target_include_directories(
   ndsu3lib
-  PUBLIC 
+  PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
   $<BUILD_INTERFACE:${CMAKE_Fortran_MODULE_DIRECTORY}>
   $<INSTALL_INTERFACE:include/ndsu3lib>
@@ -171,7 +170,7 @@ install(
 # Copy .mod files to include directory
 install(DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY} DESTINATION include/ndsu3lib FILES_MATCHING PATTERN "*.mod")
 # Copy header to include directory
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/c++wrappers.h DESTINATION include/ndsu3lib)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/ndsu3lib.h DESTINATION include/ndsu3lib)
 
 install(
   EXPORT ndsu3libTargets

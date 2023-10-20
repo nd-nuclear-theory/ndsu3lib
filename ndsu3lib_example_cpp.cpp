@@ -1,5 +1,5 @@
 /***************************************************************
- 
+
  ndsu3lib_example.cpp -- simple program tabulating SU(3) reduced Wigner
  and recoupling coefficients to demonstrate usage of C++ wrappers
 
@@ -7,10 +7,10 @@
  University of Notre Dame
 
  SPDX-License-Identifier: MIT
- 
+
 ***************************************************************/
 #include <iostream>
-#include "c++wrappers.h"
+#include "ndsu3lib.h"
 
 void tabulate_wigner_canonical ()
 // Tabulates SU(3)-SU(2)xU(1) reduced Wigner coefficients
@@ -54,7 +54,7 @@ void tabulate_wigner_canonical ()
       std::cout << wigner[ind] << "  ";
     }
     std::cout << std::endl;
-  }  
+  }
 }
 
 void tabulate_wigner_su3so3 ()
@@ -116,7 +116,7 @@ void tabulate_u_coeff ()
   if(info != 0)
   {
     std::cout << "calculate_u_coeff: MKL subroutine dgesv ran with error: info=" << info << std::endl;
-    return; 
+    return;
   }
   std::cout << "SU(3) recoupling coefficients U[(9,3)(1,1)(6,6)(2,2);(9,3)rhoa,rhob(3,3)rhoc,rhod]:" << std::endl;
   std::cout << "rhoa  rhob  rhoc  rhod  coefficient" << std::endl;
