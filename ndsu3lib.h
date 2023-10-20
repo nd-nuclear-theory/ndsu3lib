@@ -8,6 +8,9 @@
  SPDX-License-Identifier: MIT
 
 ***************************************************************/
+#ifndef NDSU3LIB_H_
+#define NDSU3LIB_H_
+
 namespace ndsu3lib
 {
   extern "C"
@@ -243,4 +246,6 @@ namespace ndsu3lib
     fortran::wigner_su3so3_wrapper(irrep1, L1, irrep2, L2, irrep3, L3, kappa1max, kappa2max, kappa3max, rhomax, dimen, wigner);
   }
 
-}
+}  // namespace ndsu3lib
+
+#endif  // NDSU3LIB_H_
