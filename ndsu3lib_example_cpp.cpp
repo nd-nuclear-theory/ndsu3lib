@@ -244,12 +244,12 @@ void tabulate_nine_lm ()
 
 int main()
 {
-  ndsu3lib::ndsu3lib_init(true, 400);
+  ndsu3lib::initialize_ndsu3lib(true, 400);
   tabulate_wigner_canonical ();
   tabulate_wigner_su3so3 ();
   tabulate_u_coeff ();
   tabulate_z_coeff ();
   tabulate_nine_lm ();
-  ndsu3lib::ndsu3lib_free(true);
+  ndsu3lib::finalize_ndsu3lib(true);
   return 0;
 }

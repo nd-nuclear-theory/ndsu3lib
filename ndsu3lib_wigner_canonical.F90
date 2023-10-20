@@ -277,7 +277,7 @@ CONTAINS
     !--------------------------------------------------------------------------------
     !#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
     !USE mpmodule
-    !#endif  
+    !#endif
     IMPLICIT NONE
     INTEGER,INTENT(IN) :: upboundS
     INTEGER :: p,q,sigma,ind1,ind2,aux,ind3,n,ind4,ind5,nmax,aux2,aux3
@@ -487,7 +487,7 @@ CONTAINS
     CALL allocate_S(upbound_S+incr)
   END SUBROUTINE reallocate_S
 
-  SUBROUTINE ndsu3lib_init(wso3,j2max) BIND(C)
+  SUBROUTINE initialize_ndsu3lib(wso3,j2max) BIND(C)
     !----------------------------------------------------------------------------
     ! ndsu3lib initialization subroutine
     ! This subroutine must be called by the main program before calling ndsu3lib
@@ -537,16 +537,16 @@ CONTAINS
     CALL lock%init()
 #endif
 
-  END SUBROUTINE ndsu3lib_init
+  END SUBROUTINE initialize_ndsu3lib
 
-  SUBROUTINE ndsu3lib_free(wso3) BIND(C)
+  SUBROUTINE finalize_ndsu3lib(wso3) BIND(C)
     !-------------------------------------------------------------------------------
     ! This subroutine can be called by the main program once SU(3) Wigner or
     ! recoupling coefficients are not going to be calculated anymore to free memory.
     !
     ! Input argument: wso3
     !
-    ! wso3 should be .TRUE. if ndsu3lib_init was called with the first argument
+    ! wso3 should be .TRUE. if initialize_ndsu3lib was called with the first argument
     ! being .TRUE.
     !-------------------------------------------------------------------------------
     !USE iso_c_binding
@@ -570,7 +570,7 @@ CONTAINS
     CALL fwig_temp_free();
     CALL fwig_table_free();
 #endif
-  END SUBROUTINE ndsu3lib_free
+  END SUBROUTINE finalize_ndsu3lib
 
   FUNCTION outer_multiplicity(irrep1,irrep2,irrep3) RESULT(rhomax) BIND(C)
     !--------------------------------------------------------------------------------------
@@ -620,7 +620,7 @@ CONTAINS
     ! lambda3=irrep3%lambda, mu3=irrep3%mu
     ! I3=1 for E=HW, I3=0 for E=LW
     ! rhomax=multiplicity of coupling (lambda1,mu1)x(lambda2,mu2)->(lambda3,mu3) which must be greater than 0
-    ! 
+    !
     ! <(lambda1,mu1)epsilon1,Lambda1;(lambda2,mu2)epsilon2,Lambda2||(lambda3,mu3)E>_rho=wigner(p1,p2,q2,rho)
     !   where epsilon2=2*lambda2+mu2-3*(p2+q2) for I3=1, epsilon2=-2*mu2-lambda2+3*(p2+q2) for I3=0
     !         epsilon1=epsilon3E-epsilon2
@@ -1061,13 +1061,13 @@ CONTAINS
     ! wignerex is an array containing the extremal coefficients calculated by subroutine wigner_canonical_extremal.
     ! If I3=1, coefficients are calculated from the highest-weight (HW) coefficients.
     ! If I3=0, coefficients are calculated from the lowest-weight (LW) coefficients.
-    ! 
+    !
     ! <(lambda1,mu1)epsilon1,Lambda1;(lambda2,mu2)epsilon2,Lambda2||(lambda3,mu3)epsilon3,Lambda3>_rho=wigner(p1,p2,q2,rho)
     !   where epsilon2=2*lambda2+mu2-3*(p2+q2)
     !         epsilon1=epsilon3-epsilon2
     !         Lambda1=(mu1+p1-q1)/2
     !         Lambda2=(mu2+p2-q2)/2
-    !         p1=p1a(i) 
+    !         p1=p1a(i)
     !         p2=p2a(i)
     !         q2=q2a(i)
     !         q1=(2*(lambda1+lambda2)+mu1+mu2-epsilon3)/3-p1-p2-q2
@@ -1219,7 +1219,7 @@ CONTAINS
        END DO
 
     ELSE
- 
+
 !       wigner(0:irrep1%lambda,0:irrep2%lambda,0:irrep2%mu,1:rhomax)=0.D0
        epsilon3ex=2*irrep3%lambda+irrep3%mu
        epsilon2max=2*irrep2%lambda+irrep2%mu
@@ -1404,7 +1404,7 @@ CONTAINS
     !         epsilon1=epsilon3-epsilon2
     !         Lambda1=(mu1+p1-q1)/2
     !         Lambda2=(mu2+p2-q2)/2
-    !         p1=p1a(i) 
+    !         p1=p1a(i)
     !         p2=p2a(i)
     !         q2=q2a(i)
     !         q1=(2*(lambda1+lambda2)+mu1+mu2-epsilon3)/3-p1-p2-q2
@@ -1432,7 +1432,7 @@ CONTAINS
     !  END SUBROUTINE wigner_canonical_extremal
     !  SUBROUTINE wigner_canonical(irrep1,irrep2,irrep3,epsilon3,Lambda32,I3,rhomax,numb,wignerex,wigner,p1a,p2a,q2a)
     !    IMPLICIT NONE
-    !    TYPE(su3irrep),INTENT(IN) :: irrep1,irrep2,irrep3 
+    !    TYPE(su3irrep),INTENT(IN) :: irrep1,irrep2,irrep3
     !    INTEGER,INTENT(IN) :: epsilon3,Lambda32,I3,rhomax
     !    INTEGER :: numb
     !    INTEGER,DIMENSION(:) :: p1a,p2a,q2a

@@ -20,8 +20,8 @@ namespace ndsu3lib
     // Fortran subroutines and functions
       extern int outer_multiplicity(const su3irrep&, const su3irrep&, const su3irrep&);
       extern int inner_multiplicity(const su3irrep&, const int&);
-      extern void ndsu3lib_init(const bool&, const int&);
-      extern void ndsu3lib_free(const bool&);
+      extern void initialize_ndsu3lib(const bool&, const int&);
+      extern void finalize_ndsu3lib(const bool&);
       extern void calculate_wigner_canonical(const su3irrep&, const su3irrep&, const su3irrep&, const int&, const int&, const int&, const int&, const int&, int&, double[], int[], int[], int[]);
       extern void u_coeff_wrapper(const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const int&, const int&, const int&, const int&, const int&, double[], int&);
       extern void z_coeff_wrapper(const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const int&, const int&, const int&, const int&, const int&, double[], int&);
@@ -38,7 +38,7 @@ namespace ndsu3lib
   // Inner multiplicity of L within SU(3) irrep (lambda,mu)
   // Input arguments: irrep,L
 
-  void ndsu3lib_init(bool wso3, int j2max);
+  void initialize_ndsu3lib(bool wso3, int j2max);
   // ndsu3lib initialization subroutine
   // This subroutine must be called by the main program before calling ndsu3lib
   // subroutines for SU(3) Wigner or recoupling coefficients.
@@ -57,7 +57,7 @@ namespace ndsu3lib
   // is insufficient, WIGXJPF will terminate the program and display an error
   // message.
 
-  void ndsu3lib_free(bool wso3);
+  void finalize_ndsu3lib(bool wso3);
   // This subroutine can be called by the main program once SU(3) Wigner or
   // recoupling coefficients are not going to be calculated anymore to free memory.
   //

@@ -70,7 +70,7 @@ SUBROUTINE tabulate_wigner_su3so3
   TYPE(su3irrep) :: irrep1,irrep2,irrep3
   INTEGER :: rho,rhomax,L1,L2,L3,kappa1max,kappa2max,kappa3max,kappa1,kappa2,kappa3
   REAL(KIND=8),ALLOCATABLE,DIMENSION(:,:,:,:) :: wigner_phys
-  
+
   irrep1%lambda=6
   irrep1%mu=1
   irrep2%lambda=2
@@ -160,7 +160,7 @@ SUBROUTINE tabulate_u_coeff
   END DO
 
   DEALLOCATE(rac)
-  
+
 END SUBROUTINE tabulate_u_coeff
 
 SUBROUTINE tabulate_z_coeff
@@ -217,7 +217,7 @@ SUBROUTINE tabulate_z_coeff
   END DO
 
   DEALLOCATE(Zcoeff)
-  
+
 END SUBROUTINE tabulate_z_coeff
 
 SUBROUTINE tabulate_nine_lm
@@ -303,12 +303,12 @@ PROGRAM ndsu3lib_example
   USE ndsu3lib_wigner_canonical
   IMPLICIT NONE
 
-  CALL ndsu3lib_init(.TRUE.,400)
+  CALL initialize_ndsu3lib(.TRUE.,400)
   CALL tabulate_wigner_canonical
   CALL tabulate_wigner_su3so3
   CALL tabulate_u_coeff
   CALL tabulate_z_coeff
   CALL tabulate_nine_lm
-  CALL ndsu3lib_free(.TRUE.)
+  CALL finalize_ndsu3lib(.TRUE.)
 
 END PROGRAM ndsu3lib_example
