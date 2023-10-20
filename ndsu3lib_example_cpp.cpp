@@ -73,7 +73,7 @@ void tabulate_wigner_su3so3 ()
   double wigner[dimen];
   ndsu3lib::calculate_wigner_su3so3(
     irrep1, L1, irrep2, L2, irrep3, L3, kappa1max, kappa2max, kappa3max,
-    rhomax, dimen, wigner
+    rhomax, wigner
     );
   std::cout << std::endl;
   std::cout << "SU(3)-SO(3) reduced Wigner coefficients <(6,1)kappa1,2;(2,1)kappa2,3||(5,2)kappa3,3>_rho:" << std::endl;
@@ -112,7 +112,7 @@ void tabulate_u_coeff ()
   double rac[dimen];
   ndsu3lib::calculate_u_coeff(
     irrep1, irrep2, irrep, irrep3, irrep12, irrep23,
-    rhomaxa, rhomaxb, rhomaxc, rhomaxd, dimen, rac, info
+    rhomaxa, rhomaxb, rhomaxc, rhomaxd, rac, info
     );
   std::cout << std::endl;
   if(info != 0)
@@ -154,7 +154,7 @@ void tabulate_z_coeff ()
   double Zcoeff[dimen];
   ndsu3lib::calculate_z_coeff(
     irrep2, irrep1, irrep, irrep3, irrep12, irrep13,
-    rhomaxa, rhomaxb, rhomaxc, rhomaxd, dimen, Zcoeff, info
+    rhomaxa, rhomaxb, rhomaxc, rhomaxd, Zcoeff, info
   );
   std::cout << std::endl;
   if(info != 0)
@@ -204,7 +204,7 @@ void tabulate_nine_lm ()
     irrep3, irrep4, irrep34,
     irrep13, irrep24, irrep,
     rhomax12, rhomax34, rhomax1234, rhomax13, rhomax24, rhomax1324,
-    dimen, ninelm, info
+    ninelm, info
   );
   std::cout << std::endl;
   if(info != 0)
