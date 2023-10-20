@@ -25,7 +25,7 @@ namespace ndsu3lib
       extern int inner_multiplicity(const su3irrep&, const int&);
       extern void initialize_ndsu3lib(const bool&, const int&);
       extern void finalize_ndsu3lib(const bool&);
-      extern void calculate_wigner_canonical(const su3irrep&, const su3irrep&, const su3irrep&, const int&, const int&, const int&, const int&, const int&, int&, double[], int[], int[], int[]);
+      extern void calculate_wigner_canonical(const su3irrep&, const su3irrep&, const su3irrep&, const int&, const int&, const int&, const int&, const int&, int&, double[], int[], int[], int[], int&);
       extern void u_coeff_wrapper(const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const int&, const int&, const int&, const int&, const int&, double[], int&);
       extern void z_coeff_wrapper(const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const int&, const int&, const int&, const int&, const int&, double[], int&);
       extern void nine_lambda_mu_wrapper(const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const int&, const int&, const int&, const int&, const int&, const int&, const int&, double[], int&);
@@ -120,20 +120,7 @@ namespace ndsu3lib
   //         ind=i+numb*(rho-1)
   //         0<=i<=numb-1
   {
-    int pq3 = (2*(irrep3.lambda-irrep3.mu)-epsilon3)/3+Lambda32;
-    if ((pq3<0)||(pq3>2*irrep3.lambda)||(pq3%2!=0))
-    {
-      info = 1;
-      return;
-    }
-    pq3 = (2*irrep3.lambda+irrep3.mu-epsilon3)/3+irrep3.mu-Lambda32;
-    if ((pq3<0)||(pq3>2*irrep3.mu)||(pq3%2!=0))
-    {
-      info = 1;
-      return;
-    }
-    info = 0;
-    fortran::calculate_wigner_canonical(irrep1, irrep2, irrep3, epsilon3, Lambda32, dimpq, dimw, rhomax, numb, wigner, p1a, p2a, q2a);
+    fortran::calculate_wigner_canonical(irrep1, irrep2, irrep3, epsilon3, Lambda32, dimpq, dimw, rhomax, numb, wigner, p1a, p2a, q2a, info);
   }
 
   inline

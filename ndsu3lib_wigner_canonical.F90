@@ -1378,7 +1378,7 @@ CONTAINS
   END SUBROUTINE wigner_canonical
 
   SUBROUTINE calculate_wigner_canonical(irrep1,irrep2,irrep3,epsilon3,Lambda32,&
-       dimpq,dimw,rhomax,numb,wigner_block,p1a,p2a,q2a) BIND(C)
+       dimpq,dimw,rhomax,numb,wigner_block,p1a,p2a,q2a,info) BIND(C)
     !-------------------------------------------------------------------------------------------------------------------
     ! Calculates all SU(3)-SU(2)xU(1) reduced Wigner coefficients
     ! <(lambda1,mu1)epsilon1,Lambda1;(lambda2,mu2)epsilon2,Lambda2||(lambda3,mu3)epsilon3,Lambda3>_rho
@@ -1418,6 +1418,7 @@ CONTAINS
     INTEGER(C_INT),INTENT(OUT) :: numb
     INTEGER(C_INT),DIMENSION(dimpq),INTENT(OUT) :: p1a,p2a,q2a
     REAL(C_DOUBLE),DIMENSION(dimw),INTENT(OUT) :: wigner_block
+    INTEGER(C_INT),INTENT(OUT) :: info
     INTEGER :: i,rho,ind
     REAL(KIND=8),ALLOCATABLE,DIMENSION(:,:,:,:) :: wignerex,wigner
 
@@ -1440,6 +1441,18 @@ CONTAINS
     !    REAL(KIND=8),DIMENSION(0:,0:,0:,1:),INTENT(OUT) :: wigner
     !  END SUBROUTINE wigner_canonical
     !END INTERFACE
+
+    i = (2*(irrep3%lambda-irrep3%mu)-epsilon3)/3+Lambda32
+    IF((i<=0).or.(i>2*irrep3%lambda).or.(mod(i,2)/=0))THEN
+       info=1
+       RETURN
+    ENDIF
+    i = (2*irrep3%lambda+irrep3%mu-epsilon3)/3+irrep3%mu-Lambda32
+    IF((i<0).or.(i>2*irrep3%mu).or.(mod(i,2)/=0))THEN
+      info=1
+      RETURN
+    ENDIF
+    info=0
 
     i=MAX(irrep2%lambda,irrep2%mu)
     ALLOCATE(wignerex(0:MAX(irrep1%lambda,irrep1%mu),0:i,0:i,1:rhomax),wigner(0:MAX(irrep1%lambda,irrep1%mu),0:i,0:i,1:rhomax))

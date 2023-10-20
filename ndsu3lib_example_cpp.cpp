@@ -8,6 +8,8 @@
 
  SPDX-License-Identifier: MIT
 
+ TODO: Fix for indexing order.
+
 ***************************************************************/
 #include <iostream>
 #include "ndsu3lib.h"

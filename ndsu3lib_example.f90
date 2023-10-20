@@ -17,7 +17,7 @@ SUBROUTINE tabulate_wigner_canonical
   IMPLICIT NONE
   TYPE(su3irrep) :: irrep1,irrep2,irrep3
   INTEGER :: epsilon3,Lambda3_twice,dimpq,dimw,rhomax,numb,i,p1,q1,p2,q2,&
-             epsilon1,Lambda1_twice,epsilon2,Lambda2_twice,rho
+             epsilon1,Lambda1_twice,epsilon2,Lambda2_twice,rho,info
   INTEGER,ALLOCATABLE,DIMENSION(:) :: p1a,p2a,q2a
   REAL(KIND=8),ALLOCATABLE,DIMENSION(:) :: wigner_block
 
@@ -38,7 +38,7 @@ SUBROUTINE tabulate_wigner_canonical
   ALLOCATE(wigner_block(dimw),p1a(dimpq),p2a(dimpq),q2a(dimpq))
 
   CALL calculate_wigner_canonical(irrep1,irrep2,irrep3,epsilon3,Lambda3_twice,&
-       dimpq,dimw,rhomax,numb,wigner_block,p1a,p2a,q2a)
+       dimpq,dimw,rhomax,numb,wigner_block,p1a,p2a,q2a,info)
 
   WRITE(*,"(A)")"SU(3)-SU(2)xU(1) reduced Wigner coefficients <(6,1)epsilon1,Lambda1;(2,1)epsilon2,Lambda2||(5,2)-9,5/2>_rho:"
   WRITE(*,"(A,I1)")"epsilon1  2*Lambda1  epsilon2  2*Lambda2  coefficients for rho=1,...,rhomax=",rhomax
