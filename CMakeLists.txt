@@ -10,7 +10,9 @@ if(NOT DEFINED NDSU3LIB_MASTER_PROJECT)
   endif()
 endif()
 
-project(ndsu3lib LANGUAGES Fortran CXX)
+project(ndsu3lib LANGUAGES Fortran C CXX)
+
+set(C_STANDARD 11)
 
 if(NDSU3LIB_MASTER_PROJECT AND NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
@@ -217,10 +219,14 @@ add_executable(ndsu3lib_example_cpp ndsu3lib_example_cpp.cpp)
 target_link_libraries(ndsu3lib_example_cpp ndsu3lib::ndsu3lib)
 set_target_properties(ndsu3lib_example_cpp PROPERTIES LINKER_LANGUAGE CXX)
 
+add_executable(ndsu3lib_example_c ndsu3lib_example_c.c)
+target_link_libraries(ndsu3lib_example_c ndsu3lib::ndsu3lib)
+set_target_properties(ndsu3lib_example_c PROPERTIES LINKER_LANGUAGE C)
 
 if(NDSU3LIB_MASTER_PROJECT)
   add_custom_target(tests)
   add_dependencies(tests ndsu3lib_example)
   add_dependencies(tests ndsu3lib_example_cpp)
+  add_dependencies(tests ndsu3lib_example_c)
 endif()
 
