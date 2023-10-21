@@ -540,8 +540,8 @@ CONTAINS
 
   END SUBROUTINE calculate_9_lambda_mu
 
-  SUBROUTINE u_coeff_wrapper(irrep1,irrep2,irrep,irrep3,irrep12,irrep23,&
-       rhomaxa,rhomaxb,rhomaxc,rhomaxd,racah_ptr,info) BIND(C)
+  SUBROUTINE calculate_u_coeff_c(irrep1,irrep2,irrep,irrep3,irrep12,irrep23,&
+       rhomaxa,rhomaxb,rhomaxc,rhomaxd,racah_ptr,info) BIND(C, NAME="calculate_u_coeff")
     !------------------------------------------------------------------------------------------------------------------------
     ! Wrapper of the subroutine calculating SU(3) recoupling coefficients
     ! U[(lambda1,mu1)(lambda2,mu2)(lambda,mu)(lambda3,mu3)rhoa,rhob(lambda12,mu12)(lambda23,mu23)rhoc,rhod]
@@ -561,8 +561,8 @@ CONTAINS
     !-------------------------------------------------------------------------------------------------------------------------
     USE iso_c_binding
     IMPLICIT NONE
-    TYPE(su3irrep),INTENT(IN) :: irrep1,irrep2,irrep,irrep3,irrep12,irrep23
-    INTEGER(C_INT),INTENT(IN) :: rhomaxa,rhomaxb,rhomaxc,rhomaxd
+    TYPE(su3irrep),INTENT(IN),VALUE :: irrep1,irrep2,irrep,irrep3,irrep12,irrep23
+    INTEGER(C_INT),INTENT(IN),VALUE :: rhomaxa,rhomaxb,rhomaxc,rhomaxd
     TYPE(C_PTR),INTENT(IN),VALUE :: racah_ptr
     INTEGER(C_INT),INTENT(OUT) :: info
     REAL(C_DOUBLE),POINTER,DIMENSION(:,:) :: rac
@@ -579,10 +579,10 @@ CONTAINS
     rhomaxabc=rhomaxa*rhomaxb*rhomaxc
     CALL C_F_POINTER(racah_ptr, rac, [rhomaxd,rhomaxabc])
     CALL calculate_u_coeff(irrep1,irrep2,irrep,irrep3,irrep12,irrep23,rhomaxa,rhomaxb,rhomaxc,rhomaxd,rac,rhomaxd,info)
-  END SUBROUTINE u_coeff_wrapper
+  END SUBROUTINE calculate_u_coeff_c
 
-  SUBROUTINE z_coeff_wrapper(irrep2,irrep1,irrep,irrep3,irrep12,irrep13,&
-       rhomaxa,rhomaxb,rhomaxc,rhomaxd,Z_ptr,info) BIND(C)
+  SUBROUTINE calculate_z_coeff_c(irrep2,irrep1,irrep,irrep3,irrep12,irrep13,&
+       rhomaxa,rhomaxb,rhomaxc,rhomaxd,Z_ptr,info) BIND(C, NAME="calculate_z_coeff")
     !---------------------------------------------------------------------------------------------------------------------
     ! Wrapper of the subroutine calculating SU(3) recoupling coefficients
     ! Z[(lambda2,mu2)(lambda1,mu1)(lambda,mu)(lambda3,mu3)rhoa,rhob(lambda12,mu12)(lambda13,mu13)rhoc,rhod]
@@ -601,8 +601,8 @@ CONTAINS
     !----------------------------------------------------------------------------------------------------------------------
     USE iso_c_binding
     IMPLICIT NONE
-    TYPE(su3irrep),INTENT(IN) :: irrep1,irrep2,irrep,irrep3,irrep12,irrep13
-    INTEGER(C_INT),INTENT(IN) :: rhomaxa,rhomaxb,rhomaxc,rhomaxd
+    TYPE(su3irrep),INTENT(IN),VALUE :: irrep1,irrep2,irrep,irrep3,irrep12,irrep13
+    INTEGER(C_INT),INTENT(IN),VALUE :: rhomaxa,rhomaxb,rhomaxc,rhomaxd
     INTEGER(C_INT),INTENT(OUT) :: info
     TYPE(C_PTR),INTENT(IN),VALUE ::  Z_ptr
     REAL(KIND=8),POINTER,DIMENSION(:,:) :: Zcoeff
@@ -619,10 +619,10 @@ CONTAINS
     rhomaxabc=rhomaxa*rhomaxb*rhomaxc
     CALL C_F_POINTER(Z_ptr, Zcoeff, [rhomaxd,rhomaxabc])
     CALL calculate_z_coeff(irrep2,irrep1,irrep,irrep3,irrep12,irrep13,rhomaxa,rhomaxb,rhomaxc,rhomaxd,Zcoeff,rhomaxd,info)
-  END SUBROUTINE z_coeff_wrapper
+  END SUBROUTINE calculate_z_coeff_c
 
-  SUBROUTINE nine_lambda_mu_wrapper(irrep1,irrep2,irrep12,irrep3,irrep4,irrep34,irrep13,irrep24,irrep,&
-       rhomax12,rhomax34,rhomax1234,rhomax13,rhomax24,rhomax1324,ninelm_ptr,info) BIND(C)
+  SUBROUTINE calculate_9_lambda_mu_c(irrep1,irrep2,irrep12,irrep3,irrep4,irrep34,irrep13,irrep24,irrep,&
+       rhomax12,rhomax34,rhomax1234,rhomax13,rhomax24,rhomax1324,ninelm_ptr,info) BIND(C, NAME="calculate_9_lambda_mu")
     !------------------------------------------------------------------------------------------------------------------------------------
     ! Wrapper of the subroutine calculating 9-(lambda,mu) coefficients
     !
@@ -650,8 +650,8 @@ CONTAINS
     !------------------------------------------------------------------------------------------------------------------------------------
     USE iso_c_binding
     IMPLICIT NONE
-    TYPE(su3irrep),INTENT(IN) :: irrep1,irrep2,irrep12,irrep3,irrep4,irrep34,irrep13,irrep24,irrep
-    INTEGER(C_INT),INTENT(IN) :: rhomax12,rhomax34,rhomax1234,rhomax13,rhomax24,rhomax1324
+    TYPE(su3irrep),INTENT(IN),VALUE :: irrep1,irrep2,irrep12,irrep3,irrep4,irrep34,irrep13,irrep24,irrep
+    INTEGER(C_INT),INTENT(IN),VALUE :: rhomax12,rhomax34,rhomax1234,rhomax13,rhomax24,rhomax1324
     INTEGER(C_INT),INTENT(OUT) :: info
     TYPE(C_PTR),INTENT(IN),VALUE :: ninelm_ptr
     REAL(C_DOUBLE),POINTER,DIMENSION(:,:,:,:,:,:) :: ninelm
@@ -668,6 +668,6 @@ CONTAINS
     CALL C_F_POINTER(ninelm_ptr, ninelm, [rhomax12,rhomax34,rhomax1234,rhomax13,rhomax24,rhomax1324])
     CALL calculate_9_lambda_mu(irrep1,irrep2,irrep12,irrep3,irrep4,irrep34,irrep13,irrep24,irrep,&
          rhomax12,rhomax34,rhomax1234,rhomax13,rhomax24,rhomax1324,ninelm,info)
-  END SUBROUTINE nine_lambda_mu_wrapper
+  END SUBROUTINE calculate_9_lambda_mu_c
 
 END MODULE ndsu3lib_recoupling

@@ -25,8 +25,8 @@ CONTAINS
     !--------------------------------------------------------
     USE iso_c_binding
     IMPLICIT NONE
-    TYPE(su3irrep),INTENT(IN) :: irrep
-    INTEGER(C_INT),INTENT(IN) :: L
+    TYPE(su3irrep),INTENT(IN),VALUE :: irrep
+    INTEGER(C_INT),INTENT(IN),VALUE :: L
     INTEGER(C_INT) :: kappamax
     kappamax=MAX(0,(irrep%lambda+irrep%mu+2-L)/2)-MAX(0,(irrep%lambda+1-L)/2)-MAX(0,(irrep%mu+1-L)/2)
   END FUNCTION inner_multiplicity
@@ -1369,8 +1369,8 @@ CONTAINS
 
   END SUBROUTINE calculate_wigner_su3so3
 
-  SUBROUTINE wigner_su3so3_wrapper(irrep1,L1,irrep2,L2,irrep3,L3,&
-       kappa1max,kappa2max,kappa3max,rhomax,wigner_phys_ptr) BIND(C)
+  SUBROUTINE calculate_wigner_su3so3_c(irrep1,L1,irrep2,L2,irrep3,L3,&
+       kappa1max,kappa2max,kappa3max,rhomax,wigner_phys_ptr) BIND(C, NAME="calculate_wigner_su3so3")
     !----------------------------------------------------------------------------------------------------------------
     ! Wrapper of the subroutine calculating reduced SU(3)-SO(3) Wigner coefficients
     ! <(lambda1,mu1)kappa1,L1;(lambda2,mu2)kappa2,L2||(lambda3,mu3)kappa3,L3>_rho
@@ -1389,8 +1389,8 @@ CONTAINS
     !-----------------------------------------------------------------------------------------------------------------
     USE iso_c_binding
     IMPLICIT NONE
-    TYPE(su3irrep),INTENT(IN) :: irrep1,irrep2,irrep3
-    INTEGER(C_INT),INTENT(IN) :: L1,L2,L3,kappa1max,kappa2max,kappa3max,rhomax
+    TYPE(su3irrep),INTENT(IN),VALUE :: irrep1,irrep2,irrep3
+    INTEGER(C_INT),INTENT(IN),VALUE :: L1,L2,L3,kappa1max,kappa2max,kappa3max,rhomax
     TYPE(C_PTR),INTENT(IN),VALUE :: wigner_phys_ptr
     REAL(KIND=8),POINTER,DIMENSION(:,:,:,:) :: wigner_phys
     !INTERFACE
@@ -1404,6 +1404,6 @@ CONTAINS
     ALLOCATE(wigner_phys(kappa1max,kappa2max,kappa3max,rhomax))
     CALL C_F_POINTER(wigner_phys_ptr, wigner_phys, [kappa1max,kappa2max,kappa3max,rhomax])
     CALL calculate_wigner_su3so3(irrep1,L1,kappa1max,irrep2,L2,kappa2max,irrep3,L3,kappa3max,rhomax,wigner_phys)
-  END SUBROUTINE wigner_su3so3_wrapper
+  END SUBROUTINE calculate_wigner_su3so3_c
 
 END MODULE ndsu3lib_wigner_su3so3

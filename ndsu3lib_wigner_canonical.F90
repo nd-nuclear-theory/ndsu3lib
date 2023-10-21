@@ -487,7 +487,7 @@ CONTAINS
     CALL allocate_S(upbound_S+incr)
   END SUBROUTINE reallocate_S
 
-  SUBROUTINE initialize_ndsu3lib(wso3,j2max) BIND(C)
+  SUBROUTINE initialize_ndsu3lib(wso3,j2max)
     !----------------------------------------------------------------------------
     ! ndsu3lib initialization subroutine
     ! This subroutine must be called by the main program before calling ndsu3lib
@@ -539,7 +539,13 @@ CONTAINS
 
   END SUBROUTINE initialize_ndsu3lib
 
-  SUBROUTINE finalize_ndsu3lib(wso3) BIND(C)
+  SUBROUTINE initialize_ndsu3lib_c(wso3,j2max) BIND(C, NAME="initialize_ndsu3lib")
+    LOGICAL(C_BOOL),INTENT(IN),VALUE :: wso3
+    INTEGER(C_INT),INTENT(IN),VALUE :: j2max
+    CALL initialize_ndsu3lib(LOGICAL(wso3),j2max)
+  END SUBROUTINE initialize_ndsu3lib_c
+
+  SUBROUTINE finalize_ndsu3lib(wso3)
     !-------------------------------------------------------------------------------
     ! This subroutine can be called by the main program once SU(3) Wigner or
     ! recoupling coefficients are not going to be calculated anymore to free memory.
@@ -572,6 +578,11 @@ CONTAINS
 #endif
   END SUBROUTINE finalize_ndsu3lib
 
+  SUBROUTINE finalize_ndsu3lib_c(wso3) BIND(C, NAME="finalize_ndsu3lib")
+    LOGICAL(C_BOOL),INTENT(IN),VALUE :: wso3
+    CALL finalize_ndsu3lib(LOGICAL(wso3))
+  END SUBROUTINE finalize_ndsu3lib_c
+
   FUNCTION outer_multiplicity(irrep1,irrep2,irrep3) RESULT(rhomax) BIND(C)
     !--------------------------------------------------------------------------------------
     ! Calculates multiplicity of SU(3) coupling (lambda1,mu1)x(lambda2,mu2)->(lambda3,mu3),
@@ -582,8 +593,9 @@ CONTAINS
     !--------------------------------------------------------------------------------------
     !USE iso_c_binding
     IMPLICIT NONE
-    TYPE(su3irrep),INTENT(IN) :: irrep1,irrep2,irrep3
-    INTEGER :: rhomax,C3,C,D
+    TYPE(su3irrep),INTENT(IN),VALUE :: irrep1,irrep2,irrep3
+    INTEGER(C_INT) :: rhomax
+    INTEGER :: C3,C,D
     C3=irrep1%lambda-irrep1%mu+irrep2%lambda-irrep2%mu-irrep3%lambda+irrep3%mu ! C3 equals 3 times the C in the reference
     C=C3/3 ! C equals the C in the reference if 3 divides C3
     IF((3*C==C3).AND.(C>=-MIN(irrep2%mu,irrep1%mu)).AND.(C<=MIN(irrep1%lambda,irrep2%lambda)))THEN
