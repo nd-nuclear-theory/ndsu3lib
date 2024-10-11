@@ -244,7 +244,7 @@ void tabulate_nine_lm ()
 
 int main()
 {
-  ndsu3lib::initialize_ndsu3lib(true, 400);
+  ndsu3lib::initialize_ndsu3lib(true, 50);
   tabulate_wigner_canonical ();
   tabulate_wigner_su3so3 ();
   tabulate_u_coeff ();

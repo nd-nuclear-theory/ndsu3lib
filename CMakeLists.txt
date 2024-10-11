@@ -117,6 +117,8 @@ elseif(${NDSU3LIB_PRECISION} STREQUAL "quad")
 
   if(CMAKE_Fortran_COMPILER_ID STREQUAL GNU)
     target_compile_definitions(ndsu3lib PRIVATE NDSU3LIB_QUAD_GNU)
+  elseif(CMAKE_Fortran_COMPILER_ID STREQUAL Flang)
+    target_compile_definitions(ndsu3lib PRIVATE NDSU3LIB_QUAD_GNU)
   else()
     target_compile_definitions(ndsu3lib PRIVATE NDSU3LIB_QUAD)
   endif()
@@ -126,6 +128,8 @@ elseif(${NDSU3LIB_PRECISION} STREQUAL "multi")
 
   if(CMAKE_Fortran_COMPILER_ID STREQUAL GNU)
     target_compile_definitions(ndsu3lib PRIVATE NDSU3LIB_MP_GNU)
+  elseif(CMAKE_Fortran_COMPILER_ID STREQUAL Flang)
+    target_compile_definitions(ndsu3lib PRIVATE NDSU3LIB_MP_GNU)
   else()
     target_compile_definitions(ndsu3lib PRIVATE NDSU3LIB_MP)
   endif()
@@ -134,6 +138,12 @@ else()
   message(FATAL_ERROR "Precision option ${NDSU3LIB_PRECISION} not recognized")
 
 endif()
+
+## this is needed for Cray compiler
+if(CMAKE_Fortran_COMPILER_ID STREQUAL Cray)
+  add_link_options(-Wl,--allow-multiple-definition -fopenmp)
+endif()
+
 
 message(STATUS "Precision: ${NDSU3LIB_PRECISION}")
 

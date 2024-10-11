@@ -117,7 +117,8 @@ CONTAINS
        !$omp flush release
        CALL lock%writer_unlock(.TRUE.)
     END DO
-    DO WHILE(MAX(lambda,2*MIN(xm,xn+p+1)-xm+p)>upbound_I)
+!    DO WHILE(MAX(lambda,2*MIN(xm,xn+p+1)-xm+p)>upbound_I)
+    DO WHILE(MAX(lambda,2*Lambda2p-xm+p)>upbound_I)
        IF(.NOT.lock%writer_lock(.TRUE.))THEN
           CALL lock%reader_unlock()
           CALL lock%reader_lock()
@@ -145,7 +146,8 @@ CONTAINS
     DO WHILE(MAX(Lambda2p,2*L,lambda+mu+1)>upbound_binom)
        CALL reallocate_binom(50)
     END DO
-    DO WHILE(MAX(lambda,2*MIN(xm,xn+p+1)-xm+p)>upbound_I)
+!    DO WHILE(MAX(lambda,2*MIN(xm,xn+p+1)-xm+p)>upbound_I)
+    DO WHILE(MAX(lambda,2*Lambda2p-xm+p)>upbound_I)
        CALL reallocate_I(50)
     END DO
     DO WHILE(kkappa>upbound_S.OR.k2L-kkappa>upbound_S)

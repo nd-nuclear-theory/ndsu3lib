@@ -303,7 +303,7 @@ PROGRAM ndsu3lib_example
   USE ndsu3lib_wigner_canonical
   IMPLICIT NONE
 
-  CALL initialize_ndsu3lib(.TRUE.,400)
+  CALL initialize_ndsu3lib(.TRUE.,50)
   CALL tabulate_wigner_canonical
   CALL tabulate_wigner_su3so3
   CALL tabulate_u_coeff

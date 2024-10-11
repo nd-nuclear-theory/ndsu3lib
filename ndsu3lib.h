@@ -24,6 +24,7 @@ namespace ndsu3lib
       extern int outer_multiplicity(const su3irrep&, const su3irrep&, const su3irrep&);
       extern int inner_multiplicity(const su3irrep&, const int&);
       extern void initialize_ndsu3lib(const bool&, const int&);
+      extern void initialize_ndsu3lib_thread(const bool&, const int&);
       extern void finalize_ndsu3lib(const bool&);
       extern void calculate_wigner_canonical(const su3irrep&, const su3irrep&, const su3irrep&, const int&, const int&, const int&, const int&, const int&, int&, double[], int[], int[], int[]);
       extern void u_coeff_wrapper(const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const su3irrep&, const int&, const int&, const int&, const int&, const int&, double[], int&);
@@ -54,36 +55,41 @@ namespace ndsu3lib
   }
 
   inline
-  void initialize_ndsu3lib(bool wso3, int j2max)
+  void initialize_ndsu3lib(bool wso3, int lmpmu)
   // ndsu3lib initialization subroutine
   // This subroutine must be called by the main program before calling ndsu3lib
   // subroutines for SU(3) Wigner or recoupling coefficients.
   //
-  // Input arguments: wso3,j2max
+  // Input arguments: wso3,lmpmu
   //
   // wso3 must be true if SU(3)-SO(3) Wigner coefficients are going to be
   // calculated.
-  // If WIGXJPF is not going to be utilized, j2max is not used. Otherwise j2max
-  // must be greater than or equal to two times the maximal angular momentum
-  // expected in ordinary Clebsch-Gordan or SU(2) recoupling coefficients.
-  // j2max should be at least the maximal expected value of lambda+mu if
-  // SU(3)-SO(3) Wigner coefficients are not going to be calculated. If
-  // SU(3)-SO(3) Wigner coefficients are going to be calculated, j2max should be
-  // at least two times the maximal expected value of lambda+mu. If this j2max
-  // is insufficient, WIGXJPF will terminate the program and display an error
-  // message.
+  // lmpmu should be greater than or equal to the maximal expected value of lambda+mu.
   {
-    fortran::initialize_ndsu3lib(wso3, j2max);
+    fortran::initialize_ndsu3lib(wso3, lmpmu);
+  }
+
+  inline
+  void initialize_ndsu3lib_thread(bool wso3, int lmpmu)
+  // ndsu3lib initialization subroutine to be called by each thread
+  //
+  // Input arguments: wso3,lmpmu
+  //
+  // wso3 must be true if SU(3)-SO(3) Wigner coefficients are going to be
+  // calculated.
+  // lmpmu should be greater than or equal to the maximal expected value of lambda+mu.
+  {
+    fortran::initialize_ndsu3lib_thread(wso3, lmpmu);
   }
 
   inline
   void finalize_ndsu3lib(bool wso3)
-  // This subroutine can be called by the main program once SU(3) Wigner or
+  // This subroutine should be called by each thread once SU(3) Wigner or
   // recoupling coefficients are not going to be calculated anymore to free memory.
   //
   // Input argument: wso3
   //
-  // wso3 should be true if initialize_ndsu3lib was called with the first argument
+  // wso3 should be true if initialize_ndsu3lib or initialize_ndsu3lib_thread was called with the first argument
   // being true.
   {
     fortran::finalize_ndsu3lib(wso3);

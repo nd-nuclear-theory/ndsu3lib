@@ -127,17 +127,6 @@ CONTAINS
 #endif
   END SUBROUTINE deallocate_binom
 
-  SUBROUTINE reallocate_binom(incr)
-    !------------------------------------------------------------------------
-    ! Deallocates arrays binom, binom_quad and binom_mp, allocates them again
-    ! with upbound_binom increased by incr and calculates the entries.
-    !------------------------------------------------------------------------
-    IMPLICIT NONE
-    INTEGER,INTENT(IN) :: incr
-    CALL deallocate_binom
-    CALL allocate_binom(upbound_binom+incr)
-  END SUBROUTINE reallocate_binom
-
   SUBROUTINE allocate_I(upboundI)
     !--------------------------------------------------------
     ! Calculates values I(p,q,sigma) using recursion relation
@@ -467,12 +456,169 @@ CONTAINS
 #endif
   END SUBROUTINE deallocate_S
 
+  SUBROUTINE initialize_ndsu3lib(wso3,lmpmu) BIND(C)
+    !----------------------------------------------------------------------------------
+    ! ndsu3lib initialization subroutine
+    ! This subroutine must be called by the main program before calling ndsu3lib
+    ! subroutines for SU(3) Wigner or recoupling coefficients.
+    !
+    ! Input arguments: wso3,lmpmu
+    !
+    ! wso3 must be .TRUE. if SU(3)-SO(3) Wigner coefficients are going to be
+    ! calculated.
+    ! lmpmu should be greater than or equal to the maximal expected value of lambda+mu.
+    !----------------------------------------------------------------------------------
+    !USE iso_c_binding
+#if (defined(NDSU3LIB_RACAH_WIGXJPF) || defined(NDSU3LIB_WSO3_WIGXJPF))
+    USE fwigxjpf
+#endif
+    IMPLICIT NONE
+    LOGICAL,INTENT(IN) :: wso3
+    INTEGER(C_INT),INTENT(IN) :: lmpmu
+    CALL allocate_binom(4*lmpmu+1)
+    IF(wso3)THEN
+       CALL allocate_I(3*lmpmu)
+       CALL allocate_S(2*lmpmu)
+#if defined(NDSU3LIB_CACHE)
+       CALL cache%New(524288)
+#endif
+#if (defined(NDSU3LIB_CACHE) && (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU)))
+       CALL cache_mp%New(524288)
+#endif
+#if defined(NDSU3LIB_RACAH_WIGXJPF)
+       CALL fwig_table_init(2*lmpmu,6)
+       CALL fwig_temp_init(2*lmpmu)
+#elif defined(NDSU3LIB_WSO3_WIGXJPF)
+       CALL fwig_table_init(2*lmpmu,3)
+       CALL fwig_temp_init(2*lmpmu)
+#endif
+    ELSE
+#if defined(NDSU3LIB_RACAH_WIGXJPF)
+       CALL fwig_table_init(lmpmu,6)
+       CALL fwig_temp_init(lmpmu)
+#elif defined(NDSU3LIB_WSO3_WIGXJPF)
+       CALL fwig_table_init(lmpmu,3)
+       CALL fwig_temp_init(lmpmu)
+#endif
+    END IF
+#if defined(NDSU3LIB_OMP)
+    CALL lock%init()
+#endif
+  END SUBROUTINE initialize_ndsu3lib
+
+  SUBROUTINE initialize_ndsu3lib_thread(wso3,lmpmu) BIND(C)
+    !----------------------------------------------------------------------------------
+    ! ndsu3lib initialization subroutine to be called by each thread
+    !
+    ! Input arguments: wso3,lmpmu
+    !
+    ! wso3 must be .TRUE. if SU(3)-SO(3) Wigner coefficients are going to be
+    ! calculated.
+    ! lmpmu should be greater than or equal to the maximal expected value of lambda+mu.
+    !----------------------------------------------------------------------------------
+#if (defined(NDSU3LIB_RACAH_WIGXJPF) || defined(NDSU3LIB_WSO3_WIGXJPF))
+    USE fwigxjpf
+#endif
+    IMPLICIT NONE
+    LOGICAL,INTENT(IN) :: wso3
+    INTEGER(C_INT),INTENT(IN) :: lmpmu
+!$OMP SINGLE
+    CALL allocate_binom(4*lmpmu+1)
+!$OMP END SINGLE
+    IF(wso3)THEN
+!$OMP SINGLE
+       CALL allocate_I(3*lmpmu)
+       CALL allocate_S(2*lmpmu)
+!$OMP END SINGLE
+#if defined(NDSU3LIB_RACAH_WIGXJPF)
+!$OMP SINGLE
+       CALL fwig_table_init(2*lmpmu,6)
+!$OMP END SINGLE
+       CALL fwig_thread_temp_init(2*lmpmu)
+#elif defined(NDSU3LIB_WSO3_WIGXJPF)
+!$OMP SINGLE
+       CALL fwig_table_init(2*lmpmu,3)
+!$OMP END SINGLE
+       CALL fwig_thread_temp_init(2*lmpmu)
+#endif
+    ELSE
+#if defined(NDSU3LIB_RACAH_WIGXJPF)
+!$OMP SINGLE
+       CALL fwig_table_init(lmpmu,6)
+!$OMP END SINGLE
+       CALL fwig_thread_temp_init(lmpmu)
+#elif defined(NDSU3LIB_WSO3_WIGXJPF)
+!$OMP SINGLE
+       CALL fwig_table_init(lmpmu,3)
+!$OMP END SINGLE
+       CALL fwig_thread_temp_init(lmpmu)
+#endif
+    END IF
+  END SUBROUTINE initialize_ndsu3lib_thread
+
+  SUBROUTINE finalize_ndsu3lib(wso3) BIND(C)
+    !-------------------------------------------------------------------------------
+    ! This subroutine can be called by the main program once SU(3) Wigner or
+    ! recoupling coefficients are not going to be calculated anymore to free memory.
+    ! In OpenMP parallelized programs it should be called by each thread.
+    !
+    ! Input argument: wso3
+    !
+    ! wso3 should be .TRUE. if initialize_ndsu3lib or initialize_ndsu3lib_thread was
+    ! called with the first argument being .TRUE.
+    !-------------------------------------------------------------------------------
+    !USE iso_c_binding
+#if (defined(NDSU3LIB_RACAH_WIGXJPF) || defined(NDSU3LIB_WSO3_WIGXJPF))
+    USE fwigxjpf
+#endif
+    IMPLICIT NONE
+    LOGICAL,INTENT(IN) :: wso3
+    IF(wso3)THEN
+!$OMP SINGLE
+       CALL deallocate_I
+       CALL deallocate_S
+!$OMP END SINGLE
+#if defined(NDSU3LIB_CACHE)
+       CALL cache%Delete()
+#endif
+#if (defined(NDSU3LIB_CACHE) && (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU)))
+       CALL cache_mp%Delete()
+#endif
+    END IF
+!$OMP SINGLE
+    CALL deallocate_binom
+!$OMP END SINGLE
+#if (defined(NDSU3LIB_RACAH_WIGXJPF) || defined(NDSU3LIB_WSO3_WIGXJPF))
+    CALL fwig_temp_free();
+!$OMP SINGLE
+    CALL fwig_table_free();
+!$OMP END SINGLE
+#endif
+  END SUBROUTINE finalize_ndsu3lib
+
+  SUBROUTINE reallocate_binom(incr)
+    !------------------------------------------------------------------------
+    ! Deallocates arrays binom, binom_quad and binom_mp, allocates them again
+    ! with upbound_binom increased by incr and calculates the entries.
+    !------------------------------------------------------------------------
+    IMPLICIT NONE
+    INTEGER,INTENT(IN) :: incr
+    PRINT*,"ndsu3lib ERROR: Insufficient upper bound on lambda+mu set in initialize_ndsu3lib"
+    CALL finalize_ndsu3lib(.TRUE.)
+    STOP
+    CALL deallocate_binom
+    CALL allocate_binom(upbound_binom+incr)
+  END SUBROUTINE reallocate_binom
+
   SUBROUTINE reallocate_I(incr)
     !---------------------------------------------------------------------------------------------------------------
     ! Deallocates arrays Ia, Ia_quad and Ia_mp, reallocates them with size increased by incr and calculates entries.
     !---------------------------------------------------------------------------------------------------------------
     IMPLICIT NONE
     INTEGER,INTENT(IN) :: incr
+    PRINT*,"ndsu3lib ERROR: Insufficient upper bound on lambda+mu set in initialize_ndsu3lib"
+    CALL finalize_ndsu3lib(.TRUE.)
+    STOP
     CALL deallocate_I
     CALL allocate_I(upbound_I+incr)
   END SUBROUTINE reallocate_I
@@ -483,94 +629,12 @@ CONTAINS
     !---------------------------------------------------------------------------------------------------------------
     IMPLICIT NONE
     INTEGER,INTENT(IN) :: incr
+    PRINT*,"ndsu3lib ERROR: Insufficient upper bound on lambda+mu set in initialize_ndsu3lib"
+    CALL finalize_ndsu3lib(.TRUE.)
+    STOP
     CALL deallocate_S
     CALL allocate_S(upbound_S+incr)
   END SUBROUTINE reallocate_S
-
-  SUBROUTINE initialize_ndsu3lib(wso3,j2max) BIND(C)
-    !----------------------------------------------------------------------------
-    ! ndsu3lib initialization subroutine
-    ! This subroutine must be called by the main program before calling ndsu3lib
-    ! subroutines for SU(3) Wigner or recoupling coefficients.
-    !
-    ! Input arguments: wso3,j2max
-    !
-    ! wso3 must be .TRUE. if SU(3)-SO(3) Wigner coefficients are going to be
-    ! calculated.
-    ! If WIGXJPF is not going to be utilized, j2max is not used. Otherwise j2max
-    ! must be greater than or equal to two times the maximal angular momentum
-    ! expected in ordinary Clebsch-Gordan or SU(2) recoupling coefficients.
-    ! j2max should be at least the maximal expected value of lambda+mu if
-    ! SU(3)-SO(3) Wigner coefficients are not going to be calculated. If
-    ! SU(3)-SO(3) Wigner coefficients are going to be calculated, j2max should be
-    ! at least two times the maximal expected value of lambda+mu. If this j2max
-    ! is insufficient, WIGXJPF will terminate the program and display an error
-    ! message.
-    !----------------------------------------------------------------------------
-    !USE iso_c_binding
-#if (defined(NDSU3LIB_RACAH_WIGXJPF) || defined(NDSU3LIB_WSO3_WIGXJPF))
-    USE fwigxjpf
-#endif
-    IMPLICIT NONE
-    LOGICAL,INTENT(IN) :: wso3
-    INTEGER(C_INT),INTENT(IN) :: j2max
-    INTEGER :: i
-    CALL allocate_binom(100)
-    IF(wso3)THEN
-       CALL allocate_I(50)
-       CALL allocate_S(50)
-#if defined(NDSU3LIB_CACHE)
-       CALL cache%New(524288)
-#endif
-#if (defined(NDSU3LIB_CACHE) && (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU)))
-       CALL cache_mp%New(524288)
-#endif
-    END IF
-#if defined(NDSU3LIB_RACAH_WIGXJPF)
-    CALL fwig_table_init(j2max,6)
-    CALL fwig_temp_init(j2max)
-#elif defined(NDSU3LIB_WSO3_WIGXJPF)
-    CALL fwig_table_init(j2max,3)
-    CALL fwig_temp_init(j2max)
-#endif
-#if defined(NDSU3LIB_OMP)
-    CALL lock%init()
-#endif
-
-  END SUBROUTINE initialize_ndsu3lib
-
-  SUBROUTINE finalize_ndsu3lib(wso3) BIND(C)
-    !-------------------------------------------------------------------------------
-    ! This subroutine can be called by the main program once SU(3) Wigner or
-    ! recoupling coefficients are not going to be calculated anymore to free memory.
-    !
-    ! Input argument: wso3
-    !
-    ! wso3 should be .TRUE. if initialize_ndsu3lib was called with the first argument
-    ! being .TRUE.
-    !-------------------------------------------------------------------------------
-    !USE iso_c_binding
-#if (defined(NDSU3LIB_RACAH_WIGXJPF) || defined(NDSU3LIB_WSO3_WIGXJPF))
-    USE fwigxjpf
-#endif
-    IMPLICIT NONE
-    LOGICAL,INTENT(IN) :: wso3
-    IF(wso3)THEN
-       CALL deallocate_I
-       CALL deallocate_S
-#if defined(NDSU3LIB_CACHE)
-       CALL cache%Delete()
-#endif
-#if (defined(NDSU3LIB_CACHE) && (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU)))
-       CALL cache_mp%Delete()
-#endif
-    END IF
-    CALL deallocate_binom
-#if (defined(NDSU3LIB_RACAH_WIGXJPF) || defined(NDSU3LIB_WSO3_WIGXJPF))
-    CALL fwig_temp_free();
-    CALL fwig_table_free();
-#endif
-  END SUBROUTINE finalize_ndsu3lib
 
   FUNCTION outer_multiplicity(irrep1,irrep2,irrep3) RESULT(rhomax) BIND(C)
     !--------------------------------------------------------------------------------------
