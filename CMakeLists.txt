@@ -56,12 +56,12 @@ message(STATUS "Using SO(3) coefficient library:  ${SO3COEF_LIBRARY}")
 ###############################################################################
 # Set precision
 ###############################################################################
-set(NDSU3LIB_PRECISION_OPTIONS "double" "quad" "multi")
+set(NDSU3LIB_PRECISION_OPTIONS "double" "quad" "multi" "multiquad")
 set(NDSU3LIB_PRECISION "double" CACHE STRING "NDSU3LIB numerical precision")
 set_property(CACHE NDSU3LIB_PRECISION PROPERTY STRINGS ${NDSU3LIB_PRECISION_OPTIONS})
 
 ## mpfun20-fortran
-if(${NDSU3LIB_PRECISION} STREQUAL "multi")
+if(${NDSU3LIB_PRECISION} STREQUAL "multi" OR ${NDSU3LIB_PRECISION} STREQUAL "multiquad")
   message(STATUS "Building ndsu3lib with mpfun2020 support")
   if(NOT TARGET mpfun20::mpfun20)
     find_package(mpfun20)
@@ -115,9 +115,7 @@ if(${NDSU3LIB_PRECISION} STREQUAL "double")
 
 elseif(${NDSU3LIB_PRECISION} STREQUAL "quad")
 
-  if(CMAKE_Fortran_COMPILER_ID STREQUAL GNU)
-    target_compile_definitions(ndsu3lib PRIVATE NDSU3LIB_QUAD_GNU)
-  elseif(CMAKE_Fortran_COMPILER_ID STREQUAL Flang)
+  if(CMAKE_Fortran_COMPILER_ID STREQUAL GNU OR CMAKE_Fortran_COMPILER_ID STREQUAL Flang)
     target_compile_definitions(ndsu3lib PRIVATE NDSU3LIB_QUAD_GNU)
   else()
     target_compile_definitions(ndsu3lib PRIVATE NDSU3LIB_QUAD)
@@ -126,12 +124,19 @@ elseif(${NDSU3LIB_PRECISION} STREQUAL "quad")
 elseif(${NDSU3LIB_PRECISION} STREQUAL "multi")
   target_link_libraries(ndsu3lib PUBLIC mpfun20::mpfun20)
 
-  if(CMAKE_Fortran_COMPILER_ID STREQUAL GNU)
-    target_compile_definitions(ndsu3lib PRIVATE NDSU3LIB_MP_GNU)
-  elseif(CMAKE_Fortran_COMPILER_ID STREQUAL Flang)
+  if(CMAKE_Fortran_COMPILER_ID STREQUAL GNU OR CMAKE_Fortran_COMPILER_ID STREQUAL Flang)
     target_compile_definitions(ndsu3lib PRIVATE NDSU3LIB_MP_GNU)
   else()
     target_compile_definitions(ndsu3lib PRIVATE NDSU3LIB_MP)
+  endif()
+
+elseif(${NDSU3LIB_PRECISION} STREQUAL "multiquad")
+  target_link_libraries(ndsu3lib PUBLIC mpfun20::mpfun20)
+
+  if(CMAKE_Fortran_COMPILER_ID STREQUAL GNU OR CMAKE_Fortran_COMPILER_ID STREQUAL Flang)
+    target_compile_definitions(ndsu3lib PRIVATE NDSU3LIB_QUAD_GNU NDSU3LIB_MP_GNU)
+  else()
+    target_compile_definitions(ndsu3lib PRIVATE NDSU3LIB_QUAD NDSU3LIB_MP)
   endif()
 
 else()
@@ -148,7 +153,6 @@ endif()
 message(STATUS "Precision: ${NDSU3LIB_PRECISION}")
 
 
-## OpenMP Not currently implemented?
 option(NDSU3LIB_OPENMP "Make ndsu3lib safe for use in OpenMP parallel regions" ON)
 
 if(${NDSU3LIB_OPENMP})

@@ -22,18 +22,13 @@ void tabulate_wigner_canonical ()
       rhomax = ndsu3lib::outer_multiplicity(irrep1, irrep2, irrep3),
       dimpq = (std::max(irrep1.lambda,irrep1.mu)+1)*(irrep2.lambda+1)*(irrep2.mu+1);
   int dimw = rhomax*dimpq,
-      numb, info;
+      numb;
   int p1a[dimpq], p2a[dimpq], q2a[dimpq];
   double wigner[dimw];
   ndsu3lib::calculate_wigner_canonical(
     irrep1, irrep2, irrep3, epsilon3, Lambda3_twice,
-    dimpq, dimw, rhomax, numb, wigner, p1a, p2a, q2a, info
+    dimpq, dimw, rhomax, numb, wigner, p1a, p2a, q2a
     );
-  if (info != 0)
-  {
-    std::cout << "calculate_wigner_canonical: invalid values of epsilon3 and Lambda3" << std::endl;
-    return;
-  }
   std::cout << "SU(3)-SU(2)xU(1) reduced Wigner coefficients <(6,1)epsilon1,Lambda1;(2,1)epsilon2,Lambda2||(5,2)-9,5/2>_rho:" << std::endl;
   std::cout << "epsilon1  2*Lambda1  epsilon2  2*Lambda2  coefficients for rho=1,...,rhomax=" << rhomax << std::endl;
   for (int i = 0; i <= numb-1; i++)
@@ -115,7 +110,7 @@ void tabulate_u_coeff ()
   std::cout << std::endl;
   if(info != 0)
   {
-    std::cout << "calculate_u_coeff: MKL subroutine dgesv ran with error: info=" << info << std::endl;
+    std::cout << "calculate_u_coeff: Lapack subroutine dgesv ran with error: info=" << info << std::endl;
     return;
   }
   std::cout << "SU(3) recoupling coefficients U[(9,3)(1,1)(6,6)(2,2);(9,3)rhoa,rhob(3,3)rhoc,rhod]:" << std::endl;
@@ -157,7 +152,7 @@ void tabulate_z_coeff ()
   std::cout << std::endl;
   if(info != 0)
   {
-    std::cout << "calculate_z_coeff: MKL subroutine dgesv ran with error: info=" << info << std::endl;
+    std::cout << "calculate_z_coeff: Lapack subroutine dgesv ran with error: info=" << info << std::endl;
     return;
   }
   std::cout << "SU(3) recoupling coefficients Z[(9,3)(1,1)(6,6)(2,2);(9,3)rhoa,rhob(3,3)rhoc,rhod]:" << std::endl;
@@ -207,7 +202,7 @@ void tabulate_nine_lm ()
   std::cout << std::endl;
   if(info != 0)
   {
-    std::cout << "calculate_9_lambda_mu: MKL subroutine dgesv ran with error: info=" << info << std::endl;
+    std::cout << "calculate_9_lambda_mu: Lapack subroutine dgesv ran with error: info=" << info << std::endl;
     return;
   }
   std::cout << "                           |(1,1) (0,0)  (1,1)  rho12 |" << std::endl;

@@ -100,19 +100,18 @@ namespace ndsu3lib
       su3irrep irrep1, su3irrep irrep2, su3irrep irrep3,
       int epsilon3, int Lambda32, int dimpq, int dimw, int rhomax,
       int& numb, double wigner[],
-      int p1a[], int p2a[], int q2a[], int& info
+      int p1a[], int p2a[], int q2a[]
     )
   // Calculates all SU(3)-SU(2)xU(1) reduced Wigner coefficients
   // <(lambda1,mu1)epsilon1,Lambda1;(lambda2,mu2)epsilon2,Lambda2||(lambda3,mu3)epsilon3,Lambda3>_rho
   // for given lambda1,mu1,lambda2,mu2,lambda3,mu3,epsilon3,Lambda3=Lambda32/2
   //
   // Input arguments: irrep1,irrep2,irrep3,epsilon3,Lambda32,dimpq,dimw,rhomax
-  // Output arguments: numb,wigner,p1a,p2a,q2a,info
+  // Output arguments: numb,wigner,p1a,p2a,q2a
   //
   // rmomax is multiplicity of coupling (lambda1,mu1)x(lambda2,mu2)->(lambda3,mu3)
   // dimpq is size of arrays p1a,p2a,q2a, which should be at least (max(lambda1,mu1)+1)*(lambda2+1)*(mu2+1)
   // dimw is size of array wigner, which should be at least rhomax*dimpq
-  // info = 1 if epsilon3,Lambda32 are invalid, otherwise info = 0
   //
   // <(lambda1,mu1)epsilon1,Lambda1;(lambda2,mu2)epsilon2,Lambda2||(lambda3,mu3)epsilon3,Lambda3>_rho=wigner[ind]
   //   where epsilon2=2*lambda2+mu2-3*(p2+q2)
@@ -126,7 +125,7 @@ namespace ndsu3lib
   //         ind=i+numb*(rho-1)
   //         0<=i<=numb-1
   {
-    int pq3 = (2*(irrep3.lambda-irrep3.mu)-epsilon3)/3+Lambda32;
+/*    int pq3 = (2*(irrep3.lambda-irrep3.mu)-epsilon3)/3+Lambda32;
     if ((pq3<0)||(pq3>2*irrep3.lambda)||(pq3%2!=0))
     {
       info = 1;
@@ -138,7 +137,7 @@ namespace ndsu3lib
       info = 1;
       return;
     }
-    info = 0;
+    info = 0;*/
     fortran::calculate_wigner_canonical(irrep1, irrep2, irrep3, epsilon3, Lambda32, dimpq, dimw, rhomax, numb, wigner, p1a, p2a, q2a);
   }
 

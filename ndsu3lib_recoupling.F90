@@ -33,7 +33,7 @@ CONTAINS
     IMPLICIT NONE
     INTERFACE
        REAL(C_DOUBLE) FUNCTION gsl_sf_coupling_6j(l1,l2,l12,l3,l,l23) BIND(C)
-         USE iso_c_binding
+         USE ISO_C_BINDING
          INTEGER(C_INT), VALUE :: l1,l2,l12,l3,l,l23
        END FUNCTION gsl_sf_coupling_6j
     END INTERFACE
@@ -139,7 +139,7 @@ CONTAINS
 
     epsilon2max=2*irrep2%mu+irrep2%lambda
     i1=3*irrep1%lambda-6*irrep12%lambda+6*irrep1%mu-6*irrep12%mu+8*irrep2%lambda+4*irrep2%mu
-    factor1=DFLOAT(INT8(irrep1%lambda+1)*dimen(irrep12))/DFLOAT(dimen(irrep1))
+    factor1=DBLE(INT(irrep1%lambda+1,8)*dimen(irrep12))/DBLE(dimen(irrep1))
     m=(2*(irrep12%lambda+irrep2%mu+irrep1%mu-irrep12%mu)+irrep2%lambda+irrep1%lambda)/3
     aux=2*irrep3%lambda+irrep3%mu-epsilon23
 
@@ -159,7 +159,7 @@ CONTAINS
        q23=q2ad(indd)
        i=i+1
        matrix(i,1:rhomaxd)=wignerd(irrep1%lambda,p23,q23,1:rhomaxd)
-       factor2=DSQRT(factor1*DFLOAT(Lambda232+1))
+       factor2=DSQRT(factor1*DBLE(Lambda232+1))
 
        CALL wigner_canonical(irrep2,irrep3,irrep23,epsilon23,Lambda232,I23,rhomaxc,numbc,wignerc,wigner,p1ac,p2ac,q2ac)
 
@@ -339,7 +339,7 @@ CONTAINS
           CALL wigner_canonical(irrep1,irrep2,irrep12,epsilon12,Lambda122,0,rhomaxa,numbalw,wigneralw,wigner,p1aa,p2aa,q2aa)
        END IF
 
-       factor1=DSQRT(DFLOAT((Lambda122+1)*(irrep13%lambda+1)))
+       factor1=DSQRT(DBLE((Lambda122+1)*(irrep13%lambda+1)))
 
        pq1=(epsilon1lwpepsilon2-epsilon12)/3 ! pq1 is p1+q1
        mu1mpq1=irrep1%mu-pq1
@@ -608,7 +608,7 @@ CONTAINS
     ! ind = rhoa+rhomaxa*(rhob-1)+rhomaxa*rhomaxb*(rhoc-1)+rhomaxa*rhomaxb*rhomaxc*(rhod-1)
     ! info = 0 if MKL subroutine dgesv called by calculate_z_coeff ran withou errors.
     !----------------------------------------------------------------------------------------------------------------------
-    USE iso_c_binding
+    USE ISO_C_BINDING
     IMPLICIT NONE
     TYPE(su3irrep),INTENT(IN) :: irrep1,irrep2,irrep,irrep3,irrep12,irrep13
     INTEGER(C_INT),INTENT(IN) :: rhomaxa,rhomaxb,rhomaxc,rhomaxd,dimen

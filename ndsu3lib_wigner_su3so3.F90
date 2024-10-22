@@ -49,19 +49,21 @@ CONTAINS
     !USE mpmodule
     !#endif
     IMPLICIT NONE
-#if (defined(NDSU3LIB_DBL) || defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
-    REAL(KIND=8),INTENT(OUT) :: coeff
-#elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
     CLASS(*),TARGET,INTENT(OUT) :: coeff
     TYPE(mp_real),POINTER :: point
+#else
+    REAL(KIND=8),INTENT(OUT) :: coeff
 #endif
 !    TYPE(su3irrep),INTENT(IN) :: irrep
     INTEGER,INTENT(IN) :: lambda,mu,epsilon,Lambda2p,MLambda2p,M,L,Mp,p,q
     REAL(KIND=8) :: S11,S12,S2
 #if (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
-    REAL(KIND=16) :: coeffq,S11q,S12q,S2q
+    REAL(wp) :: coeffq,S11q,S12q,S2q
 #elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
-    REAL(KIND=16) :: coeffq,S11q,S12q,S2q
+    TYPE(mp_realm) :: coeffq,S11q,S12q,S2q
+#endif
+#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
     TYPE(mp_real) :: S11mp,S12mp,S2mp
 #endif
     INTEGER :: a4,LmM,LpM,LmMp,gama,NLambda2p,k2L,kkappa,alpha,&
@@ -252,7 +254,7 @@ CONTAINS
                       END IF
                    END IF
 
-                   IF(S2/=0.D0)coeff=coeff+binom(ind3)*S11*S12*S2/DFLOAT(k2L+1)
+                   IF(S2/=0.D0)coeff=coeff+binom(ind3)*S11*S12*S2/DBLE(k2L+1)
 
                 END IF
              END IF
@@ -269,9 +271,9 @@ CONTAINS
              aux1=lambda+mu+1
              aux2=p+mu+1
              aux3=2*L*(L+1)
-             S2=DFLOAT(2*L+1)*DSQRT((binom((lambdas+lambda)/2+p)/binom(aux3-Mp))*(binom(mu*(mu+1)/2+q)&
+             S2=DBLE(2*L+1)*DSQRT((binom((lambdas+lambda)/2+p)/binom(aux3-Mp))*(binom(mu*(mu+1)/2+q)&
                   /binom((Lambda2p*(Lambda2p+2)+MLambda2p)/2))&
-                  *(binom(aux1*(aux1+1)/2+q)/binom(aux2*(aux2+1)/2+q))*binom(aux3-M))/(4.D0**DFLOAT(p))
+                  *(binom(aux1*(aux1+1)/2+q)/binom(aux2*(aux2+1)/2+q))*binom(aux3-M))/(4.D0**DBLE(p))
              ! S2 is C
              IF(BTEST(L-p,0))THEN
                 coeff=-coeff*S2
@@ -284,7 +286,13 @@ CONTAINS
 
 #if (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU) || defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
        ELSE ! quad precision used
-          coeffq=0.Q0
+#endif
+#if (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
+          coeffq=0.0_wp
+#elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+          coeffq=mprealm(0.D0,nwdsm)
+#endif
+#if (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU) || defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
           DO gama=0,p
              MNLambda2p=MNLambda2p-1
              xn=xn+1
@@ -299,11 +307,22 @@ CONTAINS
              END IF
              ! S12 is the second S_1 in Eq.(26), where only alpha=0 contributes. CAUTION: There is a typo: it should be
              ! S_1(M_Lambda=Lambda,Lambda,N_Lambda,M), not S_1(N_Lambda,Lambda,M_Lambda=Lambda,M)
-
-             IF(S12q/=0.Q0)THEN
+#endif
+#if (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
+             IF(S12q/=0.0_wp)THEN
+#elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+             IF(S12q/=0.D0)THEN
+#endif
+#if (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU) || defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
                 alphamin=MAX(0,-MNLambda2p) ! alphamin is the lower bound for alpha in the first S_1 in Eq.(26)
                 alphamax=MIN(xm,xn) ! alphamin is the upper bound for alpha in the first S_1 in Eq.(26)
-                S11q=0.Q0
+#endif
+#if (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
+                S11q=0.0_wp
+#elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+                S11q=mprealm(0.D0,nwdsm)
+#endif
+#if (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU) || defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
                 x=2*alphamin+MNLambda2p
                 y=Lambda2p-x
                 xpys=(x+y)**2
@@ -326,9 +345,15 @@ CONTAINS
                    ind1=ind1+1
                    ind2=ind2-1
                 END DO
-
-                IF(S11q/=0.Q0)THEN
-                   S2q=0.Q0
+#endif
+#if (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
+                IF(S11q/=0.0_wp)THEN
+                   S2q=0.0_wp
+#elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+                IF(S11q/=0.D0)THEN
+                   S2q=mprealm(0.D0,nwdsm)
+#endif
+#if (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU) || defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
                    a4=upbound_S*kkappa*(kkappa+upbound_S+2)/2+aux5
                    ind1=aux3+alphaminS2
                    ind2=aux4-alphaminS2
@@ -361,13 +386,18 @@ CONTAINS
                          S2q=S2q+binom_quad(ind1)*binom_quad(ind2)*Sa_quad(a4)
                       END IF
                    END IF
-
-                   IF(S2q/=0.Q0)THEN
 #endif
-#if (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_MP))
+#if (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
+                   IF(S2q/=0.0_wp)THEN
+#elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+                   IF(S2q/=0.D0)THEN
+#endif
+#if defined(NDSU3LIB_QUAD)
                       coeffq=coeffq+binom_quad(ind3)*S11q*S12q*S2q/QFLOAT(k2L+1)
-#elif (defined(NDSU3LIB_QUAD_GNU) || defined(NDSU3LIB_MP_GNU))
+#elif defined(NDSU3LIB_QUAD_GNU)
                       coeffq=coeffq+binom_quad(ind3)*S11q*S12q*S2q/REAL(k2L+1,16)
+#elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+                      coeffq=coeffq+binom_quad(ind3)*S11q*S12q*S2q/DBLE(k2L+1)
 #endif
 #if (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU) || defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
                    END IF
@@ -381,21 +411,30 @@ CONTAINS
              aux2=aux2-p+gama
              ind3=ind3+1
           END DO
-
-          IF(coeffq/=0.Q0)THEN
+#endif
+#if (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
+          IF(coeffq/=0.0_wp)THEN
+#elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+          IF(coeffq/=0.D0)THEN
+#endif
+#if (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU) || defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
              ! Factor (2*L+1)/(2**p) appears in C in Eq.(26) as squared but that is a typo: (2L+1) should not be squared!
              aux1=lambda+mu+1
              aux2=p+mu+1
              aux3=2*L*(L+1)
 #endif
-#if (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_MP))
+#if defined(NDSU3LIB_QUAD)
              S2q=QFLOAT(2*L+1)*QSQRT((binom_quad((lambdas+lambda)/2+p)/binom_quad(aux3-Mp))*(binom_quad(mu*(mu+1)/2+q)&
                   /binom_quad((Lambda2p*(Lambda2p+2)+MLambda2p)/2))&
-                  *(binom_quad(aux1*(aux1+1)/2+q)/binom_quad(aux2*(aux2+1)/2+q))*binom_quad(aux3-M))/(4.Q0**QFLOAT(p))
-#elif (defined(NDSU3LIB_QUAD_GNU) || defined(NDSU3LIB_MP_GNU))
+                  *(binom_quad(aux1*(aux1+1)/2+q)/binom_quad(aux2*(aux2+1)/2+q))*binom_quad(aux3-M))/(4.0_wp**QFLOAT(p))
+#elif defined(NDSU3LIB_QUAD_GNU)
              S2q=REAL(2*L+1,16)*SQRT((binom_quad((lambdas+lambda)/2+p)/binom_quad(aux3-Mp))*(binom_quad(mu*(mu+1)/2+q)&
                   /binom_quad((Lambda2p*(Lambda2p+2)+MLambda2p)/2))&
-                  *(binom_quad(aux1*(aux1+1)/2+q)/binom_quad(aux2*(aux2+1)/2+q))*binom_quad(aux3-M))/(4.Q0**REAL(p,16))
+                  *(binom_quad(aux1*(aux1+1)/2+q)/binom_quad(aux2*(aux2+1)/2+q))*binom_quad(aux3-M))/(4.0_wp**REAL(p,16))
+#elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+             S2q=DBLE(2*L+1)*SQRT((binom_quad((lambdas+lambda)/2+p)/binom_quad(aux3-Mp))*(binom_quad(mu*(mu+1)/2+q)&
+                  /binom_quad((Lambda2p*(Lambda2p+2)+MLambda2p)/2))&
+                  *(binom_quad(aux1*(aux1+1)/2+q)/binom_quad(aux2*(aux2+1)/2+q))*binom_quad(aux3-M))/(4.D0**DBLE(p))
 #endif
              ! S2q is C
 #if (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU) || defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
@@ -499,7 +538,7 @@ CONTAINS
                    END IF
                 END IF
 
-                IF(S2mp/=0.D0)point=point+binom_mp(ind3)*S11mp*S12mp*S2mp/DFLOAT(k2L+1) ! coeff=coeff+binom_mp(ind3)*S11mp*S12mp*S2mp/DFLOAT(k2L+1)
+                IF(S2mp/=0.D0)point=point+binom_mp(ind3)*S11mp*S12mp*S2mp/DBLE(k2L+1) ! coeff=coeff+binom_mp(ind3)*S11mp*S12mp*S2mp/DFLOAT(k2L+1)
 
              END IF
           END IF
@@ -516,9 +555,9 @@ CONTAINS
           aux1=lambda+mu+1
           aux2=p+mu+1
           aux3=2*L*(L+1)
-          S2mp=DFLOAT(2*L+1)*SQRT((binom_mp((lambdas+lambda)/2+p)/binom_mp(aux3-Mp))*(binom_mp(mu*(mu+1)/2+q)&
+          S2mp=DBLE(2*L+1)*SQRT((binom_mp((lambdas+lambda)/2+p)/binom_mp(aux3-Mp))*(binom_mp(mu*(mu+1)/2+q)&
                /binom_mp((Lambda2p*(Lambda2p+2)+MLambda2p)/2))&
-               *(binom_mp(aux1*(aux1+1)/2+q)/binom_mp(aux2*(aux2+1)/2+q))*binom_mp(aux3-M))/(4.D0**DFLOAT(p))
+               *(binom_mp(aux1*(aux1+1)/2+q)/binom_mp(aux2*(aux2+1)/2+q))*binom_mp(aux3-M))/(4.D0**DBLE(p))
           ! S2mp is C
           IF(BTEST(L-p,0))THEN
              point=-point*S2mp ! coeff=-coeff*S2mp
@@ -562,11 +601,11 @@ CONTAINS
     USE ISO_C_BINDING
 #endif
     IMPLICIT NONE
-#if (defined(NDSU3LIB_DBL) || defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
-    REAL(KIND=8),INTENT(OUT) :: coeff
-#elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
     CLASS(*),TARGET,INTENT(OUT) :: coeff
     TYPE(mp_real),POINTER :: point
+#else
+    REAL(KIND=8),INTENT(OUT) :: coeff
 #endif
     TYPE(su3irrep),INTENT(IN) :: irrep
 #if defined(NDSU3LIB_CACHE_C)
@@ -645,10 +684,10 @@ CONTAINS
       absMLambda2p=ABS(MLambda2p)
       absMp=ABS(Mp)
       IF(lambda<256.AND.mu<256.AND.p<256.AND.q<256.AND.absMLambda2p<256.AND.M<256.AND.L<256.AND.absMp<256)THEN
-         key=IOR(ISHFT(INT8(IAND(lambda,255)),56),IOR(ISHFT(INT8(IAND(mu,255)),48),&
-             IOR(ISHFT(INT8(IAND(p,255)),40),IOR(ISHFT(INT8(IAND(q,255)),32),&
-             IOR(ISHFT(INT8(IAND(absMLambda2p,255)),24),IOR(ISHFT(INT8(IAND(M,255)),16),&
-             IOR(ISHFT(INT8(IAND(L,255)),8),INT8(IAND(absMp,255)))))))))
+         key=IOR(ISHFT(INT(IAND(lambda,255),8),56),IOR(ISHFT(INT(IAND(mu,255),8),48),&
+             IOR(ISHFT(INT(IAND(p,255),8),40),IOR(ISHFT(INT(IAND(q,255),8),32),&
+             IOR(ISHFT(INT(IAND(absMLambda2p,255),8),24),IOR(ISHFT(INT(IAND(M,255),8),16),&
+             IOR(ISHFT(INT(IAND(L,255),8),8),INT(IAND(absMp,255),8))))))))
          point2=>cache%Get(key)
          IF(ASSOCIATED(point2))THEN
             coeff=point2
@@ -679,10 +718,10 @@ CONTAINS
       absMLambda2p=ABS(MLambda2p)
       absMp=ABS(Mp)
       IF(lambda<256.AND.mu<256.AND.p<256.AND.q<256.AND.absMLambda2p<256.AND.M<256.AND.L<256.AND.absMp<256)THEN
-         key=IOR(ISHFT(INT8(IAND(lambda,255)),56),IOR(ISHFT(INT8(IAND(mu,255)),48),&
-             IOR(ISHFT(INT8(IAND(p,255)),40),IOR(ISHFT(INT8(IAND(q,255)),32),&
-             IOR(ISHFT(INT8(IAND(absMLambda2p,255)),24),IOR(ISHFT(INT8(IAND(M,255)),16),&
-             IOR(ISHFT(INT8(IAND(L,255)),8),INT8(IAND(absMp,255)))))))))
+         key=IOR(ISHFT(INT(IAND(lambda,255),8),56),IOR(ISHFT(INT(IAND(mu,255),8),48),&
+             IOR(ISHFT(INT(IAND(p,255),8),40),IOR(ISHFT(INT(IAND(q,255),8),32),&
+             IOR(ISHFT(INT(IAND(absMLambda2p,255),8),24),IOR(ISHFT(INT(IAND(M,255),8),16),&
+             IOR(ISHFT(INT(IAND(L,255),8),8),INT(IAND(absMp,255),8))))))))
          point3=>cache_mp%Get(key)
          IF(ASSOCIATED(point3))THEN
             coeff=point3
@@ -735,11 +774,11 @@ CONTAINS
     !USE mpmodule
     !#endif
     IMPLICIT NONE
-#if (defined(NDSU3LIB_DBL) || defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
-    REAL(KIND=8),DIMENSION(:,:),INTENT(OUT) :: matrix
-#elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
     CLASS(*),TARGET,DIMENSION(:,:),INTENT(OUT) :: matrix
     TYPE(mp_real),POINTER,DIMENSION(:,:) :: point
+#else
+    REAL(KIND=8),DIMENSION(:,:),INTENT(OUT) :: matrix
 #endif
     TYPE(su3irrep),INTENT(IN) :: irrep
     INTEGER,INTENT(IN) :: I,J,L,kappamax
@@ -861,7 +900,7 @@ CONTAINS
     ! Calculates SU(2) Clebsch-Gordan coefficient <j1/2,m1/2,j2/2,m2/2|j3/2,m3/2>
     ! using GSL function gsl_sf_coupling_3j calculating 3j symbol.
     !----------------------------------------------------------------------------
-    USE iso_c_binding
+    USE ISO_C_BINDING
     IMPLICIT NONE
     INTERFACE
        REAL(C_DOUBLE) FUNCTION gsl_sf_coupling_3j(l1,n1,l2,n2,l3,n3) BIND(C)
@@ -872,7 +911,7 @@ CONTAINS
     INTEGER(C_INT),INTENT(IN) :: j1,m1,j2,m2,j3,m3
     REAL(C_DOUBLE) :: cg
     INTEGER :: a
-    cg=gsl_sf_coupling_3j(j1,j2,j3,m1,m2,-m3)*DSQRT(DFLOAT(j3+1))
+    cg=gsl_sf_coupling_3j(j1,j2,j3,m1,m2,-m3)*DSQRT(DBLE(j3+1))
     a=j1-j2+m3
     IF((a/4)*4/=a)cg=-cg
     RETURN
@@ -910,11 +949,11 @@ CONTAINS
     !USE mpmodule
     !#endif
     IMPLICIT NONE
-#if (defined(NDSU3LIB_DBL) || defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
-    REAL(KIND=8),DIMENSION(:,:),INTENT(IN) :: matrix1,matrix2
-#elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
     CLASS(*),TARGET,DIMENSION(:,:),INTENT(IN) :: matrix1,matrix2
     TYPE(mp_real),POINTER,DIMENSION(:,:) :: point1,point2
+#else
+    REAL(KIND=8),DIMENSION(:,:),INTENT(IN) :: matrix1,matrix2
 #endif
     REAL(KIND=8),DIMENSION(:,:),INTENT(IN) :: matrix3
 #if defined(NDSU3LIB_WSO3_WIGXJPF)
@@ -948,10 +987,10 @@ CONTAINS
     !  END SUBROUTINE transformation_coeff
     !END INTERFACE
 
-#if (defined(NDSU3LIB_DBL) || defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
-    ALLOCATE(transcoeff1(kappa1max),transcoeff2(kappa2max))
-#elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
     ALLOCATE(transcoeff1(kappa1max),transcoeff2(kappa2max),transcoeff1mp(kappa1max),transcoeff2mp(kappa2max))
+#else
+    ALLOCATE(transcoeff1(kappa1max),transcoeff2(kappa2max))    
 #endif
 
     wigner_phys(1:kappa1max,1:kappa2max,1:kappa3max,1:rhomax)=0.D0
@@ -1038,7 +1077,7 @@ CONTAINS
 #if defined(NDSU3LIB_WSO3_GSL)
              cg1=clebsch_gordan(L12,2*M1p,L22,2*M2p,L32,K32) ! cg1 is <L1 M'_1;L2 M'_2|L3 K3>
 #elif defined(NDSU3LIB_WSO3_WIGXJPF)
-             cg1=fwig3jj(L12,L22,L32,2*M1p,2*M2p,-K32)*DSQRT(DFLOAT(L32+1))
+             cg1=fwig3jj(L12,L22,L32,2*M1p,2*M2p,-K32)*DSQRT(DBLE(L32+1))
              phase=L12-L22+K32
              IF((phase/4)*4/=phase)cg1=-cg1
 #endif
@@ -1144,7 +1183,7 @@ CONTAINS
 #if defined(NDSU3LIB_WSO3_GSL)
                 cg2=cg1*clebsch_gordan(Lambda12,-MLambda12,Lambda22,-MLambda22,Lambda32,-MLambda32)
 #elif defined(NDSU3LIB_WSO3_WIGXJPF)
-                cg=fwig3jj(Lambda12,Lambda22,Lambda32,-MLambda12,-MLambda22,MLambda32)*DSQRT(DFLOAT(Lambda32+1))
+                cg=fwig3jj(Lambda12,Lambda22,Lambda32,-MLambda12,-MLambda22,MLambda32)*DSQRT(DBLE(Lambda32+1))
                 phase=Lambda12-Lambda22-MLambda32
                 IF((phase/4)*4/=phase)cg=-cg
                 cg2=cg1*cg
@@ -1179,10 +1218,10 @@ CONTAINS
        END DO
     END DO
 
-#if (defined(NDSU3LIB_DBL) || defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
-    DEALLOCATE(transcoeff1,transcoeff2)
-#elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
     DEALLOCATE(transcoeff1,transcoeff2,transcoeff1mp,transcoeff2mp)
+#else
+    DEALLOCATE(transcoeff1,transcoeff2)    
 #endif
 
   END SUBROUTINE wigner_su3so3
@@ -1280,16 +1319,7 @@ CONTAINS
     CALL wigner_canonical_extremal(irrep1,irrep2,irrep3,I3,rhomax,numb,wigner_can,p1a,p2a,q2a)
     CALL orthonormalization_matrix(I3,J3,irrep3,L3,kappa3max,matrix3)
 
-#if (defined(NDSU3LIB_DBL) || defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
-
-    ALLOCATE(matrix1(kappa1max,kappa1max),matrix2(kappa2max,kappa2max))
-    CALL orthonormalization_matrix(I1,J1,irrep1,L1,kappa1max,matrix1)
-    CALL orthonormalization_matrix(I2,J2,irrep2,L2,kappa2max,matrix2)
-    CALL wigner_su3so3(I1,J1,irrep1,L1,kappa1max,matrix1,I2,J2,irrep2,L2,kappa2max,matrix2,&
-         I3,irrep3,L3,kappa3max,matrix3,rhomax,numb,wigner_can,p1a,p2a,q2a,wigner_phys)
-    DEALLOCATE(wigner_can,matrix1,matrix2,matrix3,p1a,p2a,q2a)
-
-#elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
 
     sum1=irrep1%lambda+irrep1%mu+L1+2
     IF(sum1<62)THEN
@@ -1367,6 +1397,15 @@ CONTAINS
        DEALLOCATE(wigner_can,matrix1mp,matrix2mp,matrix3,p1a,p2a,q2a)
     END IF
 
+#else
+
+    ALLOCATE(matrix1(kappa1max,kappa1max),matrix2(kappa2max,kappa2max))
+    CALL orthonormalization_matrix(I1,J1,irrep1,L1,kappa1max,matrix1)
+    CALL orthonormalization_matrix(I2,J2,irrep2,L2,kappa2max,matrix2)
+    CALL wigner_su3so3(I1,J1,irrep1,L1,kappa1max,matrix1,I2,J2,irrep2,L2,kappa2max,matrix2,&
+         I3,irrep3,L3,kappa3max,matrix3,rhomax,numb,wigner_can,p1a,p2a,q2a,wigner_phys)
+    DEALLOCATE(wigner_can,matrix1,matrix2,matrix3,p1a,p2a,q2a)
+
 #endif
 
   END SUBROUTINE calculate_wigner_su3so3
@@ -1389,7 +1428,7 @@ CONTAINS
     ! wigner_phys_block(ind) = <(lambda1,mu1)kappa1,L1;(lambda2,mu2)kappa2,L2||(lambda3,mu3)kappa3,L3>_rho
     ! ind = kappa1+kappa1max*(kappa2-1)+kappa1max*kappa2max*(kappa3-1)+kappa1max*kappa2max*kappa3max*(rho-1)
     !-----------------------------------------------------------------------------------------------------------------
-    USE iso_c_binding
+    USE ISO_C_BINDING
     IMPLICIT NONE
     TYPE(su3irrep),INTENT(IN) :: irrep1,irrep2,irrep3
     INTEGER(C_INT),INTENT(IN) :: L1,L2,L3,kappa1max,kappa2max,kappa3max,rhomax,dimen

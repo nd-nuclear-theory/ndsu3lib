@@ -51,7 +51,7 @@ SUBROUTINE tabulate_wigner_canonical
      epsilon1=epsilon3-epsilon2
      Lambda1_twice=irrep1%mu+p1-q1 ! Lambda1_twice is 2*Lambda1
      Lambda2_twice=irrep2%mu+p2-q2 ! Lambda2_twice is 2*Lambda2
-     WRITE(*,"(X,I4,7X,I3,7X,I4,7X,I3,3X,2D25.16)")epsilon1,Lambda1_twice,epsilon2,Lambda2_twice,&
+     WRITE(*,"(I5,I10,I11,I10,2D28.16)")epsilon1,Lambda1_twice,epsilon2,Lambda2_twice,&
           (wigner_block(i+numb*(rho-1)),rho=1,rhomax)
   END DO
 
@@ -95,7 +95,7 @@ SUBROUTINE tabulate_wigner_su3so3
   DO kappa1=1,kappa1max
      DO kappa2=1,kappa2max
         DO kappa3=1,kappa3max
-           WRITE(*,"(2X,I2,6X,I2,6X,I2,X,2D25.16)")kappa1,kappa2,kappa3,&
+           WRITE(*,"(I4,I8,I8,2D26.16)")kappa1,kappa2,kappa3,&
              (wigner_phys(kappa1,kappa2,kappa3,rho),rho=1,rhomax)
         END DO
      END DO
@@ -142,7 +142,7 @@ SUBROUTINE tabulate_u_coeff
 
   WRITE(*,*)
   IF(info/=0)THEN
-     WRITE(*,"(A,I2)")"calculate_u_coeff: MKL subroutine dgesv ran with error: info=",info
+     WRITE(*,"(A,I2)")"calculate_u_coeff: Lapack subroutine dgesv ran with error: info=",info
      DEALLOCATE(rac)
      RETURN
   END IF
@@ -153,7 +153,7 @@ SUBROUTINE tabulate_u_coeff
         DO rhoc=1,rhomaxc
            DO rhod=1,rhomaxd
               n=rhoa+rhomaxa*(rhob-1)+rhomaxa*rhomaxb*(rhoc-1)
-              WRITE(*,"(X,I2,4X,I2,4X,I2,4X,I2,D25.16)")rhoa,rhob,rhoc,rhod,rac(rhod,n)
+              WRITE(*,"(I3,I6,I6,I6,D25.16)")rhoa,rhob,rhoc,rhod,rac(rhod,n)
            END DO
         END DO
      END DO
@@ -199,7 +199,7 @@ SUBROUTINE tabulate_z_coeff
 
   WRITE(*,*)
   IF(info/=0)THEN
-     WRITE(*,"(A,I2)")"calculate_z_coeff: MKL subroutine dgesv ran with error: info=",info
+     WRITE(*,"(A,I2)")"calculate_z_coeff: Lapack subroutine dgesv ran with error: info=",info
      DEALLOCATE(Zcoeff)
      RETURN
   END IF
@@ -210,7 +210,7 @@ SUBROUTINE tabulate_z_coeff
         DO rhoc=1,rhomaxc
            DO rhod=1,rhomaxd
               n=rhoa+rhomaxa*(rhob-1)+rhomaxa*rhomaxb*(rhoc-1)
-              WRITE(*,"(X,I2,4X,I2,4X,I2,4X,I2,D25.16)")rhoa,rhob,rhoc,rhod,Zcoeff(rhod,n)
+              WRITE(*,"(I3,I6,I6,I6,D25.16)")rhoa,rhob,rhoc,rhod,Zcoeff(rhod,n)
            END DO
         END DO
      END DO
@@ -268,7 +268,7 @@ SUBROUTINE tabulate_nine_lm
 
   WRITE(*,*)
   IF(info/=0)THEN
-     WRITE(*,"(A,I2)")"calculate_9_lambda_mu: MKL subroutine dgesv ran with error: info=",info
+     WRITE(*,"(A,I2)")"calculate_9_lambda_mu: Lapack subroutine dgesv ran with error: info=",info
      DEALLOCATE(ninelm)
      RETURN
   END IF
@@ -283,7 +283,7 @@ SUBROUTINE tabulate_nine_lm
            DO rho13=1,rhomax13
               DO rho24=1,rhomax24
                  DO rho1324=1,rhomax1324
-                    WRITE(*,"(X,I2,5X,I2,6X,I2,6X,I2,5X,I2,6X,I2,2X,D25.16)")rho12,rho34,rho1234,rho13,rho24,rho1324,&
+                    WRITE(*,"(I3,I7,I8,I8,I7,I8,D27.16)")rho12,rho34,rho1234,rho13,rho24,rho1324,&
                          ninelm(rho12,rho34,rho1234,rho13,rho24,rho1324)
                  END DO
               END DO
@@ -302,13 +302,14 @@ PROGRAM ndsu3lib_example
   !---------------------------------------------------------------------------
   USE ndsu3lib_wigner_canonical
   IMPLICIT NONE
+  LOGICAL(KIND=1) :: wso3=.TRUE.
 
-  CALL initialize_ndsu3lib(.TRUE.,50)
+  CALL initialize_ndsu3lib(wso3,50)
   CALL tabulate_wigner_canonical
   CALL tabulate_wigner_su3so3
   CALL tabulate_u_coeff
   CALL tabulate_z_coeff
   CALL tabulate_nine_lm
-  CALL finalize_ndsu3lib(.TRUE.)
+  CALL finalize_ndsu3lib(wso3)
 
 END PROGRAM ndsu3lib_example

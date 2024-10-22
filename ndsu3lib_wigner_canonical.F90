@@ -10,6 +10,9 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 MODULE ndsu3lib_wigner_canonical
   USE,INTRINSIC :: ISO_C_BINDING
+#if (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
+  USE,INTRINSIC :: ISO_FORTRAN_ENV, wp => REAL128
+#endif
 #if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
   USE mpmodule
 #endif
@@ -27,8 +30,8 @@ MODULE ndsu3lib_wigner_canonical
      INTEGER(C_INT) :: lambda,mu
   END TYPE su3irrep
 #if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
-  INTEGER :: ndig,nwds
-  PARAMETER(ndig=37,nwds=INT(ndig/mpdpw+2)) ! 37 is the minimal ndig
+  INTEGER :: ndig,nwds,nwdsm
+  PARAMETER(ndig=37,nwds=INT(ndig/mpdpw+2.D0),nwdsm=8) ! 37 is the minimal ndig, Medium precision set to 8 words, i.e., quad
 #endif
   !----------------------------------------------------------------------------------------------------------------------------
   ! Binomial coefficients: (n choose k)=binom(n*(n+1)/2+k)=binom_quad(n*(n+1)/2+k)=binom_mp(n*(n+1)/2+k): n=0,...,upbound_binom
@@ -45,9 +48,11 @@ MODULE ndsu3lib_wigner_canonical
   INTEGER :: upbound_binom,upbound_I,upbound_S
   REAL(KIND=8),ALLOCATABLE,DIMENSION(:) :: binom,Ia,Sa
 #if (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
-  REAL(KIND=16),ALLOCATABLE,DIMENSION(:) :: binom_quad,Ia_quad,Sa_quad
+  REAL(wp),ALLOCATABLE,DIMENSION(:) :: binom_quad,Ia_quad,Sa_quad
 #elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
-  REAL(KIND=16),ALLOCATABLE,DIMENSION(:) :: binom_quad,Ia_quad,Sa_quad
+  TYPE(mp_realm),ALLOCATABLE,DIMENSION(:) :: binom_quad,Ia_quad,Sa_quad
+#endif
+#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
   TYPE(mp_real),ALLOCATABLE,DIMENSION(:) :: binom_mp,Ia_mp,Sa_mp
 #endif
 #if defined(NDSU3LIB_OMP)
@@ -70,43 +75,49 @@ CONTAINS
     ind=upbound_binom*(upbound_binom+1)/2+upbound_binom
 #if defined(NDSU3LIB_DBL)
     ALLOCATE(binom(0:ind))
-#elif (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
-    ALLOCATE(binom(0:ind),binom_quad(0:ind))
 #elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
     ALLOCATE(binom(0:ind),binom_quad(0:ind),binom_mp(0:ind))
+#elif (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
+    ALLOCATE(binom(0:ind),binom_quad(0:ind))
 #endif
     binom(0)=1.D0
 #if (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
-    binom_quad(0)=1.Q0
+    binom_quad(0)=1.0_wp
 #elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
-    binom_quad(0)=1.Q0
+    binom_quad(0)=mprealm(1.D0,nwdsm)
+#endif
+#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
     binom_mp(0)=mpreal(1.D0,nwds)
 #endif
     ind=1
     DO n=1,upbound_binom
        binom(ind)=1.D0
 #if (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
-       binom_quad(ind)=1.Q0
+       binom_quad(ind)=1.0_wp
 #elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
-       binom_quad(ind)=1.Q0
+       binom_quad(ind)=mprealm(1.D0,nwdsm)
+#endif
+#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
        binom_mp(ind)=mpreal(1.D0,nwds)
 #endif
        ind=ind+1
        DO k=1,n-1
           binom(ind)=binom(ind-n-1)+binom(ind-n)
-#if (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
-          binom_quad(ind)=binom_quad(ind-n-1)+binom_quad(ind-n)
-#elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
           binom_quad(ind)=binom_quad(ind-n-1)+binom_quad(ind-n)
           binom_mp(ind)=binom_mp(ind-n-1)+binom_mp(ind-n)
+#elif (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
+          binom_quad(ind)=binom_quad(ind-n-1)+binom_quad(ind-n)          
 #endif
           ind=ind+1
        END DO
        binom(ind)=1.D0
 #if (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
-       binom_quad(ind)=1.Q0
+       binom_quad(ind)=1.0_wp
 #elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
-       binom_quad(ind)=1.Q0
+       binom_quad(ind)=mprealm(1.D0,nwdsm)
+#endif
+#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
        binom_mp(ind)=mpreal(1.D0,nwds)
 #endif
        ind=ind+1
@@ -120,10 +131,10 @@ CONTAINS
     IMPLICIT NONE
 #if defined(NDSU3LIB_DBL)
     DEALLOCATE(binom)
-#elif (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
-    DEALLOCATE(binom,binom_quad)
 #elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
     DEALLOCATE(binom,binom_quad,binom_mp)
+#elif (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
+    DEALLOCATE(binom,binom_quad)
 #endif
   END SUBROUTINE deallocate_binom
 
@@ -168,10 +179,10 @@ CONTAINS
     ind1=(upbound_I**3+(2*upbound_I)**2+upbound_I)/2+2*upbound_I
 #if defined(NDSU3LIB_DBL)
     ALLOCATE(Ia(0:ind1))
-#elif (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
-    ALLOCATE(Ia(0:ind1),Ia_quad(0:ind1))
 #elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
     ALLOCATE(Ia(0:ind1),Ia_quad(0:ind1),Ia_mp(0:ind1))
+#elif (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
+    ALLOCATE(Ia(0:ind1),Ia_quad(0:ind1))
 #endif
     aux=0
     ind2=0
@@ -180,11 +191,11 @@ CONTAINS
        ind1=p*aux ! ind1=(p^3+p^2)/2
        DO sigma=0,p
           Ia(ind1)=binom(ind2) ! I(p,0,sigma)=(p choose sigma)
-#if (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
-          Ia_quad(ind1)=binom_quad(ind2)
-#elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
           Ia_quad(ind1)=binom_quad(ind2)
           Ia_mp(ind1)=binom_mp(ind2)
+#elif (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
+          Ia_quad(ind1)=binom_quad(ind2)
 #endif
           ind1=ind1+1 ! ind1=(p^3+p^2)/2+sigma
           ind2=ind2+1 ! ind2=p*(p+1)/2+sigma
@@ -198,12 +209,14 @@ CONTAINS
     Ia(5)=-Ia(0)
 #if (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
     Ia_quad(3)=Ia_quad(0)
-    Ia_quad(4)=0.Q0
+    Ia_quad(4)=0.0_wp
     Ia_quad(5)=-Ia_quad(0)
 #elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
     Ia_quad(3)=Ia_quad(0)
-    Ia_quad(4)=0.Q0
+    Ia_quad(4)=mprealm(0.D0,nwdsm)
     Ia_quad(5)=-Ia_quad(0)
+#endif
+#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
     Ia_mp(3)=Ia_mp(0)
     Ia_mp(4)=mpreal(0.D0,nwds)
     Ia_mp(5)=-Ia_mp(0)
@@ -216,22 +229,22 @@ CONTAINS
           DO sigma=0,1
              ind1=ind1+1 ! ind1=(p^3+(p+q)^2+q)/2+sigma
              Ia(ind1)=Ia(ind2) ! I(p,q,sigma)=I(p-1,q-1,sigma)
-#if (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
-             Ia_quad(ind1)=Ia_quad(ind2)
-#elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
              Ia_quad(ind1)=Ia_quad(ind2)
              Ia_mp(ind1)=Ia_mp(ind2)
+#elif (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
+             Ia_quad(ind1)=Ia_quad(ind2)
 #endif
              ind2=ind2+1 ! ind2=((p-1)^3+(p-1+q-1)^2+q-1)/2+sigma
           END DO
           DO sigma=2,p+q-2
              ind1=ind1+1 ! ind1=(p^3+(p+q)^2+q)/2+sigma
              Ia(ind1)=Ia(ind2)-Ia(ind2-2) ! I(p,q,sigma)=I(p-1,q-1,sigma)-I(p-1,q-1,sigma-2)
-#if (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
-             Ia_quad(ind1)=Ia_quad(ind2)-Ia_quad(ind2-2)
-#elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
              Ia_quad(ind1)=Ia_quad(ind2)-Ia_quad(ind2-2)
              Ia_mp(ind1)=Ia_mp(ind2)-Ia_mp(ind2-2)
+#elif (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
+             Ia_quad(ind1)=Ia_quad(ind2)-Ia_quad(ind2-2)
 #endif
              ind2=ind2+1 ! ind2=((p-1)^3+(p-1+q-1)^2+q-1)/2+sigma
           END DO
@@ -239,11 +252,11 @@ CONTAINS
           DO sigma=p+q-1,p+q
              ind1=ind1+1 ! ind1=(p^3+(p+q)^2+q)/2+sigma
              Ia(ind1)=-Ia(ind2) ! I(p,q,sigma)=-I(p-1,q-1,sigma-2)
-#if (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
-             Ia_quad(ind1)=-Ia_quad(ind2)
-#elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
              Ia_quad(ind1)=-Ia_quad(ind2)
              Ia_mp(ind1)=-Ia_mp(ind2)
+#elif (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
+             Ia_quad(ind1)=-Ia_quad(ind2)
 #endif
              ind2=ind2+1 ! ind2=((p-1)^3+(p-1+q-1)^2+q-1)/2+sigma-2
           END DO
@@ -293,19 +306,21 @@ CONTAINS
     n=(upbound_S*upbound_S*(2*upbound_S+2)+2*upbound_S*(2*upbound_S+1))/2+2*upbound_S
 #if defined(NDSU3LIB_DBL)
     ALLOCATE(Sa(0:n))
-#elif (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
-    ALLOCATE(Sa(0:n),Sa_quad(0:n))
 #elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
     ALLOCATE(Sa(0:n),Sa_quad(0:n),Sa_mp(0:n))
+#elif (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
+    ALLOCATE(Sa(0:n),Sa_quad(0:n))
 #endif
     ind1=0
     DO q=0,upbound_S
        DO sigma=0,q
           Sa(ind1)=1.D0/binom(ind1)
 #if (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
-          Sa_quad(ind1)=1.Q0/binom_quad(ind1)
+          Sa_quad(ind1)=1.0_wp/binom_quad(ind1)
 #elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
-          Sa_quad(ind1)=1.Q0/binom_quad(ind1)
+          Sa_quad(ind1)=1.D0/binom_quad(ind1)
+#endif
+#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
           Sa_mp(ind1)=1.D0/binom_mp(ind1)
 #endif
           ind1=ind1+1 ! ind1=q*(q+1)/2+sigma
@@ -322,20 +337,22 @@ CONTAINS
        DO q=0,upbound_S-1
           DO sigma=0,p+q-1
              Sa(ind1)=Sa(ind2)-Sa(ind2+1) ! S(p,q,sigma)=S(p-1,q+1,sigma)-S(p-1,q+1,sigma+1)
-#if (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
-             Sa_quad(ind1)=Sa_quad(ind2)-Sa_quad(ind2+1)
-#elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
              Sa_quad(ind1)=Sa_quad(ind2)-Sa_quad(ind2+1)
              Sa_mp(ind1)=Sa_mp(ind2)-Sa_mp(ind2+1)
+#elif (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
+             Sa_quad(ind1)=Sa_quad(ind2)-Sa_quad(ind2+1)
 #endif
              ind1=ind1+1 ! ind1=(upbound*p*(p+upbound+2)+(p+q)*(p+q+1))/2+sigma
              ind2=ind2+1 ! ind2=(upbound*(p-1)*(p-1+upbound+2)+(p-1+q+1)*(p-1+q+1+1))/2+sigma
           END DO
           Sa(ind1)=1.D0 ! S(p,q,p+q)=1
 #if (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
-          Sa_quad(ind1)=1.Q0
+          Sa_quad(ind1)=1.0_wp
 #elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
-          Sa_quad(ind1)=1.Q0
+          Sa_quad(ind1)=mprealm(1.D0,nwdsm)
+#endif
+#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
           Sa_mp(ind1)=mpreal(1.D0,nwds)
 #endif
           ind1=ind1+1
@@ -345,17 +362,16 @@ CONTAINS
        ind3=ind2-p-upbound_S
        ind2=ind1-p-upbound_S
        DO sigma=0,upbound_S-1
-          Sa(ind1)=(DFLOAT(upbound_S-sigma)*Sa(ind2)+DFLOAT(p)*Sa(ind3))/DFLOAT(p+upbound_S)
+          Sa(ind1)=(DBLE(upbound_S-sigma)*Sa(ind2)+DBLE(p)*Sa(ind3))/DBLE(p+upbound_S)
 #if defined(NDSU3LIB_QUAD)
           Sa_quad(ind1)=(QFLOAT(upbound_S-sigma)*Sa_quad(ind2)+QFLOAT(p)*Sa_quad(ind3))/QFLOAT(p+upbound_S)
 #elif defined(NDSU3LIB_QUAD_GNU)
           Sa_quad(ind1)=(REAL(upbound_S-sigma,16)*Sa_quad(ind2)+REAL(p,16)*Sa_quad(ind3))/REAL(p+upbound_S,16)
-#elif defined(NDSU3LIB_MP)
-          Sa_quad(ind1)=(QFLOAT(upbound_S-sigma)*Sa_quad(ind2)+QFLOAT(p)*Sa_quad(ind3))/QFLOAT(p+upbound_S)
-          Sa_mp(ind1)=(DFLOAT(upbound_S-sigma)*Sa_mp(ind2)+DFLOAT(p)*Sa_mp(ind3))/DFLOAT(p+upbound_S)
-#elif defined(NDSU3LIB_MP_GNU)
-          Sa_quad(ind1)=(REAL(upbound_S-sigma,16)*Sa_quad(ind2)+REAL(p,16)*Sa_quad(ind3))/REAL(p+upbound_S,16)
-          Sa_mp(ind1)=(DFLOAT(upbound_S-sigma)*Sa_mp(ind2)+DFLOAT(p)*Sa_mp(ind3))/DFLOAT(p+upbound_S)
+#elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+          Sa_quad(ind1)=(DBLE(upbound_S-sigma)*Sa_quad(ind2)+DBLE(p)*Sa_quad(ind3))/DBLE(p+upbound_S)
+#endif
+#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+          Sa_mp(ind1)=(DBLE(upbound_S-sigma)*Sa_mp(ind2)+DBLE(p)*Sa_mp(ind3))/DBLE(p+upbound_S)
 #endif
           ! S(p,q,sigma)=((q-sigma)*S(p,q-1,sigma)+p*S(p-1,q,sigma))/(p+q)
           ind1=ind1+1 ! ind1=(upbound*p*(p+upbound+2)+(p+q)*(p+q+1))/2+sigma
@@ -369,22 +385,24 @@ CONTAINS
           ind5=aux3+sigma
           Sa(ind1)=1.D0/binom(ind5-1)
 #if (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
-          Sa_quad(ind1)=1.Q0/binom_quad(ind5-1)
+          Sa_quad(ind1)=1.0_wp/binom_quad(ind5-1)
 #elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
-          Sa_quad(ind1)=1.Q0/binom_quad(ind5-1)
+          Sa_quad(ind1)=1.D0/binom_quad(ind5-1)
+#endif
+#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
           Sa_mp(ind1)=1.D0/binom_mp(ind5-1)
 #endif
           DO n=1,nmax,2
              Sa(ind1)=Sa(ind1)-binom(ind4)/binom(ind5)
              Sa(ind1)=Sa(ind1)+binom(ind4+1)/binom(ind5+1)
-#if (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
-             Sa_quad(ind1)=Sa_quad(ind1)-binom_quad(ind4)/binom_quad(ind5)
-             Sa_quad(ind1)=Sa_quad(ind1)+binom_quad(ind4+1)/binom_quad(ind5+1)
-#elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
              Sa_quad(ind1)=Sa_quad(ind1)-binom_quad(ind4)/binom_quad(ind5)
              Sa_quad(ind1)=Sa_quad(ind1)+binom_quad(ind4+1)/binom_quad(ind5+1)
              Sa_mp(ind1)=Sa_mp(ind1)-binom_mp(ind4)/binom_mp(ind5)
              Sa_mp(ind1)=Sa_mp(ind1)+binom_mp(ind4+1)/binom_mp(ind5+1)
+#elif (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
+             Sa_quad(ind1)=Sa_quad(ind1)-binom_quad(ind4)/binom_quad(ind5)
+             Sa_quad(ind1)=Sa_quad(ind1)+binom_quad(ind4+1)/binom_quad(ind5+1)
 #endif
              ind4=ind4+2
              ind5=ind5+2
@@ -392,23 +410,23 @@ CONTAINS
           IF(nmax>=-1)THEN
              IF(BTEST(nmax,0))THEN ! nmax is odd
                 Sa(ind1)=Sa(ind1)-binom(ind4)/binom(ind5)
-#if (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
-                Sa_quad(ind1)=Sa_quad(ind1)-binom_quad(ind4)/binom_quad(ind5)
-#elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
                 Sa_quad(ind1)=Sa_quad(ind1)-binom_quad(ind4)/binom_quad(ind5)
                 Sa_mp(ind1)=Sa_mp(ind1)-binom_mp(ind4)/binom_mp(ind5)
+#elif (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
+                Sa_quad(ind1)=Sa_quad(ind1)-binom_quad(ind4)/binom_quad(ind5)
 #endif
              ELSE ! nmax is even
                 Sa(ind1)=Sa(ind1)-binom(ind4)/binom(ind5)
                 Sa(ind1)=Sa(ind1)+binom(ind4+1)/binom(ind5+1)
-#if (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
-                Sa_quad(ind1)=Sa_quad(ind1)-binom_quad(ind4)/binom_quad(ind5)
-                Sa_quad(ind1)=Sa_quad(ind1)+binom_quad(ind4+1)/binom_quad(ind5+1)
-#elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
+#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
                 Sa_quad(ind1)=Sa_quad(ind1)-binom_quad(ind4)/binom_quad(ind5)
                 Sa_quad(ind1)=Sa_quad(ind1)+binom_quad(ind4+1)/binom_quad(ind5+1)
                 Sa_mp(ind1)=Sa_mp(ind1)-binom_mp(ind4)/binom_mp(ind5)
                 Sa_mp(ind1)=Sa_mp(ind1)+binom_mp(ind4+1)/binom_mp(ind5+1)
+#elif (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
+                Sa_quad(ind1)=Sa_quad(ind1)-binom_quad(ind4)/binom_quad(ind5)
+                Sa_quad(ind1)=Sa_quad(ind1)+binom_quad(ind4+1)/binom_quad(ind5+1)
 #endif
              END IF
           END IF
@@ -416,9 +434,11 @@ CONTAINS
        END DO
        Sa(ind1)=1.D0 ! S(p,q,p+q)=1
 #if (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
-       Sa_quad(ind1)=1.Q0
+       Sa_quad(ind1)=1.0_wp
 #elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
-       Sa_quad(ind1)=1.Q0
+       Sa_quad(ind1)=mprealm(1.D0,nwdsm)
+#endif
+#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
        Sa_mp(ind1)=mpreal(1.D0,nwds)
 #endif
        ind1=ind1+1
@@ -435,10 +455,10 @@ CONTAINS
     IMPLICIT NONE
 #if defined(NDSU3LIB_DBL)
     DEALLOCATE(Ia)
-#elif (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
-    DEALLOCATE(Ia,Ia_quad)
 #elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
     DEALLOCATE(Ia,Ia_quad,Ia_mp)
+#elif (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
+    DEALLOCATE(Ia,Ia_quad)
 #endif
   END SUBROUTINE deallocate_I
 
@@ -449,10 +469,10 @@ CONTAINS
     IMPLICIT NONE
 #if defined(NDSU3LIB_DBL)
     DEALLOCATE(Sa)
-#elif (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
-    DEALLOCATE(Sa,Sa_quad)
 #elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
     DEALLOCATE(Sa,Sa_quad,Sa_mp)
+#elif (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
+    DEALLOCATE(Sa,Sa_quad)
 #endif
   END SUBROUTINE deallocate_S
 
@@ -473,7 +493,7 @@ CONTAINS
     USE fwigxjpf
 #endif
     IMPLICIT NONE
-    LOGICAL,INTENT(IN) :: wso3
+    LOGICAL(C_BOOL),INTENT(IN) :: wso3
     INTEGER(C_INT),INTENT(IN) :: lmpmu
     CALL allocate_binom(4*lmpmu+1)
     IF(wso3)THEN
@@ -520,7 +540,7 @@ CONTAINS
     USE fwigxjpf
 #endif
     IMPLICIT NONE
-    LOGICAL,INTENT(IN) :: wso3
+    LOGICAL(C_BOOL),INTENT(IN) :: wso3
     INTEGER(C_INT),INTENT(IN) :: lmpmu
 !$OMP SINGLE
     CALL allocate_binom(4*lmpmu+1)
@@ -572,7 +592,7 @@ CONTAINS
     USE fwigxjpf
 #endif
     IMPLICIT NONE
-    LOGICAL,INTENT(IN) :: wso3
+    LOGICAL(C_BOOL),INTENT(IN) :: wso3
     IF(wso3)THEN
 !$OMP SINGLE
        CALL deallocate_I
@@ -603,8 +623,9 @@ CONTAINS
     !------------------------------------------------------------------------
     IMPLICIT NONE
     INTEGER,INTENT(IN) :: incr
+    LOGICAL(KIND=1) :: wso3=.TRUE.
     PRINT*,"ndsu3lib ERROR: Insufficient upper bound on lambda+mu set in initialize_ndsu3lib"
-    CALL finalize_ndsu3lib(.TRUE.)
+    CALL finalize_ndsu3lib(wso3)
     STOP
     CALL deallocate_binom
     CALL allocate_binom(upbound_binom+incr)
@@ -616,8 +637,9 @@ CONTAINS
     !---------------------------------------------------------------------------------------------------------------
     IMPLICIT NONE
     INTEGER,INTENT(IN) :: incr
+    LOGICAL(KIND=1) :: wso3=.TRUE.
     PRINT*,"ndsu3lib ERROR: Insufficient upper bound on lambda+mu set in initialize_ndsu3lib"
-    CALL finalize_ndsu3lib(.TRUE.)
+    CALL finalize_ndsu3lib(wso3)
     STOP
     CALL deallocate_I
     CALL allocate_I(upbound_I+incr)
@@ -629,8 +651,9 @@ CONTAINS
     !---------------------------------------------------------------------------------------------------------------
     IMPLICIT NONE
     INTEGER,INTENT(IN) :: incr
+    LOGICAL(KIND=1) :: wso3=.TRUE.
     PRINT*,"ndsu3lib ERROR: Insufficient upper bound on lambda+mu set in initialize_ndsu3lib"
-    CALL finalize_ndsu3lib(.TRUE.)
+    CALL finalize_ndsu3lib(wso3)
     STOP
     CALL deallocate_S
     CALL allocate_S(upbound_S+incr)
@@ -800,19 +823,19 @@ CONTAINS
              IF(p2tilde==0)THEN
                 F=1.D0
              ELSE
-                F=DFLOAT((a+1)*(b-1))
+                F=DBLE((a+1)*(b-1))
                 DO j=1,p2tilde-1
-                   F=F*DFLOAT((a+j+1)*(b-j-1))
+                   F=F*DBLE((a+j+1)*(b-j-1))
                 END DO
                 i1=p2tilde*(p2tilde+1)/2
                 DO i=1,p2tilde
                    i1=i1+1
-                   scalprod=DFLOAT((p2+1)*(mu1+lambda2+mu2-n+2))
+                   scalprod=DBLE((p2+1)*(mu1+lambda2+mu2-n+2))
                    DO j=1,p2tilde-1
                       IF(j<i)THEN
-                         scalprod=scalprod*DFLOAT((p2+j+1)*(mu1+lambda2+mu2-n+j+2))
+                         scalprod=scalprod*DBLE((p2+j+1)*(mu1+lambda2+mu2-n+j+2))
                       ELSE
-                         scalprod=scalprod*DFLOAT((a+j+1)*(b-j-1))
+                         scalprod=scalprod*DBLE((a+j+1)*(b-j-1))
                       END IF
                    END DO
                    F=F+binom(i1)*scalprod
@@ -820,18 +843,18 @@ CONTAINS
                 IF(BTEST(p2tilde,0))F=-F
              END IF
              IF(j1<q2tilde)THEN
-                G=DFLOAT(INT8((a+n-j1)*(b-n+j1))*(c+n-j1)*(d+n-j1)*(lambda2+mu2-j1+1))
+                G=DBLE(INT((a+n-j1)*(b-n+j1),8)*(c+n-j1)*(d+n-j1)*(lambda2+mu2-j1+1))
              ELSE
-                G=DFLOAT(mu2-n+j1+1)
+                G=DBLE(mu2-n+j1+1)
              END IF
              DO j=j1+1,j2-1
                 IF(j<q2tilde)THEN
-                   G=G*DFLOAT(INT8((a+n-j)*(b-n+j))*(c+n-j)*(d+n-j)*(lambda2+mu2-j+1))
+                   G=G*DBLE(INT((a+n-j)*(b-n+j),8)*(c+n-j)*(d+n-j)*(lambda2+mu2-j+1))
                 ELSE
-                   G=G*DFLOAT(mu2-n+j+1)
+                   G=G*DBLE(mu2-n+j+1)
                 END IF
              END DO
-             G=G*DFLOAT(lambda2-2*q2tilde+n+1)*binom(n*(n+1)/2+q2tilde)
+             G=G*DBLE(lambda2-2*q2tilde+n+1)*binom(n*(n+1)/2+q2tilde)
              i1=n+1+lambda2-q2tilde
              H=binom(i1*(i1+1)/2+lambda2-q2tilde)
              wigner(lambda1,p2,q2,rho)=F*DSQRT(G/H)
@@ -860,19 +883,19 @@ CONTAINS
              ! 2) 0<=q2<=mu2, where q2=(2*lambda2+mu2-epsilon2)/3-p2
              ! 3) lambda2-steps21+i2<=Lambda22<=lambda2+steps21-i2, where Lambda22=mu2+p2-q2
              Lambda22=Lambda22+2 ! Lambda22 is 2*Lambda2 in Eq.(21)
-             Sq2=q2*(mu2+1-q2)*INT8(lambda2+mu2+2-q2) ! Sq2 is S(q2)
-             Rp2=p2*(lambda2+1-p2)*INT8(mu2+1+p2) ! Rp2 is R(p2)
+             Sq2=q2*(mu2+1-q2)*INT(lambda2+mu2+2-q2,8) ! Sq2 is S(q2)
+             Rp2=p2*(lambda2+1-p2)*INT(mu2+1+p2,8) ! Rp2 is R(p2)
              IF(lambda1>=i2)THEN
                 IF(Lambda22+1<=lambda2+mu2.AND.q2>0)THEN
                    ABCD=(lambda1-i2+Lambda22-lambda3+2)*(lambda1-i2+Lambda22+lambda3+4)
-                   IF(ABCD>0)wigner(p1min-1,p2,q2,rho)=-DSQRT(DFLOAT((lambda1-i2+1)*Sq2*ABCD)&
-                        /DFLOAT(INT8((lambda1+2-i2)*(Lambda22+1)*p1min)*(lambda1+1-p1min)&
+                   IF(ABCD>0)wigner(p1min-1,p2,q2,rho)=-DSQRT(DBLE((lambda1-i2+1)*Sq2*ABCD)&
+                        /DBLE(INT((lambda1+2-i2)*(Lambda22+1)*p1min,8)*(lambda1+1-p1min)&
                         *(mu1+1+p1min)*(Lambda22+2)))*wigner(p1min,p2,q2-1,rho)
                 END IF
                 IF(Lambda22>=1.AND.p2>0)THEN
                    ABCD=(Lambda22+lambda3-lambda1+i2)*(lambda3+lambda1-i2-Lambda22+2)
                    IF(ABCD>0)wigner(p1min-1,p2,q2,rho)=wigner(p1min-1,p2,q2,rho)&
-                        -DSQRT(DFLOAT((lambda1-i2+1)*Rp2*ABCD)/DFLOAT(INT8((lambda1+2-i2)*(Lambda22+1)*p1min)&
+                        -DSQRT(DBLE((lambda1-i2+1)*Rp2*ABCD)/DBLE(INT((lambda1+2-i2)*(Lambda22+1)*p1min,8)&
                         *(lambda1+1-p1min)*(mu1+1+p1min)*Lambda22))*wigner(p1min,p2-1,q2,rho)
                 END IF
              END IF
@@ -886,15 +909,15 @@ CONTAINS
                 Lambda12=Lambda12+2
                 IF(Lambda22+1<=lambda2+mu2.AND.q2>0)THEN
                    ABCD=(Lambda22+lambda3-Lambda12+1)*(lambda3+Lambda12-Lambda22+1)
-                   IF(ABCD>0)wigner(p1,p2,q2,rho)=-DSQRT(DFLOAT((Lambda12+2)*Sq2*ABCD)&
-                        /DFLOAT(INT8((Lambda12+1)*(Lambda22+1)*q1)*(mu1+1-q1)*(lambda1+mu1+2-q1)&
+                   IF(ABCD>0)wigner(p1,p2,q2,rho)=-DSQRT(DBLE((Lambda12+2)*Sq2*ABCD)&
+                        /DBLE(INT((Lambda12+1)*(Lambda22+1)*q1,8)*(mu1+1-q1)*(lambda1+mu1+2-q1)&
                         *(Lambda22+2)))*wigner(p1,p2,q2-1,rho)
                 END IF
                 IF(Lambda22>=1.AND.p2>0)THEN
                    ABCD=(Lambda12+Lambda22-lambda3+1)*(Lambda12+Lambda22+lambda3+3)
                    IF(ABCD>0)wigner(p1,p2,q2,rho)=wigner(p1,p2,q2,rho)&
-                        +DSQRT(DFLOAT((Lambda12+2)*Rp2*ABCD)/DFLOAT(INT8((Lambda12+1)*(Lambda22+1)&
-                        *q1)*(mu1+1-q1)*(lambda1+mu1+2-q1)*Lambda22))*wigner(p1,p2-1,q2,rho)
+                        +DSQRT(DBLE((Lambda12+2)*Rp2*ABCD)/DBLE(INT((Lambda12+1)*(Lambda22+1)&
+                        *q1,8)*(mu1+1-q1)*(lambda1+mu1+2-q1)*Lambda22))*wigner(p1,p2-1,q2,rho)
                 END IF
                 q1=q1-1
              END DO
@@ -911,7 +934,7 @@ CONTAINS
           mu2=mu2+1
           noname2=noname2-1
           IF(noname2==mu1.AND.wigner(1,lambda2-1,mu2-1,rho)/=0.D0)wigner(0,lambda2,mu2,rho)&
-               =-DSQRT(DFLOAT(INT8(lambda1*(mu1+2))&
+               =-DSQRT(DBLE(INT(lambda1*(mu1+2),8)&
                *(lambda2+lambda3)*(lambda3-lambda2+2))/2.D0)*wigner(1,lambda2-1,mu2-1,rho)
           p1min=MAX(0,noname2-mu1,(2-mu1+noname2)/2)
           q1=noname2-p1min
@@ -922,18 +945,18 @@ CONTAINS
              ! 2) 0<=q1<=mu1, where q1=(2*lambda1+mu1-epsilon1)/3-p1
              ! 3) 1<=Lambda12<=lambda1+mu1-1, where Lambda12=mu1+p1-q1
              Lambda12=Lambda12+2
-             IF(p1<lambda1.AND.wigner(p1+1,lambda2-1,mu2-1,rho)/=0.D0)wigner(p1,lambda2,mu2,rho)=-DSQRT(DFLOAT(INT8((p1+1)&
-                  *(lambda1-p1))*(mu1+2+p1)*(lambda2+lambda3-Lambda12)*(lambda3+Lambda12-lambda2+2))&
-                  /DFLOAT((Lambda12+2)*(Lambda12+1)))*wigner(p1+1,lambda2-1,mu2-1,rho)
+             IF(p1<lambda1.AND.wigner(p1+1,lambda2-1,mu2-1,rho)/=0.D0)wigner(p1,lambda2,mu2,rho)=-DSQRT(DBLE(INT((p1+1)&
+                  *(lambda1-p1),8)*(mu1+2+p1)*(lambda2+lambda3-Lambda12)*(lambda3+Lambda12-lambda2+2))&
+                  /DBLE((Lambda12+2)*(Lambda12+1)))*wigner(p1+1,lambda2-1,mu2-1,rho)
              IF(wigner(p1,lambda2-1,mu2-1,rho)/=0.D0)wigner(p1,lambda2,mu2,rho)=wigner(p1,lambda2,mu2,rho)&
-                  +DSQRT(DFLOAT(INT8((q1+1)*(mu1-q1))*(lambda1+mu1+1-q1)*(Lambda12+lambda2-lambda3)&
-                  *(Lambda12+lambda2+lambda3+2))/DFLOAT((Lambda12+1)*Lambda12))*wigner(p1,lambda2-1,mu2-1,rho)
+                  +DSQRT(DBLE(INT((q1+1)*(mu1-q1),8)*(lambda1+mu1+1-q1)*(Lambda12+lambda2-lambda3)&
+                  *(Lambda12+lambda2+lambda3+2))/DBLE((Lambda12+1)*Lambda12))*wigner(p1,lambda2-1,mu2-1,rho)
              q1=q1-1
           END DO
           IF(noname2==lambda1.AND.wigner(lambda1,lambda2-1,mu2-1,rho)/=0.D0)THEN
              Lambda12=lambda1+mu1
-             wigner(lambda1,lambda2,mu2,rho)=DSQRT(DFLOAT(INT8(mu1*(lambda1+mu1+1))*(Lambda12+lambda2-lambda3)&
-                  *(Lambda12+lambda2+lambda3+2))/DFLOAT((Lambda12+1)*Lambda12))*wigner(lambda1,lambda2-1,mu2-1,rho)
+             wigner(lambda1,lambda2,mu2,rho)=DSQRT(DBLE(INT(mu1*(lambda1+mu1+1),8)*(Lambda12+lambda2-lambda3)&
+                  *(Lambda12+lambda2+lambda3+2))/DBLE((Lambda12+1)*Lambda12))*wigner(lambda1,lambda2-1,mu2-1,rho)
           END IF
        END DO
 
@@ -981,27 +1004,27 @@ CONTAINS
                 Lambda12=Lambda12+2
                 IF(Lambda22==lambda2-i1.OR.Lambda22==0)THEN
                    IF(Lambda12>=1.AND.p1/=0)THEN
-                      wigner(p1,p2,q2,rho)=-DSQRT(DFLOAT(INT8((Lambda22+1)*p1*(lambda1+1-p1))*(mu1+1+p1)&
-                           *(Lambda22+lambda3-Lambda12+2)*(lambda3+Lambda12-Lambda22))/DFLOAT(INT8((Lambda12+1)&
-                           *(Lambda22+2)*(p2+1))*(lambda2-p2)*(mu2+2+p2)*4*Lambda12))*wigner(p1-1,p2+1,q2,rho)
+                      wigner(p1,p2,q2,rho)=-DSQRT(DBLE(INT((Lambda22+1)*p1*(lambda1+1-p1),8)*(mu1+1+p1)&
+                           *(Lambda22+lambda3-Lambda12+2)*(lambda3+Lambda12-Lambda22))/DBLE(INT((Lambda12+1)&
+                           *(Lambda22+2)*(p2+1),8)*(lambda2-p2)*(mu2+2+p2)*4*Lambda12))*wigner(p1-1,p2+1,q2,rho)
                    ELSE
                       wigner(p1,p2,q2,rho)=0.D0
                    END IF
                    IF(Lambda12+1<=lambda1+mu1.AND.q1/=0)wigner(p1,p2,q2,rho)=wigner(p1,p2,q2,rho)&
-                        +DSQRT(DFLOAT(INT8((Lambda22+1)*q1*(mu1+1-q1))*(lambda1+mu1+2-q1)*(Lambda12+Lambda22-lambda3+2)&
-                        *(Lambda12+Lambda22+lambda3+4))/DFLOAT(INT8((Lambda12+1)*(Lambda22+2)*(p2+1))*(lambda2-p2)&
+                        +DSQRT(DBLE(INT((Lambda22+1)*q1*(mu1+1-q1),8)*(lambda1+mu1+2-q1)*(Lambda12+Lambda22-lambda3+2)&
+                        *(Lambda12+Lambda22+lambda3+4))/DBLE(INT((Lambda12+1)*(Lambda22+2)*(p2+1),8)*(lambda2-p2)&
                         *(mu2+2+p2)*4*(Lambda12+2)))*wigner(p1,p2+1,q2,rho)
                 ELSE IF(q2<mu2)THEN
                    IF(Lambda12>=1.AND.p1/=0)THEN
-                      wigner(p1,p2,q2,rho)=-DSQRT(DFLOAT(INT8((Lambda22+1)*p1*(lambda1+1-p1))*(mu1+1+p1)&
-                           *(Lambda12+Lambda22-lambda3)*(Lambda12+Lambda22+lambda3+2))/DFLOAT(INT8((Lambda12+1)&
-                           *Lambda22*(q2+1))*(mu2-q2)*(lambda2+mu2+1-q2)*4*Lambda12))*wigner(p1-1,p2,q2+1,rho)
+                      wigner(p1,p2,q2,rho)=-DSQRT(DBLE(INT((Lambda22+1)*p1*(lambda1+1-p1),8)*(mu1+1+p1)&
+                           *(Lambda12+Lambda22-lambda3)*(Lambda12+Lambda22+lambda3+2))/DBLE(INT((Lambda12+1)&
+                           *Lambda22*(q2+1),8)*(mu2-q2)*(lambda2+mu2+1-q2)*4*Lambda12))*wigner(p1-1,p2,q2+1,rho)
                    ELSE
                       wigner(p1,p2,q2,rho)=0.D0
                    END IF
                    IF(Lambda12+1<=lambda1+mu1.and.q1/=0)wigner(p1,p2,q2,rho)=wigner(p1,p2,q2,rho)&
-                        -DSQRT(DFLOAT(INT8((Lambda22+1)*q1*(mu1+1-q1))*(lambda1+mu1+2-q1)*(Lambda22+lambda3-Lambda12)&
-                        *(lambda3+Lambda12-Lambda22+2))/DFLOAT(INT8((Lambda12+1)*Lambda22*(q2+1))*(mu2-q2)&
+                        -DSQRT(DBLE(INT((Lambda22+1)*q1*(mu1+1-q1),8)*(lambda1+mu1+2-q1)*(Lambda22+lambda3-Lambda12)&
+                        *(lambda3+Lambda12-Lambda22+2))/DBLE(INT((Lambda12+1)*Lambda22*(q2+1),8)*(mu2-q2)&
                         *(lambda2+mu2+1-q2)*4*(Lambda12+2)))*wigner(p1,p2,q2+1,rho)
                 END IF
 
@@ -1195,15 +1218,15 @@ CONTAINS
           IF(Lam32<Lambda32)THEN
              Lam32=Lam32+1
              q3=q3-1 ! p3 and q3 correspond to eps3 and Lam32
-             N3=DSQRT(DFLOAT(Lam32+1)/DFLOAT(INT8((q3+1)*(irrep3%mu-q3))*(lm3-q3)*(Lam32prime+2)*4))
+             N3=DSQRT(DBLE(Lam32+1)/DBLE(INT((q3+1)*(irrep3%mu-q3),8)*(lm3-q3)*(Lam32prime+2)*4))
           ELSE
              Lam32=Lam32-1
              p3=p3-1 ! p3 and q3 correspond to eps3 and Lam32
-             N3=DSQRT(DFLOAT(Lam32+1)/DFLOAT(INT8((p3+1)*(irrep3%lambda-p3))*(mu3p+p3)*Lam32prime*4))
+             N3=DSQRT(DBLE(Lam32+1)/DBLE(INT((p3+1)*(irrep3%lambda-p3),8)*(mu3p+p3)*Lam32prime*4))
           END IF ! Lam32 is 2*Lambda3 in Eq.(19) and N3 is sqrt((2*Lambda3'+1)*(2*Lambda3+1))/N3.
 
           DO p2=MAX(0,noname1-irrep2%mu,(Lam32-irrep1%mu+noname2-irrep2%mu)/2-irrep1%lambda),MIN(irrep2%lambda,noname2)
-             Rp2=INT8(p2+1)*(irrep2%lambda-p2)*(mu2p+p2)
+             Rp2=INT(p2+1,8)*(irrep2%lambda-p2)*(mu2p+p2)
              q2ex=MAX(0,noname1-p2,(irrep2%mu+noname2-Lam32-irrep1%mu)/2-irrep1%lambda)
              pq1=noname2-p2-q2ex ! pq1 is p1+q1
              Lambda22=irrep2%mu+p2-q2ex ! Lambda22 is 2*Lambda2 in Eq.(19)
@@ -1213,7 +1236,7 @@ CONTAINS
                 ! 2) -lambda1-2*mu1<=epsilon1<=2*lambda1+mu1, where epsilon1=eps3-epsilon2max+3*p2+3*q2
                 !     epsilon2=epsilon2max-3*(p2+q2) ! epsilon2 is epsilon2 in Eq.(19)
                 !     epsilon1=eps3-epsilon2 ! epsilon1 is epsilon1 in Eq.(19)
-                Sq2=INT8(q2+1)*(irrep2%mu-q2)*(lm2-q2)
+                Sq2=INT(q2+1,8)*(irrep2%mu-q2)*(lm2-q2)
                 p1ex=MAX(0,pq1-irrep1%mu,(Lam32-irrep1%mu+pq1-Lambda22)/2,(Lambda22-Lam32-irrep1%mu+pq1)/2)
                 q1=pq1-p1ex
                 Lambda12=irrep1%mu+p1ex-q1 ! Lambda12 is 2*Lambda1 in Eq.(19)
@@ -1234,40 +1257,40 @@ CONTAINS
                    IF(Lam32>Lam32prime)THEN
 
                       IF(q1/=irrep1%mu)THEN
-                         wigner(p1,p2,q2,1:rhomax)=DSQRT(DFLOAT(INT8((q1+1)*(irrep1%mu-q1))*(lm1-q1)&
-                              *(s2+2)*(s2-2*Lambda22))/DFLOAT(Lambda12*(Lambda12+1)))*wigner(p1,p2,q2,1:rhomax)
+                         wigner(p1,p2,q2,1:rhomax)=DSQRT(DBLE(INT((q1+1)*(irrep1%mu-q1),8)*(lm1-q1)&
+                              *(s2+2)*(s2-2*Lambda22))/DBLE(Lambda12*(Lambda12+1)))*wigner(p1,p2,q2,1:rhomax)
                       ELSE
                          wigner(p1,p2,q2,1:rhomax)=0.D0
                       END IF
 
                       IF(p1/=irrep1%lambda)wigner(p1,p2,q2,1:rhomax)=wigner(p1,p2,q2,1:rhomax)&
-                           +DSQRT(DFLOAT(INT8((p1+1)*(irrep1%lambda-p1))*(mu1p+p1)&
-                           *(s2-2*Lambda12)*(s2-2*Lam32prime))/DFLOAT((Lambda12+1)*(Lambda12+2)))*wigner(p1+1,p2,q2,1:rhomax)
+                           +DSQRT(DBLE(INT((p1+1)*(irrep1%lambda-p1),8)*(mu1p+p1)&
+                           *(s2-2*Lambda12)*(s2-2*Lam32prime))/DBLE((Lambda12+1)*(Lambda12+2)))*wigner(p1+1,p2,q2,1:rhomax)
 
-                      IF(p2/=irrep2%lambda)wigner(p1,p2,q2,1:rhomax)=wigner(p1,p2,q2,1:rhomax)-DSQRT(DFLOAT(Rp2&
-                           *(s2-2*Lam32prime)*(s2-2*Lambda22))/DFLOAT((Lambda22+1)*(Lambda22+2)))*wigner(p1,p2+1,q2,1:rhomax)
+                      IF(p2/=irrep2%lambda)wigner(p1,p2,q2,1:rhomax)=wigner(p1,p2,q2,1:rhomax)-DSQRT(DBLE(Rp2&
+                           *(s2-2*Lam32prime)*(s2-2*Lambda22))/DBLE((Lambda22+1)*(Lambda22+2)))*wigner(p1,p2+1,q2,1:rhomax)
 
-                      IF(q2/=irrep2%mu)wigner(p1,p2,q2,1:rhomax)=wigner(p1,p2,q2,1:rhomax)+DSQRT(DFLOAT(Sq2&
-                           *(s2+2)*(s2-2*Lambda12))/DFLOAT(Lambda22*(Lambda22+1)))*wigner(p1,p2,q2+1,1:rhomax)
+                      IF(q2/=irrep2%mu)wigner(p1,p2,q2,1:rhomax)=wigner(p1,p2,q2,1:rhomax)+DSQRT(DBLE(Sq2&
+                           *(s2+2)*(s2-2*Lambda12))/DBLE(Lambda22*(Lambda22+1)))*wigner(p1,p2,q2+1,1:rhomax)
 
                    ELSE
 
                       IF(q1/=irrep1%mu)THEN
-                         wigner(p1,p2,q2,1:rhomax)=-DSQRT(DFLOAT(INT8((q1+1)*(irrep1%mu-q1))*(lm1-q1)&
-                              *(s2-2*Lambda12)*(s2-2*Lam32prime))/DFLOAT(Lambda12*(Lambda12+1)))*wigner(p1,p2,q2,1:rhomax)
+                         wigner(p1,p2,q2,1:rhomax)=-DSQRT(DBLE(INT((q1+1)*(irrep1%mu-q1),8)*(lm1-q1)&
+                              *(s2-2*Lambda12)*(s2-2*Lam32prime))/DBLE(Lambda12*(Lambda12+1)))*wigner(p1,p2,q2,1:rhomax)
                       ELSE
                          wigner(p1,p2,q2,1:rhomax)=0.D0
                       END IF
 
                       IF(p1/=irrep1%lambda)wigner(p1,p2,q2,1:rhomax)=wigner(p1,p2,q2,1:rhomax)&
-                           +DSQRT(DFLOAT(INT8((p1+1)*(irrep1%lambda-p1))*(mu1p+p1)&
-                           *(s2+2)*(s2-2*Lambda22))/DFLOAT((Lambda12+1)*(Lambda12+2)))*wigner(p1+1,p2,q2,1:rhomax)
+                           +DSQRT(DBLE(INT((p1+1)*(irrep1%lambda-p1),8)*(mu1p+p1)&
+                           *(s2+2)*(s2-2*Lambda22))/DBLE((Lambda12+1)*(Lambda12+2)))*wigner(p1+1,p2,q2,1:rhomax)
 
-                      IF(p2/=irrep2%lambda)wigner(p1,p2,q2,1:rhomax)=wigner(p1,p2,q2,1:rhomax)+DSQRT(DFLOAT(Rp2&
-                           *(s2+2)*(s2-2*Lambda12))/DFLOAT((Lambda22+1)*(Lambda22+2)))*wigner(p1,p2+1,q2,1:rhomax)
+                      IF(p2/=irrep2%lambda)wigner(p1,p2,q2,1:rhomax)=wigner(p1,p2,q2,1:rhomax)+DSQRT(DBLE(Rp2&
+                           *(s2+2)*(s2-2*Lambda12))/DBLE((Lambda22+1)*(Lambda22+2)))*wigner(p1,p2+1,q2,1:rhomax)
 
-                      IF(q2/=irrep2%mu)wigner(p1,p2,q2,1:rhomax)=wigner(p1,p2,q2,1:rhomax)+DSQRT(DFLOAT(Sq2&
-                           *(s2-2*Lam32prime)*(s2-2*Lambda22))/DFLOAT(Lambda22*(Lambda22+1)))*wigner(p1,p2,q2+1,1:rhomax)
+                      IF(q2/=irrep2%mu)wigner(p1,p2,q2,1:rhomax)=wigner(p1,p2,q2,1:rhomax)+DSQRT(DBLE(Sq2&
+                           *(s2-2*Lam32prime)*(s2-2*Lambda22))/DBLE(Lambda22*(Lambda22+1)))*wigner(p1,p2,q2+1,1:rhomax)
 
                    END IF
 
@@ -1342,17 +1365,17 @@ CONTAINS
           IF(Lam32<Lambda32)THEN
              Lam32=Lam32+1
              p3=p3+1 ! p3 and q3 correspond to eps3 and Lam32
-             N3=DSQRT(DFLOAT(Lam32+1)/DFLOAT(INT8(p3*(lambda3p-p3))*(mu3p+p3)*(Lam32prime+2)*4))
+             N3=DSQRT(DBLE(Lam32+1)/DBLE(INT(p3*(lambda3p-p3),8)*(mu3p+p3)*(Lam32prime+2)*4))
              ! N3 is sqrt((2*Lambda3+1)/(4*(2*Lambda3'+1)))/N3
           ELSE
              Lam32=Lam32-1
              q3=q3+1 ! p3 and q3 correspond to eps3 and Lam32
-             N3=DSQRT(DFLOAT(Lam32+1)/DFLOAT(INT8(q3*(mu3p-q3))*(lm3-q3)*Lam32prime*4))
+             N3=DSQRT(DBLE(Lam32+1)/DBLE(INT(q3*(mu3p-q3),8)*(lm3-q3)*Lam32prime*4))
              ! N3 is sqrt((2*Lambda3+1)/(8*Lambda3'))/N3
           END IF ! Lam32 is 2*Lambda3 in Eq.(19).
 
           DO p2=MIN(irrep2%lambda,noname2),MAX(0,noname1-irrep2%mu,(Lam32-irrep1%mu+noname2-irrep2%mu)/2-irrep1%lambda),-1
-             Rp2=INT8(p2)*(lambda2p-p2)*(mu2p+p2) ! Rp2 is R(p2)
+             Rp2=INT(p2,8)*(lambda2p-p2)*(mu2p+p2) ! Rp2 is R(p2)
              q2ex=MIN(irrep2%mu,noname2-p2,(irrep2%mu+noname2+Lam32-irrep1%mu)/2)
              pq1=noname2-p2-q2ex ! pq1 is p1+q1
              Lambda22=irrep2%mu+p2-q2ex ! Lambda22 is 2*Lambda2 in Eq.(19)
@@ -1362,7 +1385,7 @@ CONTAINS
                 ! 2) -lambda1-2*mu1<=epsilon1<=2*lambda1+mu1, where epsilon1=eps3-epsilon2max+3*p2+3*q2
                 !     epsilon2=epsilon2max-3*(p2+q2) ! epsilon2 is epsilon2 in Eq.(19)
                 !     epsilon1=eps3-epsilon2 ! epsilon1 is epsilon1 in Eq.(19)
-                Sq2=INT8(q2)*(mu2p-q2)*(lm2-q2)
+                Sq2=INT(q2,8)*(mu2p-q2)*(lm2-q2)
                 p1ex=MIN(irrep1%lambda,pq1,(Lambda22+Lam32-irrep1%mu+pq1)/2)
                 q1=pq1-p1ex
                 Lambda12=irrep1%mu+p1ex-q1 ! Lambda12 is 2*Lambda1 in Eq.(19)
@@ -1384,45 +1407,45 @@ CONTAINS
 
                       ! term with Lambda1p=Lambda1+1/2
                       IF(q1/=0)THEN
-                         wigner(p1,p2,q2,1:rhomax)=-DSQRT(DFLOAT(INT8(q1*(mu1p-q1))*(lm1-q1)&
-                              *(s2-2*Lambda12)*(s2-2*Lam32prime))/DFLOAT((Lambda12+1)*(Lambda12+2)))*wigner(p1,p2,q2,1:rhomax)
+                         wigner(p1,p2,q2,1:rhomax)=-DSQRT(DBLE(INT(q1*(mu1p-q1),8)*(lm1-q1)&
+                              *(s2-2*Lambda12)*(s2-2*Lam32prime))/DBLE((Lambda12+1)*(Lambda12+2)))*wigner(p1,p2,q2,1:rhomax)
                       ELSE
                          wigner(p1,p2,q2,1:rhomax)=0.D0
                       END IF
 
                       ! term with Lambda1p=Lambda1-1/2
-                      IF(p1/=0)wigner(p1,p2,q2,1:rhomax)=wigner(p1,p2,q2,1:rhomax)+DSQRT(DFLOAT(INT8(p1*(lambda1p-p1))*(mu1p+p1)&
-                           *(s2+2)*(s2-2*Lambda22))/DFLOAT(Lambda12*(Lambda12+1)))*wigner(p1-1,p2,q2,1:rhomax)
+                      IF(p1/=0)wigner(p1,p2,q2,1:rhomax)=wigner(p1,p2,q2,1:rhomax)+DSQRT(DBLE(INT(p1*(lambda1p-p1),8)*(mu1p+p1)&
+                           *(s2+2)*(s2-2*Lambda22))/DBLE(Lambda12*(Lambda12+1)))*wigner(p1-1,p2,q2,1:rhomax)
 
                       ! term with Lambda2p=Lambdda2+1/2
-                      IF(q2/=0)wigner(p1,p2,q2,1:rhomax)=wigner(p1,p2,q2,1:rhomax)+DSQRT(DFLOAT(Sq2&
-                           *(s2-2*Lam32prime)*(s2-2*Lambda22))/DFLOAT((Lambda22+1)*(Lambda22+2)))*wigner(p1,p2,q2-1,1:rhomax)
+                      IF(q2/=0)wigner(p1,p2,q2,1:rhomax)=wigner(p1,p2,q2,1:rhomax)+DSQRT(DBLE(Sq2&
+                           *(s2-2*Lam32prime)*(s2-2*Lambda22))/DBLE((Lambda22+1)*(Lambda22+2)))*wigner(p1,p2,q2-1,1:rhomax)
 
                       ! term with Lambda2p=Lambda2-1/2
-                      IF(p2/=0)wigner(p1,p2,q2,1:rhomax)=wigner(p1,p2,q2,1:rhomax)+DSQRT(DFLOAT(Rp2&
-                           *(s2+2)*(s2-2*Lambda12))/DFLOAT(Lambda22*(Lambda22+1)))*wigner(p1,p2-1,q2,1:rhomax)
+                      IF(p2/=0)wigner(p1,p2,q2,1:rhomax)=wigner(p1,p2,q2,1:rhomax)+DSQRT(DBLE(Rp2&
+                           *(s2+2)*(s2-2*Lambda12))/DBLE(Lambda22*(Lambda22+1)))*wigner(p1,p2-1,q2,1:rhomax)
 
                    ELSE
 
                       ! term with Lambda1p=Lambda1+1/2
                       IF(q1/=0)THEN
-                         wigner(p1,p2,q2,1:rhomax)=DSQRT(DFLOAT(INT8(q1*(mu1p-q1))*(lm1-q1)&
-                              *(s2+2)*(s2-2*Lambda22))/DFLOAT((Lambda12+1)*(Lambda12+2)))*wigner(p1,p2,q2,1:rhomax)
+                         wigner(p1,p2,q2,1:rhomax)=DSQRT(DBLE(INT(q1*(mu1p-q1),8)*(lm1-q1)&
+                              *(s2+2)*(s2-2*Lambda22))/DBLE((Lambda12+1)*(Lambda12+2)))*wigner(p1,p2,q2,1:rhomax)
                       ELSE
                          wigner(p1,p2,q2,1:rhomax)=0.D0
                       END IF
 
                       ! term with Lambda1p=Lambda1-1/2
-                      IF(p1/=0)wigner(p1,p2,q2,1:rhomax)=wigner(p1,p2,q2,1:rhomax)+DSQRT(DFLOAT(INT(p1)*(lambda1p-p1)*(mu1p+p1)&
-                           *(s2-2*Lambda12)*(s2-2*Lam32prime))/DFLOAT(Lambda12*(Lambda12+1)))*wigner(p1-1,p2,q2,1:rhomax)
+                      IF(p1/=0)wigner(p1,p2,q2,1:rhomax)=wigner(p1,p2,q2,1:rhomax)+DSQRT(DBLE(INT(p1)*(lambda1p-p1)*(mu1p+p1)&
+                           *(s2-2*Lambda12)*(s2-2*Lam32prime))/DBLE(Lambda12*(Lambda12+1)))*wigner(p1-1,p2,q2,1:rhomax)
 
                       ! term with Lambda2p=Lambda2+1/2
-                      IF(q2/=0)wigner(p1,p2,q2,1:rhomax)=wigner(p1,p2,q2,1:rhomax)+DSQRT(DFLOAT(Sq2&
-                           *(s2+2)*(s2-2*Lambda12))/DFLOAT((Lambda22+1)*(Lambda22+2)))*wigner(p1,p2,q2-1,1:rhomax)
+                      IF(q2/=0)wigner(p1,p2,q2,1:rhomax)=wigner(p1,p2,q2,1:rhomax)+DSQRT(DBLE(Sq2&
+                           *(s2+2)*(s2-2*Lambda12))/DBLE((Lambda22+1)*(Lambda22+2)))*wigner(p1,p2,q2-1,1:rhomax)
 
                       ! term with Lambda2p=Lambda2-1/2
-                      IF(p2/=0)wigner(p1,p2,q2,1:rhomax)=wigner(p1,p2,q2,1:rhomax)-DSQRT(DFLOAT(Rp2&
-                           *(s2-2*Lam32prime)*(s2-2*Lambda22))/DFLOAT(Lambda22*(Lambda22+1)))*wigner(p1,p2-1,q2,1:rhomax)
+                      IF(p2/=0)wigner(p1,p2,q2,1:rhomax)=wigner(p1,p2,q2,1:rhomax)-DSQRT(DBLE(Rp2&
+                           *(s2-2*Lam32prime)*(s2-2*Lambda22))/DBLE(Lambda22*(Lambda22+1)))*wigner(p1,p2-1,q2,1:rhomax)
 
                    END IF
 
