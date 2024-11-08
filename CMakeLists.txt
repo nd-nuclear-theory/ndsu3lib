@@ -77,9 +77,10 @@ endif()
 # Add library
 ###############################################################################
 set(ndsu3lib_sources_F
+  ndsu3lib_coupling_canonical.F90
+  ndsu3lib_coupling_su3so3.F90
   ndsu3lib_recoupling.F90
-  ndsu3lib_wigner_canonical.F90
-  ndsu3lib_wigner_su3so3.F90
+  ndsu3lib_tools.F90
 )
 set(ndsu3lib_sources_HEADERS  ndsu3lib.h)
 set(ndsu3lib_sources ${ndsu3lib_sources_F})
@@ -89,7 +90,7 @@ add_library(ndsu3lib::ndsu3lib ALIAS ndsu3lib)
 
 target_sources(ndsu3lib INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/ndsu3lib.h>)
 
-## MKL
+## Lapack
 find_package(BLAS)
 target_link_libraries(ndsu3lib PUBLIC BLAS::BLAS)
 
@@ -230,7 +231,6 @@ set_target_properties(ndsu3lib_example PROPERTIES LINKER_LANGUAGE Fortran)
 add_executable(ndsu3lib_example_cpp ndsu3lib_example_cpp.cpp)
 target_link_libraries(ndsu3lib_example_cpp ndsu3lib::ndsu3lib)
 set_target_properties(ndsu3lib_example_cpp PROPERTIES LINKER_LANGUAGE CXX)
-
 
 if(NDSU3LIB_MASTER_PROJECT)
   add_custom_target(tests)
