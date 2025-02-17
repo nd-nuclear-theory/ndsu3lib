@@ -2,6 +2,17 @@ Instructions for installing ndsu3lib with cmake.
 
 Requires cmake version 3.15 or higher 
 
+The following libraries are required:
+ - Lapack (unless recoupling coefficients are not going to be calculated)
+ - WIGXJPF or GNU Scientific Library (unless only SU(3)-U(1)xSU(2) reduced Wigner coefficients are going to be calculated)
+ - optionally MPFUN2020-Fort (recommended for SU(3)-SO(3) reduced coupling coefficients)
+
+Download links and documentation for WIGXJPF and MPFUN2020-Fort can be found here:
+
+http://fy.chalmers.se/subatom/wigxjpf/
+
+https://www.davidhbailey.com/dhbsoftware/
+
 To do a basic installation (with default values for compile flags) run  
 	cmake -B <build-dir> 
 
