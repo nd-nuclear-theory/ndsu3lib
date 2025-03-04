@@ -18,15 +18,6 @@ MODULE ndsu3lib_tools
 #if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
    USE mpmodule
 #endif
-#if defined(NDSU3LIB_CACHE)
-   USE cache_module
-#endif
-#if (defined(NDSU3LIB_CACHE) && (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU)))
-   USE cache_mp_module
-#endif
-#if defined(NDSU3LIB_OMP)
-   USE rwlock
-#endif
    IMPLICIT NONE
    TYPE, BIND(C) :: su3irrep
       !! Derived type for SU(3) irrep labels
@@ -87,9 +78,6 @@ MODULE ndsu3lib_tools
    TYPE(mp_real), ALLOCATABLE, DIMENSION(:) :: Sa_mp
       !! Array of values of S(p,q,s) in fumm arbitrary precision
 #endif
-#if defined(NDSU3LIB_OMP)
-   TYPE(ReadWriteLock_t) :: lock
-#endif
 
 CONTAINS
 
@@ -97,9 +85,6 @@ CONTAINS
       !----------------------------------------------------------------------------------------------------------------
       !! Allocate arrays binom, binom_quad, and binom_mp, calculate binomial coefficients, and store them in the arrays
       !----------------------------------------------------------------------------------------------------------------
-      !#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
-      !USE mpmodule
-      !#endif
       IMPLICIT NONE
       INTEGER, INTENT(IN) :: upbound
          !! Upper bound on n of stored binomial coefficients (n choose k)
@@ -182,33 +167,14 @@ CONTAINS
       !
       ! I(p,0,sigma)=(p choose sigma)
       !----------------------------------------------------------------------------------------------------------------
-      !#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
-      !USE mpmodule
-      !#endif
       IMPLICIT NONE
       INTEGER, INTENT(IN) :: upboundI
          !! Upper bound on p of stored values of I(p,q,s)
       INTEGER :: p, q, sigma, ind1, ind2, aux
       upbound_I = upboundI
-#if defined(NDSU3LIB_OMP)
-      CALL lock%reader_lock()
-      DO WHILE (upbound_I > upbound_binom)
-         IF (.NOT. lock%writer_lock(.TRUE.)) THEN
-            CALL lock%reader_unlock()
-            CALL lock%reader_lock()
-!$omp flush acquire
-            CYCLE
-         END IF
-!$omp flush acquire
-         CALL reallocate_binom(upbound_I - upbound_binom)
-!$omp flush release
-         CALL lock%writer_unlock(.TRUE.)
-      END DO
-#else
       IF (upbound_I > upbound_binom) THEN
          CALL reallocate_binom(upbound_I - upbound_binom)
       END IF
-#endif
       ind1 = (upbound_I**3 + (2*upbound_I)**2 + upbound_I)/2 + 2*upbound_I
 #if defined(NDSU3LIB_DBL)
       ALLOCATE (Ia(0:ind1))
@@ -234,9 +200,6 @@ CONTAINS
             ind2 = ind2 + 1 ! ind2=p*(p+1)/2+sigma
          END DO
       END DO
-#if defined(NDSU3LIB_OMP)
-      CALL lock%reader_unlock()
-#endif
       Ia(3) = Ia(0)
       Ia(4) = 0.D0
       Ia(5) = -Ia(0)
@@ -309,33 +272,14 @@ CONTAINS
       !
       ! S(0,q,sigma)=1/(q choose sigma)
       !----------------------------------------------------------------------------------------------------------------
-      !#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
-      !USE mpmodule
-      !#endif
       IMPLICIT NONE
       INTEGER, INTENT(IN) :: upboundS
          !! Upper bound on p and q of stored values of S(p,q,s)
       INTEGER :: p, q, sigma, ind1, ind2, aux, ind3, n, ind4, ind5, nmax, aux2, aux3
       upbound_S = upboundS
-#if defined(NDSU3LIB_OMP)
-      CALL lock%reader_lock()
-      DO WHILE (2*upbound_S > upbound_binom)
-         IF (.NOT. lock%writer_lock(.TRUE.)) THEN
-            CALL lock%reader_unlock()
-            CALL lock%reader_lock()
-!$omp flush acquire
-            CYCLE
-         END IF
-!$omp flush acquire
-         CALL reallocate_binom(2*upbound_S - upbound_binom)
-!$omp flush release
-         CALL lock%writer_unlock(.TRUE.)
-      END DO
-#else
       IF (2*upbound_S > upbound_binom) THEN
          CALL reallocate_binom(2*upbound_S - upbound_binom)
       END IF
-#endif
       n = (upbound_S*upbound_S*(2*upbound_S + 2) + 2*upbound_S*(2*upbound_S + 1))/2 + 2*upbound_S
 #if defined(NDSU3LIB_DBL)
       ALLOCATE (Sa(0:n))
@@ -476,9 +420,6 @@ CONTAINS
 #endif
          ind1 = ind1 + 1
       END DO
-#if defined(NDSU3LIB_OMP)
-      CALL lock%reader_unlock()
-#endif
    END SUBROUTINE allocate_S
 
    SUBROUTINE deallocate_I
@@ -509,71 +450,26 @@ CONTAINS
 #endif
    END SUBROUTINE deallocate_S
 
-   SUBROUTINE initialize_ndsu3lib(wso3, lmpmu) BIND(C)
-      !-----------------------------------------------------------------------------------------------------------------------------------
-      !! ndsu3lib initialization subroutine.
-      !! This subroutine must be called by main program before calling ndsu3lib subroutines for SU(3) coupling or recoupling coefficients.
+   SUBROUTINE initialize_ndsu3lib(wso3, openmp, lmpmu) BIND(C)
+      !--------------------------------------------------------------------------------------
+      !! ndsu3lib initialization subroutine
+      !! Must be called by the main program before calling ndsu3lib subroutines for SU(3) coupling or recoupling coefficients.
+      !! In OpenMP parallelized programs it must be called by each thread.
       !
-      ! Input arguments: wso3,lmpmu
-      !
-      ! wso3 must be .TRUE. if SU(3)-SO(3) coupling coefficients are going to be calculated.
-      ! lmpmu should be greater than or equal to maximal expected value of lambda+mu.
-      !-----------------------------------------------------------------------------------------------------------------------------------
-      !USE ISO_C_BINDING
-#if (defined(NDSU3LIB_RACAH_WIGXJPF) || defined(NDSU3LIB_WSO3_WIGXJPF))
-      USE fwigxjpf
-#endif
-      IMPLICIT NONE
-      LOGICAL(C_BOOL), INTENT(IN), VALUE :: wso3
-         !! Must be .TRUE. if SU(3)-SO(3) coupling coefficients are going to be calculated
-      INTEGER(C_INT), INTENT(IN), VALUE :: lmpmu
-         !! Should be greater than or equal to maximal expected value of lambda+mu
-      CALL allocate_binom(4*lmpmu + 1)
-      IF (wso3) THEN
-         CALL allocate_I(3*lmpmu)
-         CALL allocate_S(2*lmpmu)
-#if defined(NDSU3LIB_CACHE)
-         CALL cache%New(524288)
-#endif
-#if (defined(NDSU3LIB_CACHE) && (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU)))
-         CALL cache_mp%New(524288)
-#endif
-#if defined(NDSU3LIB_RACAH_WIGXJPF)
-         CALL fwig_table_init(2*lmpmu, 6)
-         CALL fwig_temp_init(2*lmpmu)
-#elif defined(NDSU3LIB_WSO3_WIGXJPF)
-         CALL fwig_table_init(2*lmpmu, 3)
-         CALL fwig_temp_init(2*lmpmu)
-#endif
-      ELSE
-#if defined(NDSU3LIB_RACAH_WIGXJPF)
-         CALL fwig_table_init(lmpmu, 6)
-         CALL fwig_temp_init(lmpmu)
-#elif defined(NDSU3LIB_WSO3_WIGXJPF)
-         CALL fwig_table_init(lmpmu, 3)
-         CALL fwig_temp_init(lmpmu)
-#endif
-      END IF
-#if defined(NDSU3LIB_OMP)
-      CALL lock%init()
-#endif
-   END SUBROUTINE initialize_ndsu3lib
-
-   SUBROUTINE initialize_ndsu3lib_thread(wso3, lmpmu) BIND(C)
-      !-------------------------------------------------------------------------------------
-      !! ndsu3lib initialization subroutine to be called by each thread
-      !
-      ! Input arguments: wso3,lmpmu
+      ! Input arguments: wso3,openmp,lmpmu
       !
       ! wso3 must be .TRUE. if SU(3)-SO(3) coupling coefficients are going to be calculated.
+      ! openmp must be .TRUE. if OpenMP parallelization is used, otherwise it must be .FALSE.
       ! lmpmu should be greater than or equal to the maximal expected value of lambda+mu.
-      !-------------------------------------------------------------------------------------
+      !--------------------------------------------------------------------------------------
 #if (defined(NDSU3LIB_RACAH_WIGXJPF) || defined(NDSU3LIB_WSO3_WIGXJPF))
       USE fwigxjpf
 #endif
       IMPLICIT NONE
       LOGICAL(C_BOOL), INTENT(IN), VALUE :: wso3
          !! Must be .TRUE. if SU(3)-SO(3) coupling coefficients are going to be calculated
+      LOGICAL(C_BOOL), INTENT(IN), VALUE :: openmp
+         !! Must be .TRUE. if OpenMP parallelization is used, otherwise it must be .FALSE.
       INTEGER(C_INT), INTENT(IN), VALUE :: lmpmu
          !! Should be greater than or equal to the maximal expected value of lambda+mu
 !$OMP SINGLE
@@ -588,27 +484,43 @@ CONTAINS
 !$OMP SINGLE
          CALL fwig_table_init(2*lmpmu, 6)
 !$OMP END SINGLE
-         CALL fwig_thread_temp_init(2*lmpmu)
+         IF (openmp) THEN
+            CALL fwig_thread_temp_init(2*lmpmu)
+         ELSE
+            CALL fwig_temp_init(2*lmpmu)
+         END IF
 #elif defined(NDSU3LIB_WSO3_WIGXJPF)
 !$OMP SINGLE
          CALL fwig_table_init(2*lmpmu, 3)
 !$OMP END SINGLE
-         CALL fwig_thread_temp_init(2*lmpmu)
+         IF (openmp) THEN
+            CALL fwig_thread_temp_init(2*lmpmu)
+         ELSE
+            CALL fwig_temp_init(2*lmpmu)
+         END IF
 #endif
       ELSE
 #if defined(NDSU3LIB_RACAH_WIGXJPF)
 !$OMP SINGLE
          CALL fwig_table_init(lmpmu, 6)
 !$OMP END SINGLE
-         CALL fwig_thread_temp_init(lmpmu)
+         IF (openmp) THEN
+            CALL fwig_thread_temp_init(lmpmu)
+         ELSE
+            CALL fwig_temp_init(lmpmu)
+         END IF
 #elif defined(NDSU3LIB_WSO3_WIGXJPF)
 !$OMP SINGLE
          CALL fwig_table_init(lmpmu, 3)
 !$OMP END SINGLE
-         CALL fwig_thread_temp_init(lmpmu)
+         IF (openmp) THEN
+            CALL fwig_thread_temp_init(lmpmu)
+         ELSE
+            CALL fwig_temp_init(lmpmu)
+         END IF
 #endif
       END IF
-   END SUBROUTINE initialize_ndsu3lib_thread
+   END SUBROUTINE initialize_ndsu3lib
 
    SUBROUTINE finalize_ndsu3lib(wso3) BIND(C)
       !-------------------------------------------------------------------------------------------------------------------------------------
@@ -620,7 +532,6 @@ CONTAINS
       ! wso3 should be .TRUE. if initialize_ndsu3lib or initialize_ndsu3lib_thread was
       ! called with the first argument being .TRUE.
       !-------------------------------------------------------------------------------------------------------------------------------------
-      !USE ISO_C_BINDING
 #if (defined(NDSU3LIB_RACAH_WIGXJPF) || defined(NDSU3LIB_WSO3_WIGXJPF))
       USE fwigxjpf
 #endif
@@ -632,12 +543,6 @@ CONTAINS
          CALL deallocate_I
          CALL deallocate_S
 !$OMP END SINGLE
-#if defined(NDSU3LIB_CACHE)
-         CALL cache%Delete()
-#endif
-#if (defined(NDSU3LIB_CACHE) && (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU)))
-         CALL cache_mp%Delete()
-#endif
       END IF
 !$OMP SINGLE
       CALL deallocate_binom
@@ -711,7 +616,6 @@ CONTAINS
       !       lambda3=irrep3%lambda, mu3=irrep3%mu
       ! Reference: M.F.O'Reilly, J.Math.Phys. 23 (1982) 2022: Section 5, Proposition 7(a)
       !----------------------------------------------------------------------------------
-      !USE ISO_C_BINDING
       IMPLICIT NONE
       TYPE(su3irrep), INTENT(IN), VALUE :: irrep1
          !! First SU(3) irrep in coupling
@@ -745,7 +649,6 @@ CONTAINS
       !! Inner multiplicity of SO(3) irrep L within SU(3) irrep
       ! (lambda,mu), where lambda=irrep%lambda, mu=irrep%mu
       !--------------------------------------------------------
-      !USE ISO_C_BINDING
       IMPLICIT NONE
       TYPE(su3irrep), INTENT(IN), VALUE :: irrep
          !! SU(3) irrep

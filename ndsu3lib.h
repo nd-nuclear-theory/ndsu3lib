@@ -28,9 +28,7 @@ namespace ndsu3lib
    
          extern int inner_multiplicity(SU3Irrep irrep, int L);
 
-         extern void initialize_ndsu3lib(bool wso3, int lmpmu);
-
-         extern void initialize_ndsu3lib_thread(bool wso3, int lmpmu);
+         extern void initialize_ndsu3lib(bool wso3, bool openmp, int lmpmu);
 
          extern void finalize_ndsu3lib(bool wso3);
 
@@ -88,31 +86,20 @@ namespace ndsu3lib
    }
 
    inline
-   void InitializeNdsu3lib(const bool& wso3, const int& lmpmu)
+   void InitializeNdsu3lib(const bool& wso3, const bool& openmp, const int& lmpmu)
    {
       // ndsu3lib initialization subroutine
-      // This subroutine must be called by the main program before calling ndsu3lib
-      // subroutines for SU(3) coupling or recoupling coefficients.
+      // Must be called by the main program before calling
+      // ndsu3lib subroutines for SU(3) coupling or recoupling coefficients.
+      // In OpenMP parallelized programs it should be called by each thread.
       //
-      // Input arguments: wso3,lmpmu
-      //
-      // wso3 must be true if SU(3)-SO(3) coupling coefficients are going to be
-      // calculated.
-      // lmpmu should be greater than or equal to the maximal expected value of lambda+mu.
-      fortran::initialize_ndsu3lib(wso3, lmpmu);
-   }
-
-   inline
-   void InitializeNdsu3libThread(const bool& wso3, const int& lmpmu)
-   {
-      // ndsu3lib initialization subroutine to be called by each thread
-      //
-      // Input arguments: wso3,lmpmu
+      // Input arguments: wso3,openmp,lmpmu
       //
       // wso3 must be true if SU(3)-SO(3) coupling coefficients are going to be
       // calculated.
+      // openmp must be .TRUE. if OpenMP is used, otherwise it must be .FALSE.
       // lmpmu should be greater than or equal to the maximal expected value of lambda+mu.
-      fortran::initialize_ndsu3lib_thread(wso3, lmpmu);
+      fortran::initialize_ndsu3lib(wso3, openmp, lmpmu);
    }
 
    inline

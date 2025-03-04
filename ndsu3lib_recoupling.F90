@@ -130,27 +130,6 @@ CONTAINS
       REAL(KIND=8), ALLOCATABLE, DIMENSION(:, :, :, :) :: wignera, wignerb, wignerc, wignerd, wigner
       INTEGER, ALLOCATABLE, DIMENSION(:) :: p1aa, p2aa, q2aa, p1ac, p2ac, q2ac, p2ad, q2ad
 
-      !INTERFACE
-      !   SUBROUTINE calculate_coupling_canonical_extremal(irrep1, irrep2, irrep3, I3, rhomax, i2, wigner, p1a, p2a, q2a)
-      !      IMPLICIT NONE
-      !      TYPE(su3irrep), INTENT(IN) :: irrep1, irrep2, irrep3
-      !      INTEGER, INTENT(IN) :: I3, rhomax
-      !      INTEGER, INTENT(OUT) :: i2
-      !      INTEGER, DIMENSION(:), INTENT(OUT) :: p1a, p2a, q2a
-      !      REAL(KIND=8), DIMENSION(0:, 0:, 0:, 1:), INTENT(OUT) :: wigner
-      !   END SUBROUTINE calculate_coupling_canonical_extremal
-      !   SUBROUTINE calculate_coupling_canonical_nonextremal(irrep1, irrep2, irrep3,&
-      !      epsilon3, Lambda32, I3, rhomax, numb, wignerex, wigner, p1a, p2a, q2a)
-      !      IMPLICIT NONE
-      !      TYPE(su3irrep), INTENT(IN) :: irrep1, irrep2, irrep3
-      !      INTEGER, INTENT(IN) :: epsilon3, Lambda32, I3, rhomax
-      !      INTEGER :: numb
-      !      INTEGER, DIMENSION(:) :: p1a, p2a, q2a
-      !      REAL(KIND=8), DIMENSION(0:, 0:, 0:, 1:), INTENT(IN) :: wignerex
-      !      REAL(KIND=8), DIMENSION(0:, 0:, 0:, 1:), INTENT(OUT) :: wigner
-      !   END SUBROUTINE calculate_coupling_canonical_nonextremal
-      !END INTERFACE
-
       pqdima = (irrep12%lambda + 1)*(MAX(irrep2%mu, irrep3%lambda) + 1)*(MAX(irrep2%lambda, irrep3%mu) + 1)
       pqdimc = (MAX(irrep2%lambda, irrep2%mu) + 1)*(irrep3%lambda + 1)*(irrep3%mu + 1)
       pqdimd = (irrep1%lambda + 1)*(irrep23%lambda + 1)*(irrep23%mu + 1)
@@ -325,27 +304,6 @@ CONTAINS
       REAL(KIND=8), ALLOCATABLE, DIMENSION(:, :) :: matrix
       REAL(KIND=8), ALLOCATABLE, DIMENSION(:, :, :, :) :: wignerahw, wigneralw, wignerb, wignerc, wignerd, wigner
       INTEGER, ALLOCATABLE, DIMENSION(:) :: p1aa, p2aa, q2aa, p1ab, p2ab, q2ab, p2ad, q2ad
-
-      !INTERFACE
-      !   SUBROUTINE calculate_coupling_canonical_extremal(irrep1, irrep2, irrep3, I3, rhomax, i2, wigner, p1a, p2a, q2a)
-      !      IMPLICIT NONE
-      !      TYPE(su3irrep), INTENT(IN) :: irrep1, irrep2, irrep3
-      !      INTEGER, INTENT(IN) :: I3, rhomax
-      !      INTEGER, INTENT(OUT) :: i2
-      !      INTEGER, DIMENSION(:), INTENT(OUT) :: p1a, p2a, q2a
-      !      REAL(KIND=8), DIMENSION(0:, 0:, 0:, 1:), INTENT(OUT) :: wigner
-      !   END SUBROUTINE calculate_coupling_canonical_extremal
-      !   SUBROUTINE calculate_coupling_canonical_nonextremal(irrep1, irrep2, irrep3,
-      !      epsilon3, Lambda32, I3, rhomax, numb, wignerex, wigner, p1a, p2a, q2a)
-      !      IMPLICIT NONE
-      !      TYPE(su3irrep), INTENT(IN) :: irrep1, irrep2, irrep3
-      !      INTEGER, INTENT(IN) :: epsilon3, Lambda32, I3, rhomax
-      !      INTEGER :: numb
-      !      INTEGER, DIMENSION(:) :: p1a, p2a, q2a
-      !      REAL(KIND=8), DIMENSION(0:, 0:, 0:, 1:), INTENT(IN) :: wignerex
-      !      REAL(KIND=8), DIMENSION(0:, 0:, 0:, 1:), INTENT(OUT) :: wigner
-      !   END SUBROUTINE calculate_coupling_canonical_nonextremal
-      !END INTERFACE
 
       pqdima = (irrep1%lambda + 1)*(irrep2%lambda + 1)*(irrep2%mu + 1)
       pqdimb = MAX((irrep13%lambda + 1)*(irrep2%lambda + 1)*(irrep2%mu + 1), &
@@ -556,25 +514,6 @@ CONTAINS
       INTEGER :: i1, i2
       REAL(KIND=8), ALLOCATABLE, DIMENSION(:, :) :: U1, Z, U2
 
-      !INTERFACE
-      !   SUBROUTINE calculate_u_coef(irrep1, irrep2, irrep, irrep3, irrep12, irrep23,&
-      !                               rhomaxa, rhomaxb, rhomaxc, rhomaxd, rac, ldb, info)
-      !      IMPLICIT NONE
-      !      TYPE(su3irrep), INTENT(IN) :: irrep1, irrep2, irrep, irrep3, irrep12, irrep23
-      !      INTEGER, INTENT(IN) :: rhomaxa, rhomaxb, rhomaxc, rhomaxd, ldb
-      !      INTEGER, INTENT(OUT) :: info
-      !      REAL(KIND=8), DIMENSION(:, :), INTENT(OUT) :: rac
-      !   END SUBROUTINE calculate_u_coef
-      !   SUBROUTINE calculate_z_coef(irrep2, irrep1, irrep, irrep3, irrep12, irrep13,&
-      !                               rhomaxa, rhomaxb, rhomaxc, rhomaxd, Zcoeff, ldb, info)
-      !      IMPLICIT NONE
-      !      TYPE(su3irrep), INTENT(IN) :: irrep1, irrep2, irrep, irrep3, irrep12, irrep13
-      !      INTEGER, INTENT(IN) :: rhomaxa, rhomaxb, rhomaxc, rhomaxd, ldb
-      !      INTEGER, INTENT(OUT) :: info
-      !      REAL(KIND=8), DIMENSION(:, :), INTENT(OUT) :: Zcoeff
-      !   END SUBROUTINE calculate_z_coef
-      !END INTERFACE
-
       ninelm = 0.D0
 
       DO lambda0 = 0, MIN(irrep13%lambda + irrep2%lambda + MIN(irrep2%mu, irrep13%lambda + irrep13%mu), &
@@ -650,57 +589,6 @@ CONTAINS
 
    END SUBROUTINE calculate_9_lambda_mu
 
-!  SUBROUTINE u_coef_wrapper(irrep1, irrep2, irrep, irrep3, irrep12, irrep23,&
-!                            rhomaxa, rhomaxb, rhomaxc, rhomaxd, dimen, racah_block, info) BIND(C)
-      !---------------------------------------------------------------------------------------------------------------
-      ! Wrapper of subroutine calculate_u_coef for SU(3) recoupling U coefficients
-      ! U[(lambda1,mu1)(lambda2,mu2)(lambda,mu)(lambda3,mu3)rhoa,rhob(lambda12,mu12)(lambda23,mu23)rhoc,rhod]
-      !
-      ! Input arguments: irrep1,irrep2,irrep,irrep3,irrep12,irrep23,rhomaxa,rhomaxb,rhomaxc,rhomaxd,dimen
-      ! Output arguments: racah_block,info
-      !
-      ! irrep%lambda is lambda, irrep%mu is mu,
-      ! rhomaxa is multiplicity of SU(3) coupling (lambda1,mu1)x(lambda2,mu2)->(lambda12,mu12),
-      ! rhomaxb is multiplicity of SU(3) coupling (lambda12,mu12)x(lambda3,mu3)->(lambda,mu),
-      ! rhomaxc is multiplicity of SU(3) coupling (lambda2,mu2)x(lambda3,mu3)->(lambda23,mu23),
-      ! rhomaxd is multiplicity of SU(3) coupling (lambda1,mu1)x(lambda23,mu23)->(lambda,mu),
-      ! dimen is size of array racah_block, which must be at least rhomaxa*rhomaxb*rhomaxc*rhomaxd,
-      ! racah_block(ind), where ind = rhoa+rhomaxa*(rhob-1)+rhomaxa*rhomaxb*(rhoc-1)+rhomaxa*rhomaxb*rhomaxc*(rhod-1),
-      !   is U coefficient for given rhoa,rhob,rhoc,rhod,
-      ! info is 0 iff Lapack subroutine dgesv called by calculate_u_coef ran withou errors.
-      !---------------------------------------------------------------------------------------------------------------
-!     USE ISO_C_BINDING
-!     IMPLICIT NONE
-!     TYPE(su3irrep), INTENT(IN) :: irrep1, irrep2, irrep, irrep3, irrep12, irrep23
-!     INTEGER(C_INT), INTENT(IN) :: rhomaxa, rhomaxb, rhomaxc, rhomaxd, dimen
-!     INTEGER(C_INT), INTENT(OUT) :: info
-!     REAL(C_DOUBLE), DIMENSION(dimen), INTENT(OUT) :: racah_block
-!     REAL(KIND=8), ALLOCATABLE, DIMENSION(:, :) :: rac
-!     INTEGER :: rhomaxabc,rhoabc,rhod,ind
-      !INTERFACE
-      !   SUBROUTINE calculate_u_coef(irrep1, irrep2, irrep, irrep3, irrep12, irrep23,&
-      !                               rhomaxa, rhomaxb, rhomaxc, rhomaxd, rac, ldb, info)
-      !      IMPLICIT NONE
-      !      TYPE(su3irrep), INTENT(IN) :: irrep1, irrep2, irrep, irrep3, irrep12, irrep23
-      !      INTEGER, INTENT(IN) :: rhomaxa, rhomaxb, rhomaxc, rhomaxd, ldb
-      !      INTEGER, INTENT(OUT) :: info
-      !      REAL(KIND=8), DIMENSION(:, :), INTENT(OUT) :: rac
-      !   END SUBROUTINE calculate_u_coef
-      !END INTERFACE
-!     rhomaxabc = rhomaxa*rhomaxb*rhomaxc
-!     ALLOCATE(rac(rhomaxd, rhomaxabc))
-!     CALL calculate_u_coef(irrep1, irrep2, irrep, irrep3, irrep12, irrep23,&
-!                           rhomaxa, rhomaxb, rhomaxc, rhomaxd, rac, rhomaxd, info)
-!     ind = 0
-!     DO rhod = 1, rhomaxd
-!        DO rhoabc = 1, rhomaxabc
-!           ind = ind + 1
-!           racah_block(ind) = rac(rhod, rhoabc)
-!        END DO
-!     END DO
-!     DEALLOCATE(rac)
-!  END SUBROUTINE u_coef_wrapper
-
    SUBROUTINE calculate_u_coef_c(irrep1, irrep2, irrep, irrep3, irrep12, irrep23, &
                                  rhomaxa, rhomaxb, rhomaxc, rhomaxd, racah_ptr, info) BIND(C, NAME="calculate_u_coef")
       !------------------------------------------------------------------------------------------------------------------------
@@ -750,72 +638,11 @@ CONTAINS
          !! Equals 0 iff Lapack subroutine dgesv called by calculate_u_coef ran withou errors.
       REAL(C_DOUBLE), POINTER, DIMENSION(:, :) :: rac
       INTEGER :: rhomaxabc
-      !INTERFACE
-      !   SUBROUTINE calculate_u_coef(irrep1, irrep2, irrep, irrep3, irrep12, irrep23,&
-      !                               rhomaxa, rhomaxb, rhomaxc, rhomaxd, rac, ldb, info)
-      !      IMPLICIT NONE
-      !      TYPE(su3irrep), INTENT(IN) :: irrep1, irrep2, irrep, irrep3, irrep12, irrep23
-      !      INTEGER, INTENT(IN) :: rhomaxa, rhomaxb, rhomaxc, rhomaxd, ldb
-      !      INTEGER, INTENT(OUT) :: info
-      !      REAL(KIND=8), DIMENSION(:, :), INTENT(OUT) :: rac
-      !   END SUBROUTINE calculate_u_coef
-      !END INTERFACE
       rhomaxabc = rhomaxa*rhomaxb*rhomaxc
       CALL C_F_POINTER(racah_ptr, rac, [rhomaxd, rhomaxabc])
       CALL calculate_u_coef(irrep1, irrep2, irrep, irrep3, irrep12, irrep23, &
                             rhomaxa, rhomaxb, rhomaxc, rhomaxd, rac, rhomaxd, info)
    END SUBROUTINE calculate_u_coef_c
-
-!  SUBROUTINE z_coef_wrapper(irrep2, irrep1, irrep, irrep3, irrep12, irrep13,&
-!                            rhomaxa, rhomaxb, rhomaxc, rhomaxd, dimen, Z_block, info) BIND(C)
-      !---------------------------------------------------------------------------------------------------------
-      ! Wrapper of subroutine calculate_z_coef for SU(3) recoupling Z coefficients
-      ! Z[(lambda2,mu2)(lambda1,mu1)(lambda,mu)(lambda3,mu3)rhoa,rhob(lambda12,mu12)(lambda13,mu13)rhoc,rhod]
-      !
-      ! Input arguments: irrep2,irrep1,irrep,irrep3,irrep12,irrep13,rhomaxa,rhomaxb,rhomaxc,rhomaxd,dimen
-      ! Output arguments: Z_block,info
-      !
-      ! irrep%lambda is lambda, irrep%mu is mu,
-      ! rhomaxa is multiplicity of SU(3) coupling (lambda1,mu1)x(lambda2,mu2)->(lambda12,mu12),
-      ! rhomaxb is multiplicity of SU(3) coupling (lambda12,mu12)x(lambda3,mu3)->(lambda,mu),
-      ! rhomaxc is multiplicity of SU(3) coupling (lambda1,mu1)x(lambda3,mu3)->(lambda13,mu13),
-      ! rhomaxd is multiplicity of SU(3) coupling (lambda13,mu13)x(lambda2,mu2)->(lambda,mu),
-      ! dimen is size of array Z_block, which must be at least rhomaxa*rhomaxb*rhomaxc*rhomaxd,
-      ! Z_block(ind), where ind=rhoa+rhomaxa*(rhob-1)+rhomaxa*rhomaxb*(rhoc-1)+rhomaxa*rhomaxb*rhomaxc*(rhod-1),
-      !   is Z coefficient for given rhoa,rhob,rhoc,rhod,
-      ! info is 0 iff Lapack subroutine dgesv called by calculate_z_coef ran withou errors.
-      !---------------------------------------------------------------------------------------------------------
-!     USE ISO_C_BINDING
-!     IMPLICIT NONE
-!     TYPE(su3irrep), INTENT(IN) :: irrep1, irrep2, irrep, irrep3, irrep12, irrep13
-!     INTEGER(C_INT), INTENT(IN) :: rhomaxa, rhomaxb, rhomaxc, rhomaxd, dimen
-!     INTEGER(C_INT), INTENT(OUT) :: info
-!     REAL(C_DOUBLE), DIMENSION(dimen), INTENT(OUT) :: Z_block
-!     REAL(KIND=8), ALLOCATABLE, DIMENSION(:,:) :: Zcoeff
-!     INTEGER :: rhomaxabc, rhoabc, rhod, ind
-      !INTERFACE
-      !   SUBROUTINE calculate_z_coef(irrep2, irrep1, irrep, irrep3, irrep12, irrep13,&
-      !                               rhomaxa, rhomaxb, rhomaxc, rhomaxd, Zcoeff, ldb, info)
-      !      IMPLICIT NONE
-      !      TYPE(su3irrep), INTENT(IN) :: irrep1, irrep2, irrep, irrep3, irrep12, irrep13
-      !      INTEGER, INTENT(IN) :: rhomaxa, rhomaxb, rhomaxc, rhomaxd, ldb
-      !      INTEGER, INTENT(OUT) :: info
-      !      REAL(KIND=8), DIMENSION(:, :), INTENT(OUT) :: Zcoeff
-      !   END SUBROUTINE calculate_z_coef
-      !END INTERFACE
-!     rhomaxabc = rhomaxa*rhomaxb*rhomaxc
-!     ALLOCATE(Zcoeff(rhomaxd, rhomaxabc))
-!     CALL calculate_z_coef(irrep2, irrep1, irrep, irrep3, irrep12, irrep13,&
-!                           rhomaxa, rhomaxb, rhomaxc, rhomaxd, Zcoeff, rhomaxd, info)
-!     ind = 0
-!     DO rhod = 1, rhomaxd
-!        DO rhoabc = 1, rhomaxabc
-!           ind = ind + 1
-!           Z_block(ind) = Zcoeff(rhod, rhoabc)
-!        END DO
-!     END DO
-!     DEALLOCATE(Zcoeff)
-!  END SUBROUTINE z_coef_wrapper
 
    SUBROUTINE calculate_z_coef_c(irrep2, irrep1, irrep, irrep3, irrep12, irrep13, &
                                  rhomaxa, rhomaxb, rhomaxc, rhomaxd, Z_ptr, info) BIND(C, NAME="calculate_z_coef")
@@ -866,87 +693,11 @@ CONTAINS
          !! is Z coefficient for given rhoa,rhob,rhoc,rhod.
       REAL(C_DOUBLE), POINTER, DIMENSION(:, :) :: Zcoeff
       INTEGER :: rhomaxabc
-      !INTERFACE
-      !   SUBROUTINE calculate_z_coef(irrep2, irrep1, irrep, irrep3, irrep12, irrep13,&
-      !                               rhomaxa, rhomaxb, rhomaxc, rhomaxd, Zcoeff, ldb, info)
-      !      IMPLICIT NONE
-      !      TYPE(su3irrep), INTENT(IN) :: irrep1, irrep2, irrep, irrep3, irrep12, irrep13
-      !      INTEGER, INTENT(IN) :: rhomaxa, rhomaxb, rhomaxc, rhomaxd, ldb
-      !      INTEGER, INTENT(OUT) :: info
-      !      REAL(KIND=8), DIMENSION(:, :), INTENT(OUT) :: Zcoeff
-      !   END SUBROUTINE calculate_z_coef
-      !END INTERFACE
       rhomaxabc = rhomaxa*rhomaxb*rhomaxc
       CALL C_F_POINTER(Z_ptr, Zcoeff, [rhomaxd, rhomaxabc])
       CALL calculate_z_coef(irrep2, irrep1, irrep, irrep3, irrep12, irrep13, &
                             rhomaxa, rhomaxb, rhomaxc, rhomaxd, Zcoeff, rhomaxd, info)
    END SUBROUTINE calculate_z_coef_c
-
-!  SUBROUTINE nine_lambda_mu_wrapper(irrep1, irrep2, irrep12, irrep3, irrep4, irrep34, irrep13, irrep24, irrep,&
-!     rhomax12, rhomax34, rhomax1234, rhomax13, rhomax24, rhomax1324, dimen, ninelm_block, info) BIND(C)
-      !---------------------------------------------------------------------------------------------------------------------------
-      ! Wrapper of subroutine calculate_9_lambda_mu for 9-(lambda,mu) coefficients
-      !
-      ! | (lambda1,mu1)   (lambda2,mu2)  (lambda12,mu12)  rho12 |
-      ! | (lambda3,mu3)   (lambda4,mu4)  (lambda34,mu34)  rho34 |
-      ! |(lambda13,mu13) (lambda24,mu24)   (lambda,mu)   rho1324|
-      ! |     rho13           rho24          rho1234            |
-      !
-      ! Input arguments: irrep1,irrep2,irrep12,irrep3,irrep4,irrep34,irrep13,irrep24,irrep,
-      !                  rhomax12,rhomax34,rhomax1234,rhomax13,rhomax24,rhomax1324,dimen
-      ! Output arguments: ninelm_block,info
-      !
-      ! irrep%lambda is lambda, irrep%mu is mu,
-      ! rhomax12 is multiplicity of SU(3) coupling (lambda1,mu1)x(lambda2,mu2)->(lambda12,mu12),
-      ! rhomax34 is multiplicity of SU(3) coupling (lambda3,mu3)x(lambda4,mu4)->(lambda34,mu34),
-      ! rhomax1234 is multiplicity of SU(3) coupling (lambda12,mu12)x(lambda34,mu34)->(lambda,mu),
-      ! rhomax13 is multiplicity of SU(3) coupling (lambda1,mu1)x(lambda3,mu3)->(lambda13,mu13),
-      ! rhomax24 is multiplicity of SU(3) coupling (lambda2,mu2)x(lambda4,mu4)->(lambda24,mu24),
-      ! rhomax1324 is multiplicity of SU(3) coupling (lambda13,mu13)x(lambda24,mu24)->(lambda,mu),
-      ! dimen is size of array ninelm_block, which must be at least rhomax12*rhomax34*rhomax1234*rhomax13*rhomax24*rhomax1324,
-      ! ninelm_block(ind), where ind=rho12+rhomax12*(rho34-1)+rhomax12*rhomax34*(rho1234-1)+rhomax12*rhomax34*rhomax1234*(rho13-1)
-      !   +rhomax12*rhomax34*rhomax1234*rhomax13*(rho24-1)+rhomax12*rhomax34*rhomax1234*rhomax13*rhomax24*(rho1324-1),
-      !   is 9-(lambda,mu) coefficient for given rho12,rho34,rho1234,rho13,rho24,rho1324,
-      ! info is 0 if Lapack subroutine dgesv called by calculate_9_lambda_mu ran without errors.
-      !---------------------------------------------------------------------------------------------------------------------------
-!     USE ISO_C_BINDING
-!     IMPLICIT NONE
-!     TYPE(su3irrep), INTENT(IN) :: irrep1, irrep2, irrep12, irrep3, irrep4, irrep34, irrep13, irrep24, irrep
-!     INTEGER(C_INT), INTENT(IN) :: rhomax12, rhomax34, rhomax1234, rhomax13, rhomax24, rhomax1324, dimen
-!     INTEGER(C_INT), INTENT(OUT) :: info
-!     REAL(C_DOUBLE), DIMENSION(dimen), INTENT(OUT) :: ninelm_block
-!     REAL(KIND=8), ALLOCATABLE, DIMENSION(:, :, :, :, :, :) :: ninelm
-!     INTEGER :: ind, rho12, rho34, rho1234, rho13, rho24, rho1324
-      !INTERFACE
-      !   SUBROUTINE calculate_9_lambda_mu(irrep1, irrep2, irrep12, irrep3, irrep4, irrep34, irrep13, irrep24, irrep,&
-      !                                    rhomax12, rhomax34, rhomax1234, rhomax13, rhomax24, rhomax1324, ninelm, info)
-      !      IMPLICIT NONE
-      !      TYPE(su3irrep), INTENT(IN) :: irrep1, irrep2, irrep12, irrep3, irrep4, irrep34, irrep13, irrep24, irrep
-      !      INTEGER, INTENT(IN) :: rhomax12, rhomax34, rhomax1234, rhomax13, rhomax24, rhomax1324
-      !      INTEGER, INTENT(OUT) :: info
-      !      REAL(KIND=8), DIMENSION(:, :, :, :, :, :), INTENT(OUT) :: ninelm
-      !   END SUBROUTINE calculate_9_lambda_mu
-      !END INTERFACE
-!     ALLOCATE(ninelm(rhomax12, rhomax34, rhomax1234, rhomax13, rhomax24, rhomax1324))
-!     CALL calculate_9_lambda_mu(irrep1, irrep2, irrep12, irrep3, irrep4, irrep34, irrep13, irrep24, irrep,&
-!                                rhomax12, rhomax34, rhomax1234, rhomax13, rhomax24, rhomax1324, ninelm, info)
-!     ind = 0
-!     DO rho1324 = 1, rhomax1324
-!        DO rho24 = 1, rhomax24
-!           DO rho13 = 1, rhomax13
-!              DO rho1234 = 1, rhomax1234
-!                 DO rho34 = 1, rhomax34
-!                    DO rho12 = 1, rhomax12
-!                       ind = ind + 1
-!                       ninelm_block(ind) = ninelm(rho12, rho34, rho1234, rho13, rho24, rho1324)
-!                    END DO
-!                 END DO
-!              END DO
-!           END DO
-!        END DO
-!     END DO
-!     DEALLOCATE(ninelm)
-!  END SUBROUTINE nine_lambda_mu_wrapper
 
    SUBROUTINE calculate_9_lambda_mu_c(irrep1, irrep2, irrep12, irrep3, irrep4, irrep34, irrep13, irrep24, irrep, &
                                       rhomax12, rhomax34, rhomax1234, rhomax13, rhomax24, rhomax1324, ninelm_ptr, info) &
@@ -984,16 +735,6 @@ CONTAINS
       INTEGER(C_INT), INTENT(OUT) :: info
       TYPE(C_PTR), INTENT(IN), VALUE :: ninelm_ptr
       REAL(C_DOUBLE), POINTER, DIMENSION(:, :, :, :, :, :) :: ninelm
-      !INTERFACE
-      !   SUBROUTINE calculate_9_lambda_mu(irrep1, irrep2, irrep12, irrep3, irrep4, irrep34, irrep13, irrep24, irrep,&
-      !                                    rhomax12, rhomax34, rhomax1234, rhomax13, rhomax24, rhomax1324, ninelm, info)
-      !      IMPLICIT NONE
-      !      TYPE(su3irrep), INTENT(IN) :: irrep1, irrep2, irrep12, irrep3, irrep4, irrep34, irrep13, irrep24, irrep
-      !      INTEGER, INTENT(IN) :: rhomax12, rhomax34, rhomax1234, rhomax13, rhomax24, rhomax1324
-      !      INTEGER, INTENT(OUT) :: info
-      !      REAL(KIND=8), DIMENSION(:, :, :, :, :, :), INTENT(OUT) :: ninelm
-      !   END SUBROUTINE calculate_9_lambda_mu
-      !END INTERFACE
       CALL C_F_POINTER(ninelm_ptr, ninelm, [rhomax12, rhomax34, rhomax1234, rhomax13, rhomax24, rhomax1324])
       CALL calculate_9_lambda_mu(irrep1, irrep2, irrep12, irrep3, irrep4, irrep34, irrep13, irrep24, irrep, &
                                  rhomax12, rhomax34, rhomax1234, rhomax13, rhomax24, rhomax1324, ninelm, info)

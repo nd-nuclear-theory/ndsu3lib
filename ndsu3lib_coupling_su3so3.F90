@@ -60,9 +60,6 @@ CONTAINS
       ! p and q are the p,q labels of SU(2)xU(1) basis state
       ! coeff is the inner product
       !----------------------------------------------------------------------------------------------------------------------
-      !#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
-      !USE mpmodule
-      !#endif
       IMPLICIT NONE
 #if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
       CLASS(*), TARGET, INTENT(OUT) :: coeff
@@ -72,7 +69,6 @@ CONTAINS
       REAL(KIND=8), INTENT(OUT) :: coeff
          !! Resulting inner product
 #endif
-!    TYPE(su3irrep),INTENT(IN) :: irrep
       INTEGER, INTENT(IN) :: lambda
          !! SU(3) irrep label lambda
       INTEGER, INTENT(IN) :: mu
@@ -106,21 +102,7 @@ CONTAINS
                  alphamin, alphamax, alphaminS2, alphamaxS2, LambdaM, MNLambda2p, LambdapMp, x, y, xm, xn, &
                  aux1, ind1, aux2, ind2, aux3, ind3, aux4, xpys, lambdas, aux5, indicator
 
-!     IF (I == 1) THEN
-!        lambda = irrep%lambda
-!        mu = irrep%mu
-!        epsilon = epsilonx
-!        MLambda2p = MLambda2px
-!     ELSE ! See Eq.(32) in Draayer & Akiyama and the text below it.
-!        lambda = irrep%mu
-!        mu = irrep%lambda
-!        epsilon = -epsilonx
-!        MLambda2p = -MLambda2px
-!     ENDIF
-
-!     p = ((2*(lambda - mu) - epsilon)/3 + Lambda2p)/2
       LambdapMp = (Lambda2p + Mp)/2
-!     q = p + mu - Lambda2p
       LmM = L - M
       LmMp = L - Mp
       alphaminS2 = MAX(0, -Mp - M) ! alphaminS2 is lower bound for alpha in S_2 in Eq.(26) in [2]
@@ -141,57 +123,15 @@ CONTAINS
       aux4 = LpM*(LpM + 1)/2 + LmMp
       aux5 = k2L*(k2L + 1)/2 + k2L - q - (lambda + M + Lambda2p + Mp)/2 - alphaminS2
 
-#if defined(NDSU3LIB_OMP)
-      CALL lock%reader_lock()
-      DO WHILE (MAX(Lambda2p, 2*L, lambda + mu + 1) > upbound_binom)
-         IF (.NOT. lock%writer_lock(.TRUE.)) THEN
-            CALL lock%reader_unlock()
-            CALL lock%reader_lock()
-!$omp flush acquire
-            CYCLE
-         END IF
-!$omp flush acquire
-         CALL reallocate_binom(50)
-!$omp flush release
-         CALL lock%writer_unlock(.TRUE.)
-      END DO
-!     DO WHILE(MAX(lambda,2*MIN(xm,xn+p+1)-xm+p)>upbound_I)
-      DO WHILE (MAX(lambda, 2*Lambda2p - xm + p) > upbound_I)
-         IF (.NOT. lock%writer_lock(.TRUE.)) THEN
-            CALL lock%reader_unlock()
-            CALL lock%reader_lock()
-!$omp flush acquire
-            CYCLE
-         END IF
-!$omp flush acquire
-         CALL reallocate_I(50)
-!$omp flush release
-         CALL lock%writer_unlock(.TRUE.)
-      END DO
-      DO WHILE (kkappa > upbound_S .OR. k2L - kkappa > upbound_S)
-         IF (.NOT. lock%writer_lock(.TRUE.)) THEN
-            CALL lock%reader_unlock()
-            CALL lock%reader_lock()
-!$omp flush acquire
-            CYCLE
-         END IF
-!$omp flush acquire
-         CALL reallocate_S(50)
-!$omp flush release
-         CALL lock%writer_unlock(.TRUE.)
-      END DO
-#else
       DO WHILE (MAX(Lambda2p, 2*L, lambda + mu + 1) > upbound_binom)
          CALL reallocate_binom(50)
       END DO
-!     DO WHILE(MAX(lambda,2*MIN(xm,xn+p+1)-xm+p)>upbound_I)
       DO WHILE (MAX(lambda, 2*Lambda2p - xm + p) > upbound_I)
          CALL reallocate_I(50)
       END DO
       DO WHILE (kkappa > upbound_S .OR. k2L - kkappa > upbound_S)
          CALL reallocate_S(50)
       END DO
-#endif
 
 #if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
       SELECT TYPE (coeff)
@@ -317,8 +257,6 @@ CONTAINS
                ELSE
                   coeff = coeff*S2
                END IF
-!          ELSE
-!             RETURN
             END IF
 
 #if (defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU) || defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
@@ -497,16 +435,11 @@ CONTAINS
                END IF
             ELSE
                coeff = 0.D0
-!              RETURN
             END IF
 
          END IF
 
 #endif
-
-         ! Now coeff is coefficient for E=HW. For E=HW' there is additinal phase
-         ! factor of (-1)^((lambda+M)/2) according to Eq.(33,6B) in [2], therefore:
-!        IF (I /= J .AND. BTEST(LambdaM, 0)) coeff = -coeff
 
 #if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
       CLASS DEFAULT ! CLASS IS (mp_real)
@@ -622,18 +555,9 @@ CONTAINS
             ELSE
                point = point*S2mp ! coeff=coeff*S2mp
             END IF
-!        ELSE
-!           RETURN
          END IF
-         ! Now coeff (or point) is coefficient for E=HW. For E=HW' there is additinal phase
-         ! factor of (-1)^((lambda+M)/2) according to Eq.(33,6B) in [2], therefore:
-!        IF (I /= J .AND. BTEST(LambdaM, 0)) point = -point ! coeff=-coeff
 
       END SELECT
-#endif
-
-#if defined(NDSU3LIB_OMP)
-      CALL lock%reader_unlock()
 #endif
 
    END SUBROUTINE calculate_transformation_coef_internal
@@ -661,9 +585,6 @@ CONTAINS
       !       2) Second S_1 should be S_1(M_Lambda=Lambda,Lambda,N_Lambda,M) instead of
       !          S_1(N_Lambda,Lambda,M_Lambda=Lambda,M).
       !--------------------------------------------------------------------------------------------------------
-#if defined(NDSU3LIB_CACHE_C)
-      USE ISO_C_BINDING
-#endif
       IMPLICIT NONE
 #if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
       CLASS(*), TARGET, INTENT(OUT) :: coeff
@@ -675,12 +596,6 @@ CONTAINS
 #endif
       TYPE(su3irrep), INTENT(IN) :: irrep
          !! SU(3) irrep
-#if defined(NDSU3LIB_CACHE_C)
-      INTEGER, INTENT(IN) :: I, J, epsilonx, Lambda2p, MLambda2px, Mp
-      INTEGER :: epsilon, MLambda2p
-      INTEGER(C_INT), INTENT(IN) :: M, L
-      INTEGER(C_INT) :: lambda, mu, p, q, absMLambda2p, absMp
-#else
       INTEGER, INTENT(IN) :: I
          !! Parameter determining from which extremal-weight SU(3)-SU(2)xU(1) basis state the SU(3)-SO(3) basis state is projected.
          !! Should be 1 if lambda < mu, otherwise it shuold be 0 
@@ -700,42 +615,16 @@ CONTAINS
       INTEGER, INTENT(IN) :: Mp
          !! Projection M of angular momentum L of SU(3)-SO(3) basis state along laboratory frame z-axis
       INTEGER :: lambda, mu, epsilon, MLambda2p, p, q, absMLambda2p, absMp!, aux
-#endif
-#if defined(NDSU3LIB_CACHE)
-      INTEGER(KIND=8) :: key
-      REAL(KIND=8), POINTER :: point2
-#endif
-#if (defined(NDSU3LIB_CACHE) && (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU)))
-      TYPE(mp_real), POINTER :: point3
-#endif
-#if defined(NDSU3LIB_CACHE_C)
-      INTEGER(C_INT) :: search
-      INTERFACE
-         SUBROUTINE cache_search(lm, mu, p, q, absML, K, L, absM, search, coeff) BIND(C)
-            IMPORT C_INT, C_DOUBLE
-            INTEGER(C_INT), VALUE :: lm, mu, p, q, absML, K, L, absM
-            INTEGER(C_INT) :: search
-            REAL(C_DOUBLE) :: coeff
-         END SUBROUTINE cache_search
-         SUBROUTINE cache_insert(lm, mu, p, q, absML, K, L, absM, coeff) BIND(C)
-            IMPORT C_INT, C_DOUBLE
-            INTEGER(C_INT), VALUE :: lm, mu, p, q, absML, K, L, absM
-            REAL(C_DOUBLE), VALUE :: coeff
-         END SUBROUTINE cache_insert
-      END INTERFACE
-#endif
       IF (I == 1) THEN
          lambda = irrep%lambda
          mu = irrep%mu
          epsilon = epsilonx
          MLambda2p = MLambda2px
-!        aux=0
       ELSE ! See Eq.(32) in [2] and text below it.
          lambda = irrep%mu
          mu = irrep%lambda
          epsilon = -epsilonx
          MLambda2p = -MLambda2px
-!        aux = lambda + mu
       END IF
       p = ((2*(lambda - mu) - epsilon)/3 + Lambda2p)/2
       q = p + mu - Lambda2p
@@ -743,109 +632,12 @@ CONTAINS
       SELECT TYPE (coeff)
       TYPE IS (REAL(KIND=8))
 #endif
-#if defined(NDSU3LIB_CACHE_C)
-         absMLambda2p = ABS(MLambda2p)
-         absMp = ABS(Mp)
-         IF (lambda < 256 .AND. mu < 256 .AND. p < 256 .AND. q < 256 .AND. absMLambda2p < 256 &
-             .AND. M < 256 .AND. L < 256 .AND. absMp < 256) THEN
-            CALL cache_search(lambda, mu, p, q, absMLambda2p, M, L, absMp, search, coeff)
-            IF (search == 0) THEN
-               CALL calculate_transformation_coef_internal(lambda, mu, epsilon, Lambda2p, &
-                                                           absMLambda2p, M, L, absMp, p, q, coeff)
-               CALL cache_insert(lambda, mu, p, q, absMLambda2p, M, L, absMp, coeff)
-            END IF
-            IF (MLambda2p < 0 .AND. Mp >= 0) THEN
-               IF (BTEST((Lambda2p + Mp)/2, 0)) coeff = -coeff
-            ELSE IF (MLambda2p >= 0 .AND. Mp < 0) THEN
-!              IF (BTEST(q + (Lambda2p + MLambda2p)/2 - aux + L + M, 0)) coeff = -coeff
-               IF (BTEST(q + (Lambda2p + MLambda2p)/2 + L + M, 0)) coeff = -coeff
-            ELSE IF (MLambda2p < 0 .AND. Mp < 0) THEN
-!              IF (BTEST(q + Lambda2p - aux + L + M + (MLambda2p - Mp)/2, 0)) coeff = -coeff
-               IF (BTEST(q + Lambda2p + L + M + (MLambda2p - Mp)/2, 0)) coeff = -coeff
-            END IF
-         ELSE
-            CALL calculate_transformation_coef_internal(lambda, mu, epsilon, Lambda2p, MLambda2p, M, L, Mp, p, q, coeff)
-         END IF
-#elif defined(NDSU3LIB_CACHE)
-         absMLambda2p = ABS(MLambda2p)
-         absMp = ABS(Mp)
-         IF (lambda < 256 .AND. mu < 256 .AND. p < 256 .AND. q < 256 .AND. absMLambda2p < 256 &
-             .AND. M < 256 .AND. L < 256 .AND. absMp < 256) THEN
-            key = IOR(ISHFT(INT(IAND(lambda, 255), 8), 56), &
-                      IOR(ISHFT(INT(IAND(mu, 255), 8), 48), &
-                          IOR(ISHFT(INT(IAND(p, 255), 8), 40), &
-                              IOR(ISHFT(INT(IAND(q, 255), 8), 32), &
-                                  IOR(ISHFT(INT(IAND(absMLambda2p, 255), 8), 24), &
-                                      IOR(ISHFT(INT(IAND(M, 255), 8), 16), &
-                                          IOR(ISHFT(INT(IAND(L, 255), 8), 8), &
-                                              INT(IAND(absMp, 255), 8))))))))
-            point2 => cache%Get(key)
-            IF (ASSOCIATED(point2)) THEN
-               coeff = point2
-            ELSE
-               CALL calculate_transformation_coef_internal(lambda, mu, epsilon, Lambda2p, &
-                                                           absMLambda2p, M, L, absMp, p, q, coeff)
-               CALL cache%Set(key, coeff)
-            END IF
-            IF (MLambda2p < 0 .AND. Mp >= 0) THEN
-               IF (BTEST((Lambda2p + Mp)/2, 0)) coeff = -coeff
-            ELSE IF (MLambda2p >= 0 .AND. Mp < 0) THEN
-!              IF (BTEST(q + (Lambda2p + MLambda2p)/2 - aux + L + M, 0)) coeff = -coeff
-               IF (BTEST(q + (Lambda2p + MLambda2p)/2 + L + M, 0)) coeff = -coeff
-            ELSE IF (MLambda2p < 0 .AND. Mp < 0) THEN
-!              IF (BTEST(q + Lambda2p - aux + L + M + (MLambda2p - Mp)/2, 0)) coeff = -coeff
-               IF (BTEST(q + Lambda2p + L + M + (MLambda2p - Mp)/2, 0)) coeff = -coeff
-            END IF
-         ELSE
-            CALL calculate_transformation_coef_internal(lambda, mu, epsilon, Lambda2p, MLambda2p, M, L, Mp, p, q, coeff)
-         END IF
-#else
          CALL calculate_transformation_coef_internal(lambda, mu, epsilon, Lambda2p, MLambda2p, M, L, Mp, p, q, coeff)
-#endif
          IF (I /= J .AND. BTEST((lambda + M)/2, 0)) coeff = -coeff
 #if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
       CLASS DEFAULT ! CLASS IS (mp_real)
-#endif
-#if (defined(NDSU3LIB_CACHE) && (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU)))
-         absMLambda2p = ABS(MLambda2p)
-         absMp = ABS(Mp)
-         IF (lambda < 256 .AND. mu < 256 .AND. p < 256 .AND. q < 256 .AND. absMLambda2p < 256 &
-             .AND. M < 256 .AND. L < 256 .AND. absMp < 256) THEN
-            key = IOR(ISHFT(INT(IAND(lambda, 255), 8), 56), &
-                      IOR(ISHFT(INT(IAND(mu, 255), 8), 48), &
-                          IOR(ISHFT(INT(IAND(p, 255), 8), 40), &
-                              IOR(ISHFT(INT(IAND(q, 255), 8), 32), &
-                                  IOR(ISHFT(INT(IAND(absMLambda2p, 255), 8), 24), &
-                                      IOR(ISHFT(INT(IAND(M, 255), 8), 16), &
-                                          IOR(ISHFT(INT(IAND(L, 255), 8), 8), &
-                                              INT(IAND(absMp, 255), 8))))))))
-            point3 => cache_mp%Get(key)
-            IF (ASSOCIATED(point3)) THEN
-               coeff = point3
-            ELSE
-               CALL calculate_transformation_coef_internal(lambda, mu, epsilon, Lambda2p, &
-                                                           absMLambda2p, M, L, absMp, p, q, coeff)
-               CALL cache_mp%Set(key, coeff)
-            END IF
-            point => coeff
-            IF (MLambda2p < 0 .AND. Mp >= 0) THEN
-               IF (BTEST((Lambda2p + Mp)/2, 0)) point = -point
-            ELSE IF (MLambda2p >= 0 .AND. Mp < 0) THEN
-!              IF (BTEST(q + (Lambda2p + MLambda2p)/2 - aux + L + M, 0)) coeff = -coeff
-               IF (BTEST(q + (Lambda2p + MLambda2p)/2 + L + M, 0)) point = -point
-            ELSE IF (MLambda2p < 0 .AND. Mp < 0) THEN
-!              IF (BTEST(q + Lambda2p - aux + L + M + (MLambda2p - Mp)/2, 0))coeff = -coeff
-               IF (BTEST(q + Lambda2p + L + M + (MLambda2p - Mp)/2, 0)) point = -point
-            END IF
-         ELSE
-            CALL calculate_transformation_coef_internal(lambda, mu, epsilon, Lambda2p, MLambda2p, M, L, Mp, p, q, coeff)
-            point => coeff
-         END IF
-#elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
          CALL calculate_transformation_coef_internal(lambda, mu, epsilon, Lambda2p, MLambda2p, M, L, Mp, p, q, coeff)
          point => coeff
-#endif
-#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
          IF (I /= J .AND. BTEST((lambda + M)/2, 0)) point = -point
       END SELECT
 #endif
@@ -869,9 +661,6 @@ CONTAINS
       !
       ! Note: There is typo in Eq.(6b) in [2]: square root should not be there.
       !---------------------------------------------------------------------------------------------------
-!#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
-!     USE mpmodule
-!#endif
       IMPLICIT NONE
 #if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
       CLASS(*), TARGET, DIMENSION(:, :), INTENT(OUT) :: matrix
@@ -900,19 +689,6 @@ CONTAINS
 #if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
       TYPE(mp_real) :: summp, coeffmp
 #endif
-
-      !INTERFACE
-      !   SUBROUTINE calculate_transformation_coef(I, J, irrep, epsilonx, Lambda2p, MLambda2px, M, L, Mp, coeff)
-      !      IMPLICIT NONE
-!#if (defined(NDSU3LIB_DBL) || defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
-      !      REAL(KIND=8), INTENT(OUT) :: coeff
-!#elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
-      !      CLASS(*), INTENT(OUT) :: coeff
-!#endif
-      !      TYPE(su3irrep), INTENT(IN) :: irrep
-      !      INTEGER, INTENT(IN) :: I, J, epsilonx, Lambda2p, MLambda2px, M, L, Mp
-      !   END SUBROUTINE calculate_transformation_coef
-      !END INTERFACE
 
       IF (I == 1) THEN ! E=HW or HW'
          epsilon = -irrep%lambda - 2*irrep%mu ! HW epsilon
@@ -1081,9 +857,6 @@ CONTAINS
       !
       ! Note: triangular inequality for L1,L2,L3 is not checked.
       !-------------------------------------------------------------------------------------------------------------------------------
-!#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
-!     USE mpmodule
-!#endif
       IMPLICIT NONE
 #if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
       CLASS(*), TARGET, DIMENSION(:, :), INTENT(IN) :: matrix1
@@ -1168,19 +941,6 @@ CONTAINS
       TYPE(mp_real) :: coeffmp
       TYPE(mp_real), ALLOCATABLE, DIMENSION(:) :: transcoeff1mp, transcoeff2mp
 #endif
-
-      !INTERFACE
-      !   SUBROUTINE calculate_transformation_coef(I, J, irrep, epsilonx, Lambda2p, MLambda2px, M, L, Mp, coeff)
-      !      IMPLICIT NONE
-!#if (defined(NDSU3LIB_DBL) || defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
-      !      REAL(KIND=8), INTENT(OUT) :: coeff
-!#elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
-      !      CLASS(*), INTENT(OUT) :: coeff
-!#endif
-      !      TYPE(su3irrep), INTENT(IN) :: irrep
-      !      INTEGER, INTENT(IN) :: I, J, epsilonx, Lambda2p, MLambda2px, M, L, Mp
-      !   END SUBROUTINE calculate_transformation_coef
-      !END INTERFACE
 
 #if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
       ALLOCATE (transcoeff1(kappa1max), transcoeff2(kappa2max), &
@@ -1483,9 +1243,6 @@ CONTAINS
       ! rhomax is multipicity of SU(3) coupling (lambda1,mu1)x(lambda2,mu2)->(lambda3,mu3)
       ! wigner_phys(kappa1,kappa2,kappa3,rho) is reduced coupling coefficient
       !---------------------------------------------------------------------------------------------
- !#if (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
- !    USE mpmodule
- !#endif
       IMPLICIT NONE
       TYPE(su3irrep), INTENT(IN) :: irrep1
          !! First SU(3) irrep
@@ -1518,42 +1275,6 @@ CONTAINS
       TYPE(mp_real), ALLOCATABLE, DIMENSION(:, :) :: matrix1mp, matrix2mp
 #endif
       INTEGER, ALLOCATABLE, DIMENSION(:) :: p1a, p2a, q2a
-
-      !INTERFACE
-      !   SUBROUTINE calculate_coupling_canonical_extremal(irrep1, irrep2, irrep3, I3, rhomax, i2, wigner, p1a, p2a, q2a)
-      !      IMPLICIT NONE
-      !      TYPE(su3irrep), INTENT(IN) :: irrep1, irrep2, irrep3
-      !      INTEGER, INTENT(IN) :: I3, rhomax
-      !      INTEGER, INTENT(OUT) :: i2
-      !      INTEGER, DIMENSION(:), INTENT(OUT) :: p1a, p2a, q2a
-      !      REAL(KIND=8), DIMENSION(0:, 0:, 0:, 1:), INTENT(OUT) :: wigner
-      !   END SUBROUTINE calculate_coupling_canonical_extremal
-      !   SUBROUTINE calculate_coupling_su3so3_internal(I1, J1, irrep1, L1, kappa1max, matrix1, I2, J2, irrep2, L2, kappa2max, matrix2,&
-      !      I3, irrep3, L3, kappa3max, matrix3, rhomax, numb, wigner_can, p1a, p2a, q2a, wigner_phys)
-      !      IMPLICIT NONE
-!#if (defined(NDSU3LIB_DBL) || defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
-      !      REAL(KIND=8), DIMENSION(:,:), INTENT(IN) :: matrix1, matrix2
-!#elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
-      !      CLASS(*), DIMENSION(:,:), INTENT(IN) :: matrix1, matrix2
-!#endif
-      !      REAL(KIND=8), DIMENSION(:,:), INTENT(IN) :: matrix3
-      !      TYPE(su3irrep), INTENT(IN) :: irrep1, irrep2, irrep3
-      !      INTEGER, INTENT(IN) :: I1, J1, L1, kappa1max, I2, J2, L2, kappa2max, I3, L3, kappa3max, rhomax, numb
-      !      INTEGER, DIMENSION(:), INTENT(IN) :: p1a, p2a, q2a
-      !      REAL(KIND=8), DIMENSION(0:, 0:, 0:, 1:), INTENT(IN) :: wigner_can
-      !      REAL(KIND=8), DIMENSION(:, :, :, :), INTENT(OUT) :: wigner_phys
-      !   END SUBROUTINE calculate_coupling_su3so3_internal
-      !   SUBROUTINE calculate_orthonormalization_matrix(I, J, irrep, L, kappamax, matrix)
-      !      IMPLICIT NONE
-!#if (defined(NDSU3LIB_DBL) || defined(NDSU3LIB_QUAD) || defined(NDSU3LIB_QUAD_GNU))
-      !      REAL(KIND=8), DIMENSION(:, :), INTENT(OUT) :: matrix
-!#elif (defined(NDSU3LIB_MP) || defined(NDSU3LIB_MP_GNU))
-      !      CLASS(*), DIMENSION(:, :), INTENT(OUT) :: matrix
-!#endif
-      !      TYPE(su3irrep), INTENT(IN) :: irrep
-      !      INTEGER, INTENT(IN) :: I, J, L, kappamax
-      !   END SUBROUTINE calculate_orthonormalization_matrix
-      !END INTERFACE
 
       I2 = MAX(irrep2%lambda, irrep2%mu)
       pqdim = (MAX(irrep1%lambda, irrep1%mu) + 1)*((I2 + 1)**2)
@@ -1688,54 +1409,6 @@ CONTAINS
 
    END SUBROUTINE calculate_coupling_su3so3
 
-!  SUBROUTINE coupling_su3so3_wrapper(irrep1, L1, irrep2, L2, irrep3, L3,&
-!                                   kappa1max, kappa2max, kappa3max, rhomax, dimen, wigner_phys_block) BIND(C)
-      !-----------------------------------------------------------------------------------------------------------------------------------
-      ! Wrapper of subroutine calculating SU(3)-SO(3) reduced coupling coefficients
-      ! /(lambda1,mu1) (lambda2,mu2) || (lambda3,mu3)\
-      ! \  kappa1,L1     kappa2,L2   ||   kappa3,L3  /rho
-      !
-      ! Input arguments: irrep1,L1,irrep2,L2,irrep3,L3,kappa1max,kappa2max,kappa3max,rhomax,dimen
-      ! Output argument: wigner_phys_block
-      !
-      ! irrep%lambda is lambda, irrep%mu is mu,
-      ! kappamax is inner multiplicity of L within (lambda,mu),
-      ! rhomax is multiplicity of SU(3) coupling (lambda1,mu1)x(lambda2,mu2)->(lambda3,mu3),
-      ! dimen is size of array wigner_phys_block, which must be at least kappa1max*kaapa2max*kaapa3max*rhomax,
-      ! wigner_phys_block(ind), where ind=kappa1+kappa1max*(kappa2-1)+kappa1max*kappa2max*(kappa3-1)+kappa1max*kappa2max*kappa3max*(rho-1)
-      !   is reduced coupling coefficient for given kappa1,kppa2,kappa3,rho.
-      !-----------------------------------------------------------------------------------------------------------------------------------
-!     USE ISO_C_BINDING
-!     IMPLICIT NONE
-!     TYPE(su3irrep), INTENT(IN) :: irrep1, irrep2, irrep3
-!     INTEGER(C_INT), INTENT(IN) :: L1, L2, L3, kappa1max, kappa2max, kappa3max, rhomax, dimen
-!     REAL(C_DOUBLE), DIMENSION(dimen), INTENT(OUT) :: wigner_phys_block
-!     REAL(KIND=8), ALLOCATABLE, DIMENSION(:, :, :, :) :: wigner_phys
-!     INTEGER :: ind, rho, kappa1, kappa2, kappa3
-      !INTERFACE
-      !   SUBROUTINE calculate_coupling_su3so3(irrep1, L1, kappa1max, irrep2, L2, kappa2max, irrep3, L3, kappa3max, rhomax, wigner_phys)
-      !      IMPLICIT NONE
-      !      TYPE(su3irrep), INTENT(IN) :: irrep1, irrep2, irrep3
-      !      INTEGER, INTENT(IN) :: L1, kappa1max, L2, kappa2max, L3, kappa3max, rhomax
-      !      REAL(KIND=8), DIMENSION(:, :, :, :), INTENT(OUT) :: wigner_phys
-      !   END SUBROUTINE calculate_coupling_su3so3
-      !END INTERFACE
-!     ALLOCATE(wigner_phys(kappa1max, kappa2max, kappa3max, rhomax))
-!     CALL calculate_coupling_su3so3(irrep1, L1, kappa1max, irrep2, L2, kappa2max, irrep3,L 3, kappa3max, rhomax, wigner_phys)
-!     ind = 0
-!     DO rho = 1, rhomax
-!        DO kappa3 = 1, kappa3max
-!           DO kappa2 = 1, kappa2max
-!              DO kappa1 = 1, kappa1max
-!                 ind = ind + 1
-!                 wigner_phys_block(ind) = wigner_phys(kappa1, kappa2, kappa3, rho)
-!              END DO
-!           END DO
-!        END DO
-!     END DO
-!     DEALLOCATE(wigner_phys)
-!  END SUBROUTINE coupling_su3so3_wrapper
-
    SUBROUTINE calculate_coupling_su3so3_c(irrep1, L1, irrep2, L2, irrep3, L3, &
                                           kappa1max, kappa2max, kappa3max, rhomax, wigner_phys_ptr) &
       BIND(C, NAME="calculate_coupling_su3so3")
@@ -1783,15 +1456,6 @@ CONTAINS
          !! where ind=kappa1-1+kappa1max*(kappa2-1)+kappa1max*kappa2max*(kappa3-1)+kappa1max*kappa2max*kappa3max*(rho-1),
          !! is reduced coupling coefficient for given kappa1,kappa2,kappa3,rho.
       REAL(C_DOUBLE), POINTER, DIMENSION(:, :, :, :) :: wigner_phys
-      !INTERFACE
-      !   SUBROUTINE calculate_coupling_su3so3(irrep1, L1, kappa1max, irrep2, L2, kappa2max, irrep3, L3, kappa3max, rhomax, wigner_phys)
-      !      IMPLICIT NONE
-      !      TYPE(su3irrep), INTENT(IN) :: irrep1, irrep2, irrep3
-      !      INTEGER, INTENT(IN) :: L1, kappa1max, L2, kappa2max, L3, kappa3max, rhomax
-      !      REAL(KIND=8), DIMENSION(:, :, :, :), INTENT(OUT) :: wigner_phys
-      !   END SUBROUTINE calculate_coupling_su3so3
-      !END INTERFACE
-      !ALLOCATE(wigner_phys(kappa1max, kappa2max, kappa3max, rhomax))
       CALL C_F_POINTER(wigner_phys_ptr, wigner_phys, [kappa1max, kappa2max, kappa3max, rhomax])
       CALL calculate_coupling_su3so3(irrep1, L1, kappa1max, irrep2, L2, kappa2max, &
                                      irrep3, L3, kappa3max, rhomax, wigner_phys)

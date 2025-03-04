@@ -316,11 +316,11 @@ PROGRAM ndsu3lib_example
    !------------------------------------------------------------------------------
    USE ndsu3lib_tools
    IMPLICIT NONE
-   LOGICAL(KIND=1) :: wso3 = .TRUE.
+   LOGICAL(KIND=1) :: wso3 = .TRUE., openmp = .FALSE.
       !! First input argument of subroutines initialize_ndsu3lib and finalize_ndsu3lib.
       !! Must be .TRUE. if SU(3)-SO(3) reduced coupling coefficients are going to be calculated
 
-   CALL initialize_ndsu3lib(wso3, 50)
+   CALL initialize_ndsu3lib(wso3, openmp, 50)
    CALL tabulate_coupling_canonical
    CALL tabulate_coupling_su3so3
    CALL tabulate_u_coef

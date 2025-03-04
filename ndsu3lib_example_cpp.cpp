@@ -243,7 +243,7 @@ void tabulate_nine_lm()
 
 int main()
 {
-   ndsu3lib::InitializeNdsu3lib(true, 50);
+   ndsu3lib::InitializeNdsu3lib(true, false, 50);
    tabulate_coupling_canonical();
    tabulate_coupling_su3so3();
    tabulate_u_coef();

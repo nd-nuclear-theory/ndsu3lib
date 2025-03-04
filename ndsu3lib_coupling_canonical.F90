@@ -105,25 +105,9 @@ CONTAINS
       wigner(0:lambda1, 0:lambda2, 0:mu2, 1:rhomax) = 0.D0
       Lambda22max = 0
 
-#if defined(NDSU3LIB_OMP)
-      CALL lock%reader_lock()
-      DO WHILE (MAX(mu2, (lambda1 + lambda2 - lambda3 + 2*(mu1 + mu2 - mu3))/3 + 1 + lambda2) > upbound_binom)
-         IF (.NOT. lock%writer_lock(.TRUE.)) THEN
-            CALL lock%reader_unlock()
-            CALL lock%reader_lock()
-!$omp flush acquire
-            CYCLE
-         END IF
-!$omp flush acquire
-         CALL reallocate_binom(50)
-!$omp flush release
-         CALL lock%writer_unlock(.TRUE.)
-      END DO
-#else
       DO WHILE (MAX(mu2, (lambda1 + lambda2 - lambda3 + 2*(mu1 + mu2 - mu3))/3 + 1 + lambda2) > upbound_binom)
          CALL reallocate_binom(50)
       END DO
-#endif
 
       DO rho = 1, rhomax
 
@@ -451,9 +435,6 @@ CONTAINS
 
          ! Valid values of p1, p2, and q2 are elements of arrays p1a, p2a, and q2a with indeces from 1 to i2.
       END DO ! End of loop over rho
-#if defined(NDSU3LIB_OMP)
-      CALL lock%reader_unlock()
-#endif
       !*****************************************
       ! Orthonormalization according to Eq.(...)
       !*****************************************
@@ -768,18 +749,10 @@ CONTAINS
 
       ELSE
 
-!        wigner(0:irrep1%lambda,0:irrep2%lambda,0:irrep2%mu,1:rhomax)=0.D0
          epsilon3ex = 2*irrep3%lambda + irrep3%mu
          epsilon2max = 2*irrep2%lambda + irrep2%mu
          noname1 = (epsilon2max - irrep1%lambda - 2*irrep1%mu - epsilon3ex)/3
          noname2 = (epsilon2max + 2*irrep1%lambda + irrep1%mu - epsilon3ex)/3
-
-!        DO s2=1,numb
-!           p2=irrep2%lambda-q2a(s2)
-!           q2=irrep2%mu-p2a(s2)
-!           ! p1=noname2-q1-p2-q2=noname2-irrep1%mu+p1a(s2)-p2-q2
-!           wigner(noname2-irrep1%mu+p1a(s2)-p2-q2,p2,q2,1:rhomax)=wignerex(p1a(s2),p2a(s2),q2a(s2),1:rhomax)
-!        END DO
 
          DO p1 = 0, irrep1%lambda
             DO p2 = 0, irrep2%lambda
@@ -1022,27 +995,6 @@ CONTAINS
          !! Array of resulting reduced coupling coefficients
       INTEGER :: i, rho, ind
       REAL(KIND=8), ALLOCATABLE, DIMENSION(:, :, :, :) :: wignerex, wigner
-
-      !INTERFACE
-      !   SUBROUTINE calculate_coupling_canonical_extremal(irrep1, irrep2, irrep3, I3, rhomax, i2, wigner, p1a, p2a, q2a)
-      !      IMPLICIT NONE
-      !      TYPE(su3irrep), INTENT(IN) :: irrep1, irrep2, irrep3
-      !      INTEGER, INTENT(IN) :: I3, rhomax
-      !      INTEGER, INTENT(OUT) :: i2
-      !      INTEGER, DIMENSION(:), INTENT(OUT) :: p1a, p2a, q2a
-      !      REAL(KIND=8), DIMENSION(0:,0:,0:,1:), INTENT(OUT) :: wigner
-      !   END SUBROUTINE calculate_coupling_canonical_extremal
-      !   SUBROUTINE calculate_coupling_canonical_nonextremal(irrep1, irrep2, irrep3, epsilon3, Lambda32, I3, rhomax,
-      !                                                     numb, wignerex, wigner, p1a, p2a, q2a)
-      !      IMPLICIT NONE
-      !      TYPE(su3irrep), INTENT(IN) :: irrep1, irrep2, irrep3
-      !      INTEGER, INTENT(IN) :: epsilon3, Lambda32, I3, rhomax
-      !      INTEGER :: numb
-      !      INTEGER, DIMENSION(:) :: p1a, p2a, q2a
-      !      REAL(KIND=8), DIMENSION(0:,0:,0:,1:), INTENT(IN) :: wignerex
-      !      REAL(KIND=8), DIMENSION(0:,0:,0:,1:), INTENT(OUT) :: wigner
-      !   END SUBROUTINE calculate_coupling_canonical_nonextremal
-      !END INTERFACE
 
       i = MAX(irrep2%lambda, irrep2%mu)
       ALLOCATE (wignerex(0:MAX(irrep1%lambda, irrep1%mu), 0:i, 0:i, 1:rhomax), &
