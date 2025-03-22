@@ -29,6 +29,7 @@ set_property(CACHE SO3COEF_LIBRARY PROPERTY STRINGS ${SO3COEF_LIBRARY_OPTIONS})
 
 include(fetch_declarations.cmake)
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR})
 
 if(SO3COEF_LIBRARY STREQUAL "wigxjpf")
   message(STATUS "Building ndsu3lib with wigxjpf support")
@@ -91,8 +92,10 @@ add_library(ndsu3lib::ndsu3lib ALIAS ndsu3lib)
 target_sources(ndsu3lib INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/ndsu3lib.h>)
 
 ## Lapack
-find_package(BLAS)
-target_link_libraries(ndsu3lib PUBLIC BLAS::BLAS)
+#find_package(BLAS REQUIRED)
+find_package(LAPACK REQUIRED)
+#target_link_libraries(ndsu3lib PUBLIC BLAS::BLAS)
+target_link_libraries(ndsu3lib PUBLIC LAPACK::LAPACK)
 
 
 ###############################################################################
@@ -154,7 +157,7 @@ endif()
 message(STATUS "Precision: ${NDSU3LIB_PRECISION}")
 
 
-option(NDSU3LIB_OPENMP "Make ndsu3lib safe for use in OpenMP parallel regions" ON)
+option(NDSU3LIB_OPENMP "Make ndsu3lib safe for use in OpenMP parallel regions")
 
 if(${NDSU3LIB_OPENMP})
   find_package(OpenMP REQUIRED)

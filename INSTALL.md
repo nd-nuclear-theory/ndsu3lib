@@ -53,3 +53,5 @@ If -DSO3COEF_LIBRARY=wigxjpf or -DNDSU3LIB_PRECISION=multi or -DNDSU3LIB_PRECISI
 libraries wigxjpf and mpfun20-fort, respectively.  The library is found, then it is simply included.  If the library is not found, then cmake will make a shallow git clone and copy the necessary sources to _dep dir in <build-dir>. The library is then compiled along with ndsu3lib. 
 
 The git repository that cmake clones from is set in retrieve.cmake.  
+
+To support OpenMP, set -DNDSU3LIB_OPENMP to ON.
