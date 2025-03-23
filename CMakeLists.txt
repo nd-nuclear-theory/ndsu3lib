@@ -31,6 +31,8 @@ include(fetch_declarations.cmake)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR})
 
+option(FETCH "Enable fetching of WIGXJPF or MPFUN20 from github.com/nd-nuclear-theory")
+
 if(SO3COEF_LIBRARY STREQUAL "wigxjpf")
   message(STATUS "Building ndsu3lib with wigxjpf support")
 
@@ -38,9 +40,12 @@ if(SO3COEF_LIBRARY STREQUAL "wigxjpf")
     find_package(wigxjpf)
   endif()
   ## If still not found, fetch
-  if(NOT TARGET wigxjpf::wigxjpf)
+  if(NOT TARGET wigxjpf::wigxjpf AND FETCH)
     message(STATUS "Package wigxjpf not found. Fetching...")
     FetchContent_MakeAvailable(wigxjpf)
+  endif()
+  if(NOT TARGET wigxjpf::wigxjpf)
+    message(FATAL_ERROR "WIGXJPF not found nor fetched")
   endif()
 
 elseif(SO3COEF_LIBRARY STREQUAL "gsl")
@@ -64,13 +69,16 @@ set_property(CACHE NDSU3LIB_PRECISION PROPERTY STRINGS ${NDSU3LIB_PRECISION_OPTI
 ## mpfun20-fortran
 if(${NDSU3LIB_PRECISION} STREQUAL "multi" OR ${NDSU3LIB_PRECISION} STREQUAL "multiquad")
   message(STATUS "Building ndsu3lib with mpfun2020 support")
-  if(NOT TARGET mpfun20::mpfun20)
+  if(NOT TARGET mpfun20)
     find_package(mpfun20)
   endif()
   ## If still not found, fetch
-  if(NOT TARGET mpfun20::mpfun20)
+  if(NOT TARGET mpfun20 AND FETCH)
     message(STATUS "Package mpfun20 not found. Fetching...")
     FetchContent_MakeAvailable(mpfun20)
+  endif()
+  if(NOT TARGET mpfun20)
+    message(FATAL_ERROR "MPFUN20 not found nor fetched")
   endif()
 endif()
 
@@ -126,7 +134,7 @@ elseif(${NDSU3LIB_PRECISION} STREQUAL "quad")
   endif()
 
 elseif(${NDSU3LIB_PRECISION} STREQUAL "multi")
-  target_link_libraries(ndsu3lib PUBLIC mpfun20::mpfun20)
+  target_link_libraries(ndsu3lib PUBLIC mpfun20)
 
   if(CMAKE_Fortran_COMPILER_ID STREQUAL GNU OR CMAKE_Fortran_COMPILER_ID STREQUAL Flang)
     target_compile_definitions(ndsu3lib PRIVATE NDSU3LIB_MP_GNU)
@@ -135,7 +143,7 @@ elseif(${NDSU3LIB_PRECISION} STREQUAL "multi")
   endif()
 
 elseif(${NDSU3LIB_PRECISION} STREQUAL "multiquad")
-  target_link_libraries(ndsu3lib PUBLIC mpfun20::mpfun20)
+  target_link_libraries(ndsu3lib PUBLIC mpfun20)
 
   if(CMAKE_Fortran_COMPILER_ID STREQUAL GNU OR CMAKE_Fortran_COMPILER_ID STREQUAL Flang)
     target_compile_definitions(ndsu3lib PRIVATE NDSU3LIB_QUAD_GNU NDSU3LIB_MP_GNU)
@@ -148,16 +156,20 @@ else()
 
 endif()
 
-## this is needed for Cray compiler
-if(CMAKE_Fortran_COMPILER_ID STREQUAL Cray)
-  add_link_options(-Wl,--allow-multiple-definition -fopenmp)
-endif()
-
 
 message(STATUS "Precision: ${NDSU3LIB_PRECISION}")
 
 
 option(NDSU3LIB_OPENMP "Make ndsu3lib safe for use in OpenMP parallel regions")
+
+## this is needed for Cray compiler
+if(CMAKE_Fortran_COMPILER_ID STREQUAL Cray)
+  if(${NDSU3LIB_OPENMP})
+    add_link_options(-Wl,--allow-multiple-definition -fopenmp)
+  else()
+    add_link_options(-Wl,--allow-multiple-definition)
+  endif()
+endif()
 
 if(${NDSU3LIB_OPENMP})
   find_package(OpenMP REQUIRED)
