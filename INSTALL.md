@@ -6,7 +6,7 @@
   % cd ~/code
   ~~~~~~~~~~~~~~~~
 
-  Clone the `ndsu3lib` repository.
+  Clone the `ndsu3lib` repository:
 
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   % git clone https://github.com/nd-nuclear-theory/ndsu3lib.git
@@ -44,7 +44,7 @@
       -DGSL_CBLAS_LIBRARY=<directory with GSL library files>/libgslcblas.a
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
-  On clusters, LAPACK and GSL may by available by loading appropriate modules. Then, these libraries do not need to be installed, and the variables BLAS_LIBRARIES, GSL_INCLUDE_DIR, GSL_LIBRARY, and GSL_CBLAS_LIBRARY above do not need to be defined.
+  On clusters, LAPACK and GSL may by available by loading appropriate modules. Then, these libraries do not need to be installed, and the variables `BLAS_LIBRARIES`, `GSL_INCLUDE_DIR`, `GSL_LIBRARY`, and `GSL_CBLAS_LIBRARY` above do not need to be defined.
 
   To enable quadruple precision arithmetic without multiprecision arithmetic, include
 
@@ -55,22 +55,22 @@
   To enable multiprecision arithmetic without quadruple precision arithmetic, include
 
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  -DPRECISION=multi \
+  -DPRECISION=multi
   -DMPFUN20_DIR=<directory containing MPFUN20 *.o and *.mod files>
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   To enable both quadruple precision and multiprecision arithmetic (recommended), include
   
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  -DPRECISION=multiquad \
+  -DPRECISION=multiquad
   -DMPFUN20_DIR=<directory containing MPFUN20 *.o and *.mod files>
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   If using WIGXJPF (recommended), include
 
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  -DSU2COEF_LIBRARY=wigxjpf \
-  -DWIGXJPF_INC_DIR=<directory with fwigxjpf.mod file> \
+  -DSU2COEF_LIBRARY=wigxjpf
+  -DWIGXJPF_INC_DIR=<directory with fwigxjpf.mod file>
   -DWIGXJPF_LIB_DIR=<directory with libwigxjpf.a library file>
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -80,13 +80,13 @@
   -DOPENMP=ON
   ~~~~~~~~~~~~~~~~
 
-  If CMake does not find the WIGXJPF or MPFUN2020-Fort library, it can make a shallow git clone and copy the necessary sources to _dep directory in the build directory. The library is then compiled along with ndsu3lib. To enable this, include
+  If CMake does not find the WIGXJPF or MPFUN2020-Fort library, it can make a shallow git clone and copy the necessary sources to `_dep` directory in the `build` directory. The library is then compiled along with ndsu3lib. To enable this, include
 
   ~~~~~~~~~~~~~~~~
   -DFETCH=ON
   ~~~~~~~~~~~~~~~~
 
-  The git repositories that CMake clones from are set in fetch_declarations.cmake.
+  The git repositories that CMake clones from are set in `fetch_declarations.cmake`.
 
 # 3. Compilation and installation
 
@@ -103,7 +103,7 @@
   % ./build/ndsu3lib_example_cpp
   ~~~~~~~~~~~~~~~~
 
-  The output should match the example_output.txt file.
+  The output should match the `example_output.txt` file.
 
   To install the ndsu3lib library:
 
@@ -113,7 +113,7 @@
 
 # 4. Linking
 
-  A Fortran code program.f90 using ndsu3lib can be compiled by (using GCC and GSL)
+  A Fortran code `program.f90` using ndsu3lib can be compiled by (using GCC and GSL)
  
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   % gfortran program.f90 -I <prefix>/include/ndsu3lib/mod \
@@ -131,7 +131,7 @@
   If using multiprecision arithmetic (supported by the MPFUN2020-Fort library), include
 
   ~~~~~~~~~~~~~~~~
-  -lmpfun20.
+  -lmpfun20
   ~~~~~~~~~~~~~~~~
 
   A C++ code using ndsu3lib must contain
