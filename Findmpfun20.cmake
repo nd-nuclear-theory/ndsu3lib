@@ -12,7 +12,7 @@ Imported Targets
 
 This module provides the following imported targets, if found:
 
-``mpfun20::mpfun20``
+``mpfun20``
   The mpfun20 library
 
 Result Variables
@@ -37,7 +37,7 @@ The following cache variables may also be set:
 
 find_path(mpfun20_INCLUDE_DIR
   NAMES mpmodule.o mpfuna.o mpfunb.o mpfunc.o mpfund.o mpfune.o mpfunf.o mpfung2.o mpfunh2.o mpmask13.o secondmpmodule.mod mpfuna.mod mpfunb.mod mpfunc.mod mpfund.mod mpfune.mod mpfunf.mod mpfung.mod mpfunh.mod
-  PATHS ${MPFUN20_INC_DIR}
+  PATHS ${MPFUN20_DIR}
   PATH_SUFFIXES mod mpfun20 inc include
 )
 

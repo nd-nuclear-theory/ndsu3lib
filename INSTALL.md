@@ -1,57 +1,161 @@
-Instructions for installing ndsu3lib with cmake. 
+# 0. Retrieving and installing source
 
-Requires cmake version 3.15 or higher 
+  Change to the directory where you want the repository to be installed, e.g.,
 
-The following libraries are required:
- - Lapack (unless recoupling coefficients are not going to be calculated)
- - WIGXJPF or GNU Scientific Library (unless only SU(3)-U(1)xSU(2) reduced Wigner coefficients are going to be calculated)
- - optionally MPFUN2020-Fort (recommended for SU(3)-SO(3) reduced coupling coefficients)
+  ~~~~~~~~~~~~~~~~
+  % cd ~/code
+  ~~~~~~~~~~~~~~~~
 
-Download links and documentation for WIGXJPF and MPFUN2020-Fort can be found here:
+  Clone the `ndsu3lib` repository.
 
-http://fy.chalmers.se/subatom/wigxjpf/
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  % git clone https://github.com/nd-nuclear-theory/ndsu3lib.git
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-https://www.davidhbailey.com/dhbsoftware/
+# 1. Supporting libraries
 
-To do a basic installation (with default values for compile flags) run  
-	cmake -B <build-dir> 
+  First, some supporting libraries must be installed, namely:
 
-Then to compile 
-	cmake --build <build-dir>
+  LAPACK
 
-or, if you get impatient
-	cmake --build <build-dir> -j<N>
+  GSL or Fortran version of WIGXJPF
 
-To turn on debug mode.  Include -DCMAKE_BUILD_TYPE=Debug when running cmake -B.  I.e., 
-	cmake -B <build-dir> -DCMAKE_BUILD_TYPE=Debug
+  MPFUN2020-Fort, version 2 (optional)
 
-To build with debug off, include -DCMAKE_BUILD_TYPE=Release
+  Download links and documentation for these libraries can be found here:
 
-If install at NERSC, you should include -DCMAKE_SYSTEM_NAME=CrayLinuxEnvironment.
+  LAPACK: https://www.netlib.org/lapack/#_lapack_version_3_12_1
 
-To choose which SO(3) coefficient library, set -DSO3COEF_LIBRARY to either gsl or wigxjpf, 
-or run ccmake <build-dir> and select the appropriate option (arrow down to SO3COEFF_LIBRARY and hit enter until it shows desired libary). Default is -DSO3COEF_LIBRARY=gsl
+  GSL: https://www.gnu.org/software/gsl/
 
-To choose precision, set -DNDSU3LIB_PRECISION to double, quad, multi or multiquad. Or run ccmake and select desired precision.  
+  WIGXJPF: http://fy.chalmers.se/subatom/wigxjpf/
 
-Default values are 
-	NDSU3LIB_PRECISION=double
-	SO3COEF_LIBRARY=gsl	
+  MPFUN2020-Fort: https://www.davidhbailey.com/dhbsoftware/
 
-For example: 
+# 2. Configuration
 
-If you're compiling with the gnu compiler and run
+  In the `ndsu3lib` code directory, configure the project using CMake. If using GSL and only double precision arithmetic, use
 
-	cmake -B build -DSO3COEF_LIBRARY=wigxjpf -DNDSU3LIB_PRECISION=quad
-	cmake --build build
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  % cmake -B build \
+      -DBLAS_LIBRARIES=<directory with BLAS and LAPACK library files>/librefblas.a \
+      -DGSL_INCLUDE_DIR=<directory with GSL header files> \
+      -DGSL_LIBRARY=<directory with GSL library files>/libgsl.a \
+      -DGSL_CBLAS_LIBRARY=<directory with GSL library files>/libgslcblas.a
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+  On clusters, LAPACK and GSL may by available by loading appropriate modules. Then, these libraries do not need to be installed, and the variables BLAS_LIBRARIES, GSL_INCLUDE_DIR, GSL_LIBRARY, and GSL_CBLAS_LIBRARY above do not need to be defined.
 
-Then ndsu3lib will compile with 
-	-DNDSU3LIB_QUAD_GNU -DNDSU3LIB_RACAH_WIGXJPF -DNDSU3LIB_WSO3_WIGXJPF
+  To enable quadruple precision arithmetic without multiprecision arithmetic, include
 
+  ~~~~~~~~~~~~~~~~
+  -DPRECISION=quad
+  ~~~~~~~~~~~~~~~~
 
-If -DSO3COEF_LIBRARY=wigxjpf or -DNDSU3LIB_PRECISION=multi or -DNDSU3LIB_PRECISION=multiquad then cmake will look for
-libraries wigxjpf and mpfun20-fort, respectively.  The library is found, then it is simply included.  If the library is not found, then cmake will make a shallow git clone and copy the necessary sources to _dep dir in <build-dir>. The library is then compiled along with ndsu3lib. 
+  To enable multiprecision arithmetic without quadruple precision arithmetic, include
 
-The git repository that cmake clones from is set in retrieve.cmake.  
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  -DPRECISION=multi \
+  -DMPFUN20_DIR=<directory containing MPFUN20 *.o and *.mod files>
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To support OpenMP, set -DNDSU3LIB_OPENMP to ON.
+  To enable both quadruple precision and multiprecision arithmetic (recommended), include
+  
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  -DPRECISION=multiquad \
+  -DMPFUN20_DIR=<directory containing MPFUN20 *.o and *.mod files>
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  If using WIGXJPF (recommended), include
+
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  -DSU2COEF_LIBRARY=wigxjpf \
+  -DWIGXJPF_INC_DIR=<directory with fwigxjpf.mod file> \
+  -DWIGXJPF_LIB_DIR=<directory with libwigxjpf.a library file>
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  For OpenMP multithreaded applications, include
+  
+  ~~~~~~~~~~~~~~~~
+  -DOPENMP=ON
+  ~~~~~~~~~~~~~~~~
+
+  If CMake does not find the WIGXJPF or MPFUN2020-Fort library, it can make a shallow git clone and copy the necessary sources to _dep directory in the build directory. The library is then compiled along with ndsu3lib. To enable this, include
+
+  ~~~~~~~~~~~~~~~~
+  -DFETCH=ON
+  ~~~~~~~~~~~~~~~~
+
+  The git repositories that CMake clones from are set in fetch_declarations.cmake.
+
+# 3. Compilation and installation
+
+  To compile the ndsu3lib library itself along with the example programs:
+
+  ~~~~~~~~~~~~~~~~
+  % cmake --build build
+  ~~~~~~~~~~~~~~~~
+
+  The example programs can then be run:
+
+  ~~~~~~~~~~~~~~~~
+  % ./build/ndsu3lib_example
+  % ./build/ndsu3lib_example_cpp
+  ~~~~~~~~~~~~~~~~
+
+  The output should match the example_output.txt file.
+
+  To install the ndsu3lib library:
+
+  ~~~~~~~~~~~~~~~~
+  % cmake --install build --prefix <prefix>
+  ~~~~~~~~~~~~~~~~
+
+# 4. Linking
+
+  A Fortran code program.f90 using ndsu3lib can be compiled by (using GCC and GSL)
+ 
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  % gfortran program.f90 -I <prefix>/include/ndsu3lib/mod \
+      -L <prefix>/lib -lndsu3lib \
+      -L <directory with BLAS and LAPACK library files> -llapack -lrefblas \
+      -L <directory with GSL library files> -lgsl -lgslcblas
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  If using WIGXJPF, include
+
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  -L <directory with libwigxjpf.a library file> -lwigxjpf
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  If using multiprecision arithmetic (supported by the MPFUN2020-Fort library), include
+
+  ~~~~~~~~~~~~~~~~
+  -lmpfun20.
+  ~~~~~~~~~~~~~~~~
+
+  A C++ code using ndsu3lib must contain
+
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #include "<ndsu3lib/ndsu3lib.h"
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  and can be compiled just like the Fortran program above, with
+
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  g++ -lgfortran -I <prefix>/include
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  instead of
+
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  gfortran -I <prefix>/include/ndsu3lib/mod
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  and including
+
+  ~~~~~~~~~~~~~~~~
+  -lquadmath
+  ~~~~~~~~~~~~~~~~
+
+  to enable quadruple precision arithmetic.

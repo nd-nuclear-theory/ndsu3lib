@@ -22,9 +22,9 @@ set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/mod)
 ###############################################################################
 # Find external projects/dependencies
 ###############################################################################
-set(SO3COEF_LIBRARY_OPTIONS "wigxjpf" "gsl")
-set(SO3COEF_LIBRARY "gsl" CACHE STRING "SO(3) coefficient library to use")
-set_property(CACHE SO3COEF_LIBRARY PROPERTY STRINGS ${SO3COEF_LIBRARY_OPTIONS})
+set(SU2COEF_LIBRARY_OPTIONS "wigxjpf" "gsl")
+set(SU2COEF_LIBRARY "gsl" CACHE STRING "SO(3) coefficient library to use")
+set_property(CACHE SU2COEF_LIBRARY PROPERTY STRINGS ${SU2COEF_LIBRARY_OPTIONS})
 
 
 include(fetch_declarations.cmake)
@@ -33,7 +33,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR})
 
 option(FETCH "Enable fetching of WIGXJPF or MPFUN20 from github.com/nd-nuclear-theory")
 
-if(SO3COEF_LIBRARY STREQUAL "wigxjpf")
+if(SU2COEF_LIBRARY STREQUAL "wigxjpf")
   message(STATUS "Building ndsu3lib with wigxjpf support")
 
   if(NOT TARGET wigxjpf::wigxjpf)
@@ -48,26 +48,26 @@ if(SO3COEF_LIBRARY STREQUAL "wigxjpf")
     message(FATAL_ERROR "WIGXJPF not found nor fetched")
   endif()
 
-elseif(SO3COEF_LIBRARY STREQUAL "gsl")
+elseif(SU2COEF_LIBRARY STREQUAL "gsl")
   message(STATUS "Building ndsu3lib with gsl support")
   find_package(GSL REQUIRED)
 
 else()
-  message(FATAL_ERROR "Unknown SO(3) coefficient library ${SO3COEF_LIBRARY}")
+  message(FATAL_ERROR "Unknown SO(3) coefficient library ${SU2COEF_LIBRARY}")
 
 endif()
 
-message(STATUS "Using SO(3) coefficient library:  ${SO3COEF_LIBRARY}")
+message(STATUS "Using SO(3) coefficient library:  ${SU2COEF_LIBRARY}")
 
 ###############################################################################
 # Set precision
 ###############################################################################
-set(NDSU3LIB_PRECISION_OPTIONS "double" "quad" "multi" "multiquad")
-set(NDSU3LIB_PRECISION "double" CACHE STRING "NDSU3LIB numerical precision")
-set_property(CACHE NDSU3LIB_PRECISION PROPERTY STRINGS ${NDSU3LIB_PRECISION_OPTIONS})
+set(PRECISION_OPTIONS "double" "quad" "multi" "multiquad")
+set(PRECISION "double" CACHE STRING "NDSU3LIB numerical precision")
+set_property(CACHE PRECISION PROPERTY STRINGS ${PRECISION_OPTIONS})
 
 ## mpfun20-fortran
-if(${NDSU3LIB_PRECISION} STREQUAL "multi" OR ${NDSU3LIB_PRECISION} STREQUAL "multiquad")
+if(${PRECISION} STREQUAL "multi" OR ${PRECISION} STREQUAL "multiquad")
   message(STATUS "Building ndsu3lib with mpfun2020 support")
   if(NOT TARGET mpfun20)
     find_package(mpfun20)
@@ -109,12 +109,12 @@ target_link_libraries(ndsu3lib PUBLIC LAPACK::LAPACK)
 ###############################################################################
 #configure options
 ###############################################################################
-if(${SO3COEF_LIBRARY} STREQUAL "gsl")
+if(${SU2COEF_LIBRARY} STREQUAL "gsl")
   target_compile_definitions(ndsu3lib PRIVATE NDSU3LIB_RACAH_GSL)
   target_compile_definitions(ndsu3lib PRIVATE NDSU3LIB_WSO3_GSL)
   target_link_libraries(ndsu3lib PUBLIC GSL::gsl)
 
-elseif(${SO3COEF_LIBRARY} STREQUAL "wigxjpf")
+elseif(${SU2COEF_LIBRARY} STREQUAL "wigxjpf")
   target_compile_definitions(ndsu3lib PRIVATE NDSU3LIB_RACAH_WIGXJPF)
   target_compile_definitions(ndsu3lib PRIVATE NDSU3LIB_WSO3_WIGXJPF)
   target_link_libraries(ndsu3lib PUBLIC wigxjpf::wigxjpf)
@@ -122,10 +122,10 @@ elseif(${SO3COEF_LIBRARY} STREQUAL "wigxjpf")
 endif()
 
 ## set precision
-if(${NDSU3LIB_PRECISION} STREQUAL "double")
+if(${PRECISION} STREQUAL "double")
   target_compile_definitions(ndsu3lib PRIVATE NDSU3LIB_DBL)
 
-elseif(${NDSU3LIB_PRECISION} STREQUAL "quad")
+elseif(${PRECISION} STREQUAL "quad")
 
   if(CMAKE_Fortran_COMPILER_ID STREQUAL GNU OR CMAKE_Fortran_COMPILER_ID STREQUAL Flang)
     target_compile_definitions(ndsu3lib PRIVATE NDSU3LIB_QUAD_GNU)
@@ -133,7 +133,7 @@ elseif(${NDSU3LIB_PRECISION} STREQUAL "quad")
     target_compile_definitions(ndsu3lib PRIVATE NDSU3LIB_QUAD)
   endif()
 
-elseif(${NDSU3LIB_PRECISION} STREQUAL "multi")
+elseif(${PRECISION} STREQUAL "multi")
   target_link_libraries(ndsu3lib PUBLIC mpfun20)
 
   if(CMAKE_Fortran_COMPILER_ID STREQUAL GNU OR CMAKE_Fortran_COMPILER_ID STREQUAL Flang)
@@ -142,7 +142,7 @@ elseif(${NDSU3LIB_PRECISION} STREQUAL "multi")
     target_compile_definitions(ndsu3lib PRIVATE NDSU3LIB_MP)
   endif()
 
-elseif(${NDSU3LIB_PRECISION} STREQUAL "multiquad")
+elseif(${PRECISION} STREQUAL "multiquad")
   target_link_libraries(ndsu3lib PUBLIC mpfun20)
 
   if(CMAKE_Fortran_COMPILER_ID STREQUAL GNU OR CMAKE_Fortran_COMPILER_ID STREQUAL Flang)
@@ -152,26 +152,26 @@ elseif(${NDSU3LIB_PRECISION} STREQUAL "multiquad")
   endif()
 
 else()
-  message(FATAL_ERROR "Precision option ${NDSU3LIB_PRECISION} not recognized")
+  message(FATAL_ERROR "Precision option ${PRECISION} not recognized")
 
 endif()
 
 
-message(STATUS "Precision: ${NDSU3LIB_PRECISION}")
+message(STATUS "Precision: ${PRECISION}")
 
 
-option(NDSU3LIB_OPENMP "Make ndsu3lib safe for use in OpenMP parallel regions")
+option(OPENMP "Make ndsu3lib safe for use in OpenMP parallel regions")
 
 ## this is needed for Cray compiler
 if(CMAKE_Fortran_COMPILER_ID STREQUAL Cray)
-  if(${NDSU3LIB_OPENMP})
+  if(${OPENMP})
     add_link_options(-Wl,--allow-multiple-definition -fopenmp)
   else()
     add_link_options(-Wl,--allow-multiple-definition)
   endif()
 endif()
 
-if(${NDSU3LIB_OPENMP})
+if(${OPENMP})
   find_package(OpenMP REQUIRED)
   target_link_libraries(ndsu3lib PUBLIC OpenMP::OpenMP_Fortran)
 endif()
