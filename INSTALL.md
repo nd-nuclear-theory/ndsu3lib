@@ -14,64 +14,77 @@
 
 # 1. Supporting libraries
 
-  First, some supporting libraries must be installed, namely:
+  First, some supporting libraries must be installed, if they are not already
+  available on your system, namely:
 
-  LAPACK
+  - LAPACK (or a vendor optimized implementation)
 
-  GSL or Fortran version of WIGXJPF
+  - WIGXJPF (installed for use from Fortran) or GNU Scientific Library (GSL)
 
-  MPFUN2020-Fort, version 2 (optional)
+  - MPFUN2020-Fort (version 2) (optional)
 
   Download links and documentation for these libraries can be found here:
 
-  LAPACK: https://www.netlib.org/lapack/#_lapack_version_3_12_1
+  - LAPACK: https://www.netlib.org/lapack/#_lapack_version_3_12_1
 
-  GSL: https://www.gnu.org/software/gsl/
+  - WIGXJPF: http://fy.chalmers.se/subatom/wigxjpf/
 
-  WIGXJPF: http://fy.chalmers.se/subatom/wigxjpf/
+  - GSL: https://www.gnu.org/software/gsl/
 
-  MPFUN2020-Fort: https://www.davidhbailey.com/dhbsoftware/
+  - MPFUN2020-Fort: https://www.davidhbailey.com/dhbsoftware/
+
+  On clusters, LAPACK and GSL may by available by loading appropriate modules.
 
 # 2. Configuration
 
-  In the `ndsu3lib` code directory, configure the project using CMake. If using GSL and only double precision arithmetic, use
+  In the `ndsu3lib` code directory, configure the project using CMake.  The
+  basic command is
 
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  % cmake -B build \
-      -DBLAS_LIBRARIES=<directory with BLAS and LAPACK library files>/librefblas.a \
-      -DGSL_INCLUDE_DIR=<directory with GSL header files> \
-      -DGSL_LIBRARY=<directory with GSL library files>/libgsl.a \
-      -DGSL_CBLAS_LIBRARY=<directory with GSL library files>/libgslcblas.a
+  % cmake -B <build_dir>
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Here `<build_dir>` is whatever subdirectory name you choose for CMake to use
+  as the build directory, e.g., `build`.
+  
+  This will default to using GSL for angular momentum coefficients, and only
+  enabling double precision arithmetic.  Other choices are documented below.
+  
+  This basic form of the configuration command also assumes that any installed
+  libraries are already in the compiler library search path, either because they
+  were loaded as a module or since they are installed under one of the standard
+  installation prefixes on your system (e.g., in `/usr`).  If you have installed
+  these libraries to custom locations, these needs to be specified via
+  additional flags to CMake, also as documented below.
+  
+## 2.1. Configuration mode flags
+  
+  To use WIGXJPF (recommended), rather than GSL, for angular momentum
+  coefficients, specify
+
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  -DSU2COEF_LIBRARY=wigxjpf
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  To enable both quadruple precision and multiprecision arithmetic
+  (recommended), specify
+  
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  -DPRECISION=multiquad
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
-  On clusters, LAPACK and GSL may by available by loading appropriate modules. Then, these libraries do not need to be installed, and the variables `BLAS_LIBRARIES`, `GSL_INCLUDE_DIR`, `GSL_LIBRARY`, and `GSL_CBLAS_LIBRARY` above do not need to be defined.
-
-  To enable quadruple precision arithmetic without multiprecision arithmetic, include
+  However, if you wish to enable just quadruple precision arithmetic (without
+  multiprecision arithmetic), specify
 
   ~~~~~~~~~~~~~~~~
   -DPRECISION=quad
   ~~~~~~~~~~~~~~~~
 
-  To enable multiprecision arithmetic without quadruple precision arithmetic, include
+  Or, to enable just multiprecision arithmetic (without quadruple precision
+  arithmetic), include
 
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   -DPRECISION=multi
-  -DMPFUN20_DIR=<directory containing MPFUN20 *.o and *.mod files>
-  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  To enable both quadruple precision and multiprecision arithmetic (recommended), include
-  
-  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  -DPRECISION=multiquad
-  -DMPFUN20_DIR=<directory containing MPFUN20 *.o and *.mod files>
-  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  If using WIGXJPF (recommended), include
-
-  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  -DSU2COEF_LIBRARY=wigxjpf
-  -DWIGXJPF_INC_DIR=<directory with fwigxjpf.mod file>
-  -DWIGXJPF_LIB_DIR=<directory with libwigxjpf.a library file>
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   For OpenMP multithreaded applications, include
@@ -80,20 +93,49 @@
   -DOPENMP=ON
   ~~~~~~~~~~~~~~~~
 
-  If CMake does not find the WIGXJPF or MPFUN2020-Fort library, it can make a shallow git clone and copy the necessary sources to `_dep` directory in the `build` directory. The library is then compiled along with ndsu3lib. To enable this, include
+## 2.2. Library path configuration variables
 
-  ~~~~~~~~~~~~~~~~
-  -DFETCH=ON
-  ~~~~~~~~~~~~~~~~
+  If you have installed any of the aforementioned libraries to a custom
+  location, you can use configuration variables to inform CMake of this
+  location.
+  
+  CMake has a built-in capability to find various vendor optimized LAPACK
+  implemenatations (recommended).  If, however, you have installed the reference
+  implementation of LAPACK, a custom path to the installation can be specified:
 
-  The git repositories that CMake clones from are set in `fetch_declarations.cmake`.
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  -DBLAS_LIBRARIES=<directory with BLAS/LAPACK library files>/librefblas.a
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+  See also: https://cmake.org/cmake/help/latest/module/FindBLAS.html
+  
+  To specify a custom location for WIGXJPF:
+
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  -DWIGXJPF_INC_DIR=<directory with fwigxjpf.mod file>
+  -DWIGXJPF_LIB_DIR=<directory with libwigxjpf.a library file>
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  To specify a custom location for GSL:
+  
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  -DGSL_ROOT_DIR=<installation prefix for GSL>
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  See also: https://cmake.org/cmake/help/latest/module/FindGSL.html
+  
+  To specify a custom location for MPFUN2020-Fort:
+
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  -DMPFUN20_DIR=<directory containing MPFUN20 *.o and *.mod files>
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # 3. Compilation and installation
 
-  To compile the ndsu3lib library itself along with the example programs:
+  To compile the `ndsu3lib` library itself along with the example programs:
 
   ~~~~~~~~~~~~~~~~
-  % cmake --build build
+  % cmake --build <build_dir>
   ~~~~~~~~~~~~~~~~
 
   The example programs can then be run:
@@ -103,59 +145,120 @@
   % ./build/ndsu3lib_example_cpp
   ~~~~~~~~~~~~~~~~
 
-  The output should match the `example_output.txt` file.
+  These are the example programs implemented in Fortran and C++, respectively.
+  The output of the Fortran code should match the `example_output.txt` file.
+  The output of the C++ example program should be the same, to within formatting
+  differences.
 
-  To install the ndsu3lib library:
+  To install the `ndsu3lib` library:
 
   ~~~~~~~~~~~~~~~~
-  % cmake --install build --prefix <prefix>
+  % cmake --install <build_dir> --prefix <prefix>
   ~~~~~~~~~~~~~~~~
 
-# 4. Linking
+  Here `<prefix>` specifies the installation prefix (i.e., the parent directory
+  to the `include` and `lib` subdirectories, in which the Fortran module files,
+  C++ header files, library binary files, and CMake configuration files will be
+  installed).
+  
+# 4. Linking to `ndsu3lib`
 
-  A Fortran code `program.f90` using ndsu3lib can be compiled by (using GCC and GSL)
+  We provide here simple examples illustrating compiling and linking Fortran or
+  C++ programs which use the `ndsu3lib` library.  For purposes of illustration,
+  we assume the GNU Compiler Collection (GCC) compilers are being used.
+
+# 4.1. Linking from a Fortran program
+
+  We start from the basic compilation command for a program `program.f90`:
  
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  % gfortran program.f90 -I <prefix>/include/ndsu3lib/mod \
-      -L <prefix>/lib -lndsu3lib \
-      -L <directory with BLAS and LAPACK library files> -llapack -lrefblas \
-      -L <directory with GSL library files> -lgsl -lgslcblas
+  % gfortran program.f90 -o program -lndsu3lib
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+  Unless you have installed `ndsu3lib` globally, you will also need to specify
+  the location of the module and library files:
+  
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  -I <prefix>/include/ndsu3lib/mod -L <prefix>/lib
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   
+  You will need to provide flags for the BLAS and LAPACK libraries.  See the
+  documentation for your vendor optimized implementation (recommended).
+  However, if you built `ndsu3lib` to use the reference implementation of
+  LAPACK:
+  
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  -llapack -lrefblas
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+  If you built `ndsu3lib` to use WIGXJPF for angular momentum coefficients:
+
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  -lwigxjpf
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  If using WIGXJPF, include
+  If you built `ndsu3lib` to use GSL for angular momentum coefficients:
+  
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  -lgsl -lgslcblas
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  If you built `ndsu3lib` to use multiprecision arithmetic (supported by the
+  MPFUN2020-Fort library):
 
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  -L <directory with libwigxjpf.a library file> -lwigxjpf
-  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  If using multiprecision arithmetic (supported by the MPFUN2020-Fort library), include
-
-  ~~~~~~~~~~~~~~~~
   -lmpfun20
-  ~~~~~~~~~~~~~~~~
-
-  A C++ code using ndsu3lib must contain
-
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #include "<ndsu3lib/ndsu3lib.h"
+  
+  If you built `ndsu3lib` to use OpenMP, linkage to OpenMP libraries will also
+  need to be specified:
+  
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  and can be compiled just like the Fortran program above, with
-
-  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  g++ -lgfortran -I <prefix>/include
+  -fopenmp
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  instead of
+  Note that the `-fopenmp` flag here is specific to GCC.  See the relevant
+  documentation for other compilers.
+
+  If you have not installed these libraries globally, or in locations specified
+  through the `LIBRARY_PATH` environment variable (e.g., after loading a
+  module), you will also need to specify their locations with an `-L` flag.
+  However, the MPFUN20 library file is generated by CMake when it builds
+  `ndsu3lib`, and is installed alongside the `ndsu3lib` library file, so you do
+  not need to independently specify a location for it.
+
+# 4.2. Linking from a C++ program
+
+  A C++ code using `ndsu3lib` must contain
 
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  gfortran -I <prefix>/include/ndsu3lib/mod
+  #include <ndsu3lib/ndsu3lib.h>
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  and including
+  The basic compilation command for a program `program.cpp` is
+
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  % g++ program.cpp -o program -lndsu3lib -lgfortran
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Note that the `gfortran` library name here is specific to GCC.  See the
+  relevant documentation for other compilers.
+  
+  Unless you have installed `ndsu3lib` globally, you will also need to specify
+  the location of the header and library files:
+  
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  -I <prefix>/include -L <prefix>/lib
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  If you built `ndsu3lib` to use quadruple precision arithmetic:
 
   ~~~~~~~~~~~~~~~~
   -lquadmath
   ~~~~~~~~~~~~~~~~
 
-  to enable quadruple precision arithmetic.
+  Note that the `quadmath` library name here is specific to GCC.  See the
+  relevant documentation for other compilers.
+
+  Then you will need to provide flags for linkage to external libraries as
+  described above for linking from a Fortran program.
