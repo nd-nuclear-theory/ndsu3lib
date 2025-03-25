@@ -2,9 +2,9 @@
 
   Change to the directory where you want the repository to be installed, e.g.,
 
-  ~~~~~~~~~~~~~~~~
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   % cd ~/code
-  ~~~~~~~~~~~~~~~~
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   Clone the `ndsu3lib` repository:
 
@@ -21,7 +21,7 @@
 
   - WIGXJPF (installed for use from Fortran) or GNU Scientific Library (GSL)
 
-  - MPFUN2020-Fort (version 2) (optional)
+  - MPFUN20-Fort (version 2) (optional)
 
   Download links and documentation for these libraries can be found here:
 
@@ -31,7 +31,7 @@
 
   - GSL: https://www.gnu.org/software/gsl/
 
-  - MPFUN2020-Fort: https://www.davidhbailey.com/dhbsoftware/
+  - MPFUN20-Fort: https://www.davidhbailey.com/dhbsoftware/
 
   On clusters, LAPACK and GSL may by available by loading appropriate modules.
 
@@ -76,9 +76,9 @@
   However, if you wish to enable just quadruple precision arithmetic (without
   multiprecision arithmetic), specify
 
-  ~~~~~~~~~~~~~~~~
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   -DPRECISION=quad
-  ~~~~~~~~~~~~~~~~
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   Or, to enable just multiprecision arithmetic (without quadruple precision
   arithmetic), include
@@ -89,9 +89,9 @@
 
   For OpenMP multithreaded applications, include
   
-  ~~~~~~~~~~~~~~~~
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   -DOPENMP=ON
-  ~~~~~~~~~~~~~~~~
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ## 2.2. Library path configuration variables
 
@@ -124,7 +124,7 @@
 
   See also: https://cmake.org/cmake/help/latest/module/FindGSL.html
   
-  To specify a custom location for MPFUN2020-Fort:
+  To specify a custom location for MPFUN20-Fort:
 
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   -DMPFUN20_DIR=<directory containing MPFUN20 *.o and *.mod files>
@@ -134,16 +134,16 @@
 
   To compile the `ndsu3lib` library itself along with the example programs:
 
-  ~~~~~~~~~~~~~~~~
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   % cmake --build <build_dir>
-  ~~~~~~~~~~~~~~~~
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   The example programs can then be run:
 
-  ~~~~~~~~~~~~~~~~
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   % ./build/ndsu3lib_example
   % ./build/ndsu3lib_example_cpp
-  ~~~~~~~~~~~~~~~~
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   These are the example programs implemented in Fortran and C++, respectively.
   The output of the Fortran code should match the `example_output.txt` file.
@@ -152,9 +152,9 @@
 
   To install the `ndsu3lib` library:
 
-  ~~~~~~~~~~~~~~~~
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   % cmake --install <build_dir> --prefix <prefix>
-  ~~~~~~~~~~~~~~~~
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   Here `<prefix>` specifies the installation prefix (i.e., the parent directory
   to the `include` and `lib` subdirectories, in which the Fortran module files,
@@ -204,7 +204,7 @@
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   If you built `ndsu3lib` to use multiprecision arithmetic (supported by the
-  MPFUN2020-Fort library):
+  MPFUN20-Fort library):
 
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   -lmpfun20
@@ -253,9 +253,9 @@
 
   If you built `ndsu3lib` to use quadruple precision arithmetic:
 
-  ~~~~~~~~~~~~~~~~
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   -lquadmath
-  ~~~~~~~~~~~~~~~~
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   Note that the `quadmath` library name here is specific to GCC.  See the
   relevant documentation for other compilers.
