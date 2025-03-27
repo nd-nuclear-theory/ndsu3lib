@@ -21,7 +21,8 @@
 
   - WIGXJPF (installed for use from Fortran) or GNU Scientific Library (GSL)
 
-  - MPFUN20-Fort (version 2) (optional)
+  - MPFUN20-Fort (version 2) (optional, used only for SU(3)-SO(3) reduced
+    coupling coefficients)
 
   Download links and documentation for these libraries can be found here:
 
@@ -66,8 +67,14 @@
   -DSU2COEF_LIBRARY=wigxjpf
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+  For SU(3)-SO(3) reduced coupling coefficients, floating-point calculations can
+  be done in either double or quadruple or arbitrary precision (multiprecision).
+  If you do not need to compute these coefficients, you do not need the
+  MPFUN20-Fort library and you do not need to enable the quadruple precision or
+  multiprecision arithmetic.
+
   To enable both quadruple precision and multiprecision arithmetic
-  (recommended), specify
+  (recommended for SU(3)-SO(3) reduced coupling coefficients), specify
   
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   -DPRECISION=multiquad
