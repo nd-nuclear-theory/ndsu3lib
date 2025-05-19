@@ -12,8 +12,13 @@ For installation instructions see `INSTALL.md`.
 Contact:
 
   Jakub Herko
+
   TRIUMF
+
   4004 Wesbrook Mall
+
   Vancouver, British Columbia V6T 2A3
+
   Canada
+
   e-mail: jherko@triumf.ca
