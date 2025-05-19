@@ -7,6 +7,10 @@ authors:
     affiliation: University of Notre Dame
     orcid: https://orcid.org/0000-0001-5077-2699
 title: ndsu3lib
+abstract: "A modern Fortran library for SU(3) coupling and recoupling coefficients"
+keywords:
+  - SU(3) coupling coefficients
+  - SU(3) recoupling coefficients
 type: software
 repository-code: https://github.com/nd-nuclear-theory/ndsu3lib.git
 license: MIT
