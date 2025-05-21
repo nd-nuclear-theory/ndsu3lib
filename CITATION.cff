@@ -4,8 +4,16 @@ authors:
   - family-names: Herko
     given-names: Jakub
     email: jherko@triumf.ca
-    affiliation: University of Notre Dame
     orcid: https://orcid.org/0000-0001-5077-2699
+  - family-names: Fasano
+    given-names: Patrick J.
+    orcid: https://orcid.org/0000-0003-2457-4976
+  - family-names: Caprio
+    given-names: Mark A.
+    orcid: https://orcid.org/0000-0001-5138-3740
+  - family-names: McCoy
+    given-names: Anna E.
+    orcid: https://orcid.org/0000-0002-1033-1474
 title: ndsu3lib
 abstract: "A modern Fortran library for SU(3) coupling and recoupling coefficients"
 keywords:
