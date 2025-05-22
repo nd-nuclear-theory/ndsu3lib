@@ -9,6 +9,8 @@ A simple program `ndsu3lib_example_cpp` demonstrating usage of the C++ wrappers 
 
 For installation instructions see `INSTALL.md`.
 
+This material is based upon work supported by the U.S. Department of Energy, Office of Science, under Award No. DE-FG02-95ER40934.
+
 Contact:
 
   Jakub Herko
