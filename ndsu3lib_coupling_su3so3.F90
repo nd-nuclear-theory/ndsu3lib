@@ -24,7 +24,7 @@ CONTAINS
    FUNCTION Kmin(lambda, mu, L) RESULT(res)
       !--------------------------------------------------------------------------
       !! Lowest projection K of angular momentum L within SU(3) irrep (lambda,mu)
-      ! as given by Eq.(...) in J.Herko et al. in preparation
+      ! as given by Eq.(A.3) in J.Herko et al. arXiv:2505.08993
       !--------------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER, INTENT(IN) :: lambda
@@ -45,10 +45,10 @@ CONTAINS
       !! Internal subroutine for calculation of inner product of SU(3)-SU(2)xU(1) and non-orthogonal SU(3)-SO(3) basis states
       ! /      (lambda,mu)       | (lambda,mu)\
       ! \epsilon,Lambda,M_Lambda |    K,L,M   /
-      ! using Eq.(...) in [1] or equivalently Eq.(26) in [2]
+      ! using Eq.(A.10) in [1] or equivalently Eq.(26) in [2]
       !
       ! References: [1] J.Herko et al. in preparation
-      !             [2] J.P.Draayer, Y.Akiyama, J.Math.Phys., Vol.14, No.12 (1973) 1904
+      !             [2] J.P.Draayer, Y.Akiyama, J.Math.Phys. 14, 1904 (1973)
       !
       ! Input arguments: lambda, mu, epsilon, Lambda2p, MLambda2p, M, L, Mp, p, q
       ! Output argument: coeff
@@ -567,10 +567,10 @@ CONTAINS
       !! Calculate inner product of SU(3)-SU(2)xU(1) and non-orthogonal SU(3)-SO(3) basis states of SU(3) irrep
       ! /      (lambda,mu)       | (lambda,mu)\
       ! \epsilon,Lambda,M_Lambda |    K,L,M   /
-      ! using Eq.(...) in [1] or equivalently Eq.(26),(32), and (33,6B) in [2].
+      ! using Eq.(A.10) in [1] or equivalently Eq.(26),(32), and (33,6B) in [2].
       !
-      ! References: [1] J.Herko et al. in preparation
-      !             [2] J.P.Draayer, Y.Akiyama, J.Math.Phys., Vol.14, No.12 (1973) 1904
+      ! References: [1] J.Herko et al. arXiv:2505.08993
+      !             [2] J.P.Draayer, Y.Akiyama, J.Math.Phys. 14, 1904 (1973)
       !
       ! Input arguments: I, J, irrep, epsilonx, Lambda2p, MLambda2px, M, L, Mp
       ! Output argument: coeff
@@ -646,10 +646,10 @@ CONTAINS
    SUBROUTINE calculate_orthonormalization_matrix(I, J, irrep, L, kappamax, matrix)
       !---------------------------------------------------------------------------------------------------
       !! Calculate bottom triangle, including diagonal, of orthonormalization matrix for SU(3)-SO(3) basis
-      ! for given lambda,mu,L using Eq.(..) in [1] or equaivalently Eq.(6a),(6b),(6c),(27) in [2]
+      ! for given lambda,mu,L using Eqs.(A.6-9) in [1] or equaivalently Eqs.(6a-c),(27) in [2]
       !
-      ! References: [1] J.Herko et al. in preparation
-      !             [2] J.P.Draayer, Y.Akiyama, J.Math.Phys., Vol.14, No.12 (1973) 1904
+      ! References: [1] J.Herko et al. arXiv:2505.08993
+      !             [2] J.P.Draayer, Y.Akiyama, J.Math.Phys. 14, 1904 (1973)
       !
       ! Input arguments: I, J, irrep, L, kappamax
       ! Output argument: matrix
@@ -712,23 +712,23 @@ CONTAINS
 
          ! First, upper triangle is calculated including diagonal.
          DO ii = 1, kappamax ! loop over columns
-            Ki = Ki + 2 ! Ki is K_i in Eq.(...)
+            Ki = Ki + 2 ! Ki is K_i
             Kj = Kminm2
             DO jj = 1, ii - 1 ! loop over rows
-               Kj = Kj + 2 ! Kj is K_j in Eq.(...)
+               Kj = Kj + 2 ! Kj is K_j
                sum = 0.D0
                DO k = 1, jj - 1
-                  sum = sum + matrix(k, jj)*matrix(k, ii) ! sum is the sum in Eq.(...)
+                  sum = sum + matrix(k, jj)*matrix(k, ii) ! sum is the sum
                END DO
                CALL calculate_transformation_coef(I, J, irrep, epsilon, Lambda2, MLambda2, Ki, L, Kj, coeff)
-               matrix(jj, ii) = matrix(jj, jj)*(coeff - sum) ! Eq.(...)
+               matrix(jj, ii) = matrix(jj, jj)*(coeff - sum)
             END DO
             sum = 0.D0
             DO jj = 1, ii - 1
-               sum = sum + matrix(jj, ii)*matrix(jj, ii) ! sum is the sum in Eq.(...)
+               sum = sum + matrix(jj, ii)*matrix(jj, ii) ! sum is the sum
             END DO
             CALL calculate_transformation_coef(I, J, irrep, epsilon, Lambda2, MLambda2, Ki, L, Ki, coeff)
-            matrix(ii, ii) = 1.D0/DSQRT(coeff - sum) ! Eq.(...)
+            matrix(ii, ii) = 1.D0/DSQRT(coeff - sum)
          END DO
 
          ! Now, bottom triangle is calculated.
@@ -736,9 +736,9 @@ CONTAINS
             DO ii = jj + 1, kappamax ! loop over rows
                sum = 0.D0
                DO k = jj, ii - 1
-                  sum = sum + matrix(k, jj)*matrix(k, ii) ! sum is the sum in Eq.(...)
+                  sum = sum + matrix(k, jj)*matrix(k, ii) ! sum is the sum
                END DO
-               matrix(ii, jj) = -matrix(ii, ii)*sum ! Eq.(...)
+               matrix(ii, jj) = -matrix(ii, ii)*sum
             END DO
          END DO
 
@@ -748,23 +748,23 @@ CONTAINS
 
          ! First, upper triangle is calculated including diagonal.
          DO ii = 1, kappamax ! loop over columns
-            Ki = Ki + 2 ! Ki is K_i in Eq.(...)
+            Ki = Ki + 2 ! Ki is K_i
             Kj = Kminm2
             DO jj = 1, ii - 1 ! loop over rows
-               Kj = Kj + 2 ! Kj is K_j in Eq.(...)
+               Kj = Kj + 2 ! Kj is K_j
                summp = mpreal(0.D0, nwds)
                DO k = 1, jj - 1
-                  summp = summp + point(k, jj)*point(k, ii) ! summp=summp+matrix(k,jj)*matrix(k,ii) ! sum is the sum in Eq.(...)
+                  summp = summp + point(k, jj)*point(k, ii) ! summp=summp+matrix(k,jj)*matrix(k,ii) ! sum is the sum
                END DO
                CALL calculate_transformation_coef(I, J, irrep, epsilon, Lambda2, MLambda2, Ki, L, Kj, coeffmp)
-               point(jj, ii) = point(jj, jj)*(coeffmp - summp) ! matrix(jj,ii)=matrix(jj,jj)*(coeffmp-summp) ! Eq.(...)
+               point(jj, ii) = point(jj, jj)*(coeffmp - summp) ! matrix(jj,ii)=matrix(jj,jj)*(coeffmp-summp)
             END DO
             summp = mpreal(0.D0, nwds)
             DO jj = 1, ii - 1
-               summp = summp + point(jj, ii)*point(jj, ii) ! summp=summp+matrix(jj,ii)*matrix(jj,ii) ! sum is the sum in Eq.(...)
+               summp = summp + point(jj, ii)*point(jj, ii) ! summp=summp+matrix(jj,ii)*matrix(jj,ii) ! sum is the sum
             END DO
             CALL calculate_transformation_coef(I, J, irrep, epsilon, Lambda2, MLambda2, Ki, L, Ki, coeffmp)
-            point(ii, ii) = 1.D0/SQRT(coeffmp - summp) ! matrix(ii,ii)=1.D0/SQRT(coeffmp-summp) ! Eq.(...)
+            point(ii, ii) = 1.D0/SQRT(coeffmp - summp) ! matrix(ii,ii)=1.D0/SQRT(coeffmp-summp)
          END DO
 
          ! Now, bottom triangle is calculated.
@@ -772,9 +772,9 @@ CONTAINS
             DO ii = jj + 1, kappamax ! loop over rows
                summp = mpreal(0.D0, nwds)
                DO k = jj, ii - 1
-                  summp = summp + point(k, jj)*point(k, ii) ! summp=summp+matrix(k,jj)*matrix(k,ii) ! sum is the sum in Eq.(...)
+                  summp = summp + point(k, jj)*point(k, ii) ! summp=summp+matrix(k,jj)*matrix(k,ii) ! sum is the sum
                END DO
-               point(ii, jj) = -point(ii, ii)*summp ! matrix(ii,jj)=-matrix(ii,ii)*summp ! Eq.(...)
+               point(ii, jj) = -point(ii, ii)*summp ! matrix(ii,jj)=-matrix(ii,ii)*summp
             END DO
          END DO
 
@@ -830,10 +830,10 @@ CONTAINS
       ! /(lambda1,mu1) (lambda2,mu2) || (lambda3,mu3)\
       ! \  kappa1,L1     kappa2,L2   ||   kappa3,L3  /rho
       !! from extremal-weight SU(3)-SU(2)xU(1) reduced coupling coefficients
-      ! for given lambda1,mu1,L1,lambda2,mu2,L2,lambda3,mu3,L3 using Eq.(...) in [1] or equivalently Eq.(31),(25),(5) in [2]
+      ! for given lambda1,mu1,L1,lambda2,mu2,L2,lambda3,mu3,L3 using Eqs.(53),(16),(54) in [1] or equivalently Eqs.(31),(25),(5) in [2]
       !
-      ! References: [1] J.Herko et al. in preparation
-      !             [2] J.P.Draayer, Y.Akiyama, J.Math.Phys., Vol.14, No.12 (1973) 1904
+      ! References: [1] J.Herko et al. arXiv:2505.08993
+      !             [2] J.P.Draayer, Y.Akiyama, J.Math.Phys. 14, 1904 (1973) 1904
       !
       ! Input arguments: I1,J1,irrep1,L1,kappa1max,matrix1,I2,J2,irrep2,L2,kappa2max,matrix2,I3,irrep3,L3,kappa3max,
       !                  matrix3,rhomax,numb,wigner_can,p1a,p2a,q2a

@@ -22,10 +22,11 @@ CONTAINS
       ! / (lambda1,mu1)    (lambda2,mu2)   ||   (lambda3,mu3)   \
       ! \epsilon1,Lambda1 epsilon2,Lambda2 || epsilon3E,Lambda3E/rho
       !! for given lambda1,mu1,lambda2,mu2,lambda3,mu3.
-      ! using Eq.(...) in Ref.[1]
+      ! using Eqs.(A.19),(43),(A.22),(48) in Ref.[1]
       !
-      ! References: [1] J.Herko et al. in preparation
-      !             [2] D.Goldberg, ACM Computing Surveys, Vol.23, No.1 (1991) 5
+      ! References: [1] J.Herko et al. arXiv:2505.08993
+      !             [2] J.P.Draayer, Y.Akiyama, J.Math.Phys. 14, 1904 (1973)
+      !             [3] D.Goldberg, ACM Computing Surveys 23, 5 (1991)
       !
       ! Input arguments: irrep1,irrep2,irrep3,I3,rhomax
       ! Output arguments: i2,wigner,p1a,p2a,q2a
@@ -125,7 +126,7 @@ CONTAINS
          ! Calculation of
          ! /  (lambda1,mu1)    (\bar{lambda2},\bar{mu2}) ||   (lambda3,mu3)   \
          ! \epsilon1H,Lambda1H     epsilon2,Lambda2      || epsilon3H,Lambda3H/rho
-         ! using Eq.(...) in [1]
+         ! using Eq.(20) in [2]
          !************************************************************************
          epsilon2 = lambda1 + 2*mu1 - lambda3 - 2*mu3
          noname1 = (2*lambda2 + mu2 - epsilon2)/3
@@ -197,10 +198,10 @@ CONTAINS
          ! from
          ! /  (lambda1,mu1)    (\bar{lambda2},\bar{mu2}) ||   (lambda3,mu3)   \
          ! \epsilon1H,Lambda1H     epsilon2,Lambda2      || epsilon3H,Lambda3H/rho
-         ! using Eq.(...) in [1]
+         ! using Eq.(A.19) in [1]
          !************************************************************************
          noname2 = lambda1 + mu1 + 1
-         steps21 = (epsilon2 + lambda2 + 2*mu2)/3 ! steps21 is the number of iterations in Eq.(...)
+         steps21 = (epsilon2 + lambda2 + 2*mu2)/3 ! steps21 is the number of iterations in Eq.(A.19)
          DO i2 = 1, steps21
             noname1 = noname1 + 1
             noname2 = noname2 - 1
@@ -214,7 +215,7 @@ CONTAINS
                ! 1) 0<=p2<=lambda2
                ! 2) 0<=q2<=mu2, where q2=(2*lambda2+mu2-epsilon2)/3-p2
                ! 3) lambda2-steps21+i2<=Lambda22<=lambda2+steps21-i2, where Lambda22=mu2+p2-q2
-               Lambda22 = Lambda22 + 2 ! Lambda22 is 2*Lambda2 in Eq.(...)
+               Lambda22 = Lambda22 + 2 ! Lambda22 is 2*Lambda2
                Sq2 = q2*(mu2 + 1 - q2)*INT(lambda2 + mu2 + 2 - q2, 8) ! Sq2 is S(q2)
                Rp2 = p2*(lambda2 + 1 - p2)*INT(mu2 + 1 + p2, 8) ! Rp2 is R(p2)
                IF (lambda1 >= i2) THEN
@@ -277,7 +278,7 @@ CONTAINS
          ! from
          ! / (lambda1,mu1)   (\bar{lambda2},\bar{mu2}) ||   (lambda3,mu3)   \
          ! \epsilon1,Lambda1    epsilon2H,Lambda2H     || epsilon3H,Lambda3H/rho
-         ! using Eq.(...) in [1]
+         ! using Eq.(43) in [1]
          !**********************************************************************
          noname2 = noname2 - 1
          DO i1 = 1, eta
@@ -352,7 +353,7 @@ CONTAINS
          ! from
          ! / (lambda1,mu1)     (lambda2,mu2)    ||   (lambda3,mu3)   \
          ! \epsilon1,Lambda1 epsilon2H,Lambda2H || epsilon3H,Lambda3H/rho
-         ! using Eq.(...) in [1]
+         ! using Eq.(A.22) in [1]
          !***************************************************************
          noname1 = lambda2 + mu2
          DO i1 = 1, lambda2 + mu2 ! This is loop over epsilon2=epsilon2HW+3,...,2*lambda2+mu2; i1 is (epsilon2-epsilon2HW)/3
@@ -361,7 +362,7 @@ CONTAINS
             noname1 = noname1 - 1
             p2min = MAX(0, noname1 - mu2, (lambda2 - i1 - mu2 + noname1 + 1)/2)
             q2 = noname1 - p2min
-            Lambda22 = mu2 + p2min - q2 - 2 ! Lambda22 is 2*Lambda2' in Eq.(18)
+            Lambda22 = mu2 + p2min - q2 - 2 ! Lambda22 is 2*Lambda2'
             DO p2 = p2min, MIN(lambda2, noname1, (lambda2 + i1 - mu2 + noname1)/2)
                Lambda22 = Lambda22 + 2
                p1min = MAX(0, noname2 - mu1, (lambda3 - mu1 + noname2 - Lambda22 + 1)/2, (Lambda22 - lambda3 - mu1 + noname2 + 1)/2)
@@ -435,11 +436,11 @@ CONTAINS
 
          ! Valid values of p1, p2, and q2 are elements of arrays p1a, p2a, and q2a with indeces from 1 to i2.
       END DO ! End of loop over rho
-      !*****************************************
-      ! Orthonormalization according to Eq.(...)
-      !*****************************************
+      !***********************************************
+      ! Orthonormalization according to Eq.(23) in [1]
+      !***********************************************
       ! Gram-Schmidt orthonormalization is performed, where coupling coefficients for given rho represent vector,
-      ! whose components are indexed by epsilon1,Lambda1,espilon2,Lambda2, and scalar product is defined in Eq.(...).
+      ! whose components are indexed by epsilon1,Lambda1,espilon2,Lambda2, and scalar product is defined in Eq.(23).
       DO rho = 1, rhomax
          DO i4 = 1, rho
             p1 = p1a(1)
@@ -447,7 +448,7 @@ CONTAINS
             q2 = q2a(1)
             scalprod = wigner(p1, p2, q2, rho)*wigner(p1, p2, q2, i4)
             F = 0.D0
-            DO i1 = 2, i2 ! Kahan summation fomula (see Ref.[2]) is used to calculate scalar product.
+            DO i1 = 2, i2 ! Kahan summation fomula (see Ref.[3]) is used to calculate scalar product.
                p1 = p1a(i1)
                p2 = p2a(i1)
                q2 = q2a(i1)
@@ -475,9 +476,9 @@ CONTAINS
             END IF
          END DO
       END DO
-      !****************************************
-      ! Setting the phase according to Eq.(...)
-      !****************************************
+      !**********************************************
+      ! Setting the phase according to Eq.(48) in [1]
+      !**********************************************
       phiprhomax = lambda1 + lambda2 - lambda3 + mu1 + mu2 - mu3 + rhomax ! phiprhomax is phi+rhomax
       i4 = phiprhomax + (lambda1 + Lambda22max - lambda3)/2 
       ! i4 is lambda1+lambda2-lambda3+mu1+mu2-mu3+rhomax+(lambda1+2*Lambda2_max-lambda3)/2
@@ -500,7 +501,7 @@ CONTAINS
             p1 = p1a(i1)
             p2 = p2a(i1)
             DO rho = 1, rhomax
-               ! See Eq.(35,2B) in Draayer & Akiyama
+               ! See Eq.(35,2B) in [2]
                IF (BTEST(phiprhomax - rho + p1 + p2 &
                          + (mu1 - (2*(lambda1 + lambda2 + mu3) + mu1 + mu2 + lambda3)/3 + mu2 - lambda3)/2, 0)) THEN
                   q2 = q2a(i1)
@@ -518,7 +519,7 @@ CONTAINS
       ! / (lambda1,mu1)    (lambda2,mu2)   ||  (lambda3,mu3)  \
       ! \epsilon1,Lambda1 epsilon2,Lambda2 || epsilon3,Lambda3/rho
       !! for given lambda1,mu1,lambda2,mu2,lambda3,mu3,epsilon3,Lambda3 from extremal-weight coefficients.
-      ! using Eq.(...) in [1] and Table 9.1 on page 311 in [2].
+      ! using Eqs.(28),(29) in [1] and Table 9.1 on page 311 in [2].
       !
       ! References: [1] J.Herko et al. in preparation
       !             [2] Varshalovich, Quantum theory of angular momentum
@@ -621,11 +622,11 @@ CONTAINS
          p3 = irrep3%lambda
          q3 = irrep3%mu
 
-         DO eps3 = epsilon3ex, epsilon3, 3 ! eps3 is epsilon3 in Eq.(..)
+         DO eps3 = epsilon3ex, epsilon3, 3 ! eps3 is epsilon3
             noname1 = noname1 - 1 ! noname1 is (epsilon1min-eps3+epsilon2max)/3
             noname2 = noname2 - 1 ! noname2 is (epsilon1max-eps3+epsilon2max)/3
 
-            Lam32prime = Lam32 ! Lam32prime is 2*Lambda3' in Eq.(...)
+            Lam32prime = Lam32 ! Lam32prime is 2*Lambda3'
             IF (Lam32 < Lambda32) THEN
                Lam32 = Lam32 + 1
                q3 = q3 - 1 ! p3 and q3 correspond to eps3 and Lam32
@@ -634,24 +635,24 @@ CONTAINS
                Lam32 = Lam32 - 1
                p3 = p3 - 1 ! p3 and q3 correspond to eps3 and Lam32
                N3 = DSQRT(DBLE(Lam32 + 1)/DBLE(INT((p3 + 1)*(irrep3%lambda - p3), 8)*(mu3p + p3)*Lam32prime*4))
-            END IF ! Lam32 is 2*Lambda3 in Eq.(...) and N3 is sqrt((2*Lambda3'+1)*(2*Lambda3+1))/N3.
+            END IF ! Lam32 is 2*Lambda3 and N3 is sqrt((2*Lambda3'+1)*(2*Lambda3+1))/N3.
 
             DO p2 = MAX(0, noname1 - irrep2%mu, (Lam32 - irrep1%mu + noname2 - irrep2%mu)/2 - irrep1%lambda), &
                MIN(irrep2%lambda, noname2)
                Rp2 = INT(p2 + 1, 8)*(irrep2%lambda - p2)*(mu2p + p2)
                q2ex = MAX(0, noname1 - p2, (irrep2%mu + noname2 - Lam32 - irrep1%mu)/2 - irrep1%lambda)
                pq1 = noname2 - p2 - q2ex ! pq1 is p1+q1
-               Lambda22 = irrep2%mu + p2 - q2ex ! Lambda22 is 2*Lambda2 in Eq.(...)
+               Lambda22 = irrep2%mu + p2 - q2ex ! Lambda22 is 2*Lambda2
                DO q2 = q2ex, MIN(irrep2%mu, noname2 - p2, (irrep2%mu + noname2 + Lam32 - irrep1%mu)/2)
                   ! Lower and upper bounds on q2 are such that:
                   ! 1) 0<=q2<=mu2
                   ! 2) -lambda1-2*mu1<=epsilon1<=2*lambda1+mu1, where epsilon1=eps3-epsilon2max+3*p2+3*q2
-                  !     epsilon2=epsilon2max-3*(p2+q2) ! epsilon2 is epsilon2 in Eq.(...)
-                  !     epsilon1=eps3-epsilon2 ! epsilon1 is epsilon1 in Eq.(...)
+                  !     epsilon2=epsilon2max-3*(p2+q2) ! epsilon2 is epsilon2
+                  !     epsilon1=eps3-epsilon2 ! epsilon1 is epsilon1
                   Sq2 = INT(q2 + 1, 8)*(irrep2%mu - q2)*(lm2 - q2)
                   p1ex = MAX(0, pq1 - irrep1%mu, (Lam32 - irrep1%mu + pq1 - Lambda22)/2, (Lambda22 - Lam32 - irrep1%mu + pq1)/2)
                   q1 = pq1 - p1ex
-                  Lambda12 = irrep1%mu + p1ex - q1 ! Lambda12 is 2*Lambda1 in Eq.(...)
+                  Lambda12 = irrep1%mu + p1ex - q1 ! Lambda12 is 2*Lambda1
                   DO p1 = p1ex, MIN(irrep1%lambda, pq1, (Lambda22 + Lam32 - irrep1%mu + pq1)/2)
                      ! Lower and upper bounds on p1 are such that:
                      ! 1) 0<=p1<=lambda1
@@ -739,10 +740,10 @@ CONTAINS
                      wigner(p1, p2, q2, 1:rhomax) = wigner(p1, p2, q2, 1:rhomax)*N3
 
                      q1 = q1 - 1
-                     Lambda12 = Lambda12 + 2 ! Lambda12 is 2*Lambda1 in Eq.(...)
+                     Lambda12 = Lambda12 + 2 ! Lambda12 is 2*Lambda1
                   END DO
                   pq1 = pq1 - 1 ! pq1 is p1+q1
-                  Lambda22 = Lambda22 - 1 ! Lambda22 is 2*Lambda2 in Eq.(...)
+                  Lambda22 = Lambda22 - 1 ! Lambda22 is 2*Lambda2
                END DO
             END DO
          END DO
@@ -791,11 +792,11 @@ CONTAINS
          p3 = 0
          q3 = 0
 
-         DO eps3 = epsilon3ex, epsilon3, -3 ! eps3 is epsilon3 in Eq.(...)
+         DO eps3 = epsilon3ex, epsilon3, -3 ! eps3 is epsilon3
             noname1 = noname1 + 1 ! noname1 is (epsilon1min-eps3+epsilon2max)/3
             noname2 = noname2 + 1 ! noname2 is (epsilon1max-eps3+epsilon2max)/3
 
-            Lam32prime = Lam32 ! Lam32prime is 2*Lambda3' in Eq.(...)
+            Lam32prime = Lam32 ! Lam32prime is 2*Lambda3'
             IF (Lam32 < Lambda32) THEN
                Lam32 = Lam32 + 1
                p3 = p3 + 1 ! p3 and q3 correspond to eps3 and Lam32
@@ -806,24 +807,24 @@ CONTAINS
                q3 = q3 + 1 ! p3 and q3 correspond to eps3 and Lam32
                N3 = DSQRT(DBLE(Lam32 + 1)/DBLE(INT(q3*(mu3p - q3), 8)*(lm3 - q3)*Lam32prime*4))
                ! N3 is sqrt((2*Lambda3+1)/(8*Lambda3'))/N3
-            END IF ! Lam32 is 2*Lambda3 in Eq.(...)
+            END IF ! Lam32 is 2*Lambda3
 
             DO p2 = MIN(irrep2%lambda, noname2), &
                MAX(0, noname1 - irrep2%mu, (Lam32 - irrep1%mu + noname2 - irrep2%mu)/2 - irrep1%lambda), -1
                Rp2 = INT(p2, 8)*(lambda2p - p2)*(mu2p + p2) ! Rp2 is R(p2)
                q2ex = MIN(irrep2%mu, noname2 - p2, (irrep2%mu + noname2 + Lam32 - irrep1%mu)/2)
                pq1 = noname2 - p2 - q2ex ! pq1 is p1+q1
-               Lambda22 = irrep2%mu + p2 - q2ex ! Lambda22 is 2*Lambda2 in Eq.(...)
+               Lambda22 = irrep2%mu + p2 - q2ex ! Lambda22 is 2*Lambda2
                DO q2 = q2ex, MAX(0, noname1 - p2, (irrep2%mu + noname2 - Lam32 - irrep1%mu)/2 - irrep1%lambda), -1
                   ! Lower and upper bounds on q2 are such that:
                   ! 1) 0<=q2<=mu2
                   ! 2) -lambda1-2*mu1<=epsilon1<=2*lambda1+mu1, where epsilon1=eps3-epsilon2max+3*p2+3*q2
-                  !     epsilon2=epsilon2max-3*(p2+q2) ! epsilon2 is epsilon2 in Eq.(...)
-                  !     epsilon1=eps3-epsilon2 ! epsilon1 is epsilon1 in Eq.(...)
+                  !     epsilon2=epsilon2max-3*(p2+q2) ! epsilon2 is epsilon2
+                  !     epsilon1=eps3-epsilon2 ! epsilon1 is epsilon1
                   Sq2 = INT(q2, 8)*(mu2p - q2)*(lm2 - q2)
                   p1ex = MIN(irrep1%lambda, pq1, (Lambda22 + Lam32 - irrep1%mu + pq1)/2)
                   q1 = pq1 - p1ex
-                  Lambda12 = irrep1%mu + p1ex - q1 ! Lambda12 is 2*Lambda1 in Eq.(...)
+                  Lambda12 = irrep1%mu + p1ex - q1 ! Lambda12 is 2*Lambda1
                   DO p1 = p1ex, &
                      MAX(0, pq1 - irrep1%mu, (Lam32 - irrep1%mu + pq1 - Lambda22)/2, (Lambda22 - Lam32 - irrep1%mu + pq1)/2), -1
                      ! Lower and upper bounds on p1 are such that:
@@ -920,10 +921,10 @@ CONTAINS
                      wigner(p1, p2, q2, 1:rhomax) = wigner(p1, p2, q2, 1:rhomax)*N3
 
                      q1 = q1 + 1
-                     Lambda12 = Lambda12 - 2 ! Lambda12 is 2*Lambda1 in Eq.(...)
+                     Lambda12 = Lambda12 - 2 ! Lambda12 is 2*Lambda1
                   END DO
                   pq1 = pq1 + 1 ! pq1 is p1+q1
-                  Lambda22 = Lambda22 + 1 ! Lambda22 is 2*Lambda2 in Eq.(...)
+                  Lambda22 = Lambda22 + 1 ! Lambda22 is 2*Lambda2
                END DO
             END DO
          END DO

@@ -70,11 +70,11 @@ CONTAINS
       !! Calculate SU(3) recoupling U coefficients
       ! U[(lambda1,mu1)(lambda2,mu2)(lambda,mu)(lambda3,mu3);(lambda12,mu12)rhoa,rhob(lambda23,mu23)rhoc,rhod]
       ! for given lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,lambda23,mu23
-      ! using Eq.(...) in [1] or equivalently Eq.(22),(35,1B) in [2] and
+      ! using Eq.(A.24) in [1] or equivalently Eq.(22),(35,1B) in [2] and
       !! calling Lapack subroutine dgesv to solve system of linear equations
       !
-      ! References: [1] J.Herko et al. in preparation
-      !             [2] J.P.Draayer, Y.Akiyama, J.Math.Phys., Vol.14, No.12 (1973) 1904
+      ! References: [1] J.Herko et al. arXiv:2505.08993
+      !             [2] J.P.Draayer, Y.Akiyama, J.Math.Phys. 14, 1904 (1973)
       !
       ! Input arguments: irrep1,irrep2,irrep,irrep3,irrep12,irrep23,rhomaxa,rhomaxb,rhomaxc,rhomaxd,ldb
       ! Output arguments: rac,info
@@ -243,11 +243,11 @@ CONTAINS
       !! Calculate SU(3) recoupling Z coefficients
       ! Z[(lambda2,mu2)(lambda1,mu1)(lambda,mu)(lambda3,mu3);(lambda12,mu12)rhoa,rhob(lambda13,mu13)rhoc,rhod]
       ! for given lambda2,mu2,lambda1,mu1,lambda,mu,lambda3,mu3,lambda12,mu12,lambda13,mu13
-      ! using Eq.(...) in [1] or equivalently Eq.(2) in [2] and
+      ! using Eq.(A.25) in [1] or equivalently Eq.(2) in [2] and
       !! calling Lapack subroutine dgesv to solve system of linear equations
       !
-      ! References: [1] J.Herko et al. in preparation
-      !             [2] D.J.Millener, J.Math.Phys., Vol.19, No.7 (1978) 1513
+      ! References: [1] J.Herko et al. arXiv:2505.08993
+      !             [2] D.J.Millener, J.Math.Phys. 19, 1513 (1978)
       !
       ! Input arguments: irrep2,irrep1,irrep,irrep3,irrep12,irrep13,rhomaxa,rhomaxb,rhomaxc,rhomaxd,ldb
       ! Output arguments: Zcoeff,info
@@ -453,7 +453,7 @@ CONTAINS
       !
       ! for given lambda1,mu1,lambda2,mu2,lambda12,mu12,lambda3,mu3,lambda4,mu4,lambda34,mu34,lambda13,mu13,lambda24,mu24,lambda,mu
       !! from U and Z coefficients obtained by calling calculate_u_coef and calculate_z_coef
-      ! using Eq.(...) in J.Herko et al. in preparation
+      ! using Eq.(56) in J.Herko et al. arXiv:2505.08993
       !
       ! Input arguments: irrep1,irrep2,irrep12,irrep3,irrep4,irrep34,irrep13,irrep24,irrep,
       !                  rhomax12,rhomax34,rhomax1234,rhomax13,rhomax24,rhomax1324
