@@ -521,7 +521,7 @@ CONTAINS
       !! for given lambda1,mu1,lambda2,mu2,lambda3,mu3,epsilon3,Lambda3 from extremal-weight coefficients.
       ! using Eqs.(28),(29) in [1] and Table 9.1 on page 311 in [2].
       !
-      ! References: [1] J.Herko et al. in preparation
+      ! References: [1] J.Herko et al. arXiv:2505.08993
       !             [2] Varshalovich, Quantum theory of angular momentum
       !
       ! Input arguments: irrep1,irrep2,irrep3,epsilon3,Lambda32,I3,rhomax,wignerex
