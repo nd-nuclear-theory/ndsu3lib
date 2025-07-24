@@ -589,12 +589,14 @@ CONTAINS
 
    END SUBROUTINE calculate_9_lambda_mu
 
-   SUBROUTINE calculate_u_coef_c(irrep1, irrep2, irrep, irrep3, irrep12, irrep23, &
-                                 rhomaxa, rhomaxb, rhomaxc, rhomaxd, racah_ptr, info) BIND(C, NAME="calculate_u_coef")
+   FUNCTION calculate_u_coef_c(irrep1, irrep2, irrep, irrep3, irrep12, irrep23, &
+                               rhomaxa, rhomaxb, rhomaxc, rhomaxd, racah_ptr) &
+      RESULT(info) BIND(C, NAME="calculate_u_coef")
       !------------------------------------------------------------------------------------------------------------------------
       !! Wrapper of subroutine calculate_u_coef for SU(3) recoupling U coefficients
       ! U[(lambda1,mu1)(lambda2,mu2)(lambda,mu)(lambda3,mu3)rhoa,rhob(lambda12,mu12)(lambda23,mu23)rhoc,rhod]
-      !! to be used by C++ wrapper
+      !
+      !! to be used by C/C++ callers
       !
       ! Input arguments: irrep1,irrep2,irrep,irrep3,irrep12,irrep23,rhomaxa,rhomaxb,rhomaxc,rhomaxd
       ! Output arguments: racah_ptr,info
@@ -634,7 +636,7 @@ CONTAINS
          !! Array of U coefficients.
          !! racah_ptr(ind), where ind=rhod-1+rhomaxd*(rhoa-1)+rhomaxd*rhomaxa*(rhob-1)+rhomaxd*rhomaxa*rhomaxb*(rhoc-1),
          !! is U coefficient for given rhoa,rhob,rhoc,rhod.
-      INTEGER(C_INT), INTENT(OUT) :: info
+      INTEGER(C_INT) :: info
          !! Equals 0 iff Lapack subroutine dgesv called by calculate_u_coef ran withou errors.
       REAL(C_DOUBLE), POINTER, DIMENSION(:, :) :: rac
       INTEGER :: rhomaxabc
@@ -642,14 +644,16 @@ CONTAINS
       CALL C_F_POINTER(racah_ptr, rac, [rhomaxd, rhomaxabc])
       CALL calculate_u_coef(irrep1, irrep2, irrep, irrep3, irrep12, irrep23, &
                             rhomaxa, rhomaxb, rhomaxc, rhomaxd, rac, rhomaxd, info)
-   END SUBROUTINE calculate_u_coef_c
+   END FUNCTION calculate_u_coef_c
 
-   SUBROUTINE calculate_z_coef_c(irrep2, irrep1, irrep, irrep3, irrep12, irrep13, &
-                                 rhomaxa, rhomaxb, rhomaxc, rhomaxd, Z_ptr, info) BIND(C, NAME="calculate_z_coef")
+   FUNCTION calculate_z_coef_c(irrep2, irrep1, irrep, irrep3, irrep12, irrep13, &
+                               rhomaxa, rhomaxb, rhomaxc, rhomaxd, Z_ptr) &
+      RESULT(info) BIND(C, NAME="calculate_z_coef")
       !---------------------------------------------------------------------------------------------------------
       !! Wrapper of subroutine calculate_z_coef for SU(3) recoupling Z coefficients
       ! Z[(lambda2,mu2)(lambda1,mu1)(lambda,mu)(lambda3,mu3)rhoa,rhob(lambda12,mu12)(lambda13,mu13)rhoc,rhod]
-      !! to be used by C++ wrapper
+      !
+      !! to be used by C/C++ callers
       !
       ! Input arguments: irrep2,irrep1,irrep,irrep3,irrep12,irrep13,rhomaxa,rhomaxb,rhomaxc,rhomaxd
       ! Output argumrnts: Z_ptr,info
@@ -685,7 +689,7 @@ CONTAINS
          !! Multiplicity of SU(3) coupling 1x3->13
       INTEGER(C_INT), INTENT(IN), VALUE :: rhomaxd
          !! Multiplicity of SU(3) coupling 13x2->irrep
-      INTEGER(C_INT), INTENT(OUT) :: info
+      INTEGER(C_INT) :: info
          !! Equals 0 iff Lapack subroutine dgesv called by calculate_z_coeff ran withou errors.
       TYPE(C_PTR), INTENT(IN), VALUE :: Z_ptr
          !! Array of Z coefficients.
@@ -697,11 +701,11 @@ CONTAINS
       CALL C_F_POINTER(Z_ptr, Zcoeff, [rhomaxd, rhomaxabc])
       CALL calculate_z_coef(irrep2, irrep1, irrep, irrep3, irrep12, irrep13, &
                             rhomaxa, rhomaxb, rhomaxc, rhomaxd, Zcoeff, rhomaxd, info)
-   END SUBROUTINE calculate_z_coef_c
+   END FUNCTION calculate_z_coef_c
 
-   SUBROUTINE calculate_9_lambda_mu_c(irrep1, irrep2, irrep12, irrep3, irrep4, irrep34, irrep13, irrep24, irrep, &
-                                      rhomax12, rhomax34, rhomax1234, rhomax13, rhomax24, rhomax1324, ninelm_ptr, info) &
-      BIND(C, NAME="calculate_9_lambda_mu")
+   FUNCTION calculate_9_lambda_mu_c(irrep1, irrep2, irrep12, irrep3, irrep4, irrep34, irrep13, irrep24, irrep, &
+                                    rhomax12, rhomax34, rhomax1234, rhomax13, rhomax24, rhomax1324, ninelm_ptr) &
+      RESULT(info) BIND(C, NAME="calculate_9_lambda_mu")
       !---------------------------------------------------------------------------------------------------------------------------
       !! Wrapper of subroutine calculate_9_lambda_mu for 9-(lambda,mu) coefficients
       !
@@ -710,7 +714,7 @@ CONTAINS
       ! |(lambda13,mu13) (lambda24,mu24)   (lambda,mu)   rho1324|
       ! |     rho13           rho24          rho1234            |
       !
-      !! to be used by C++ wrapper
+      !! to be used by C/C++ callers
       !
       ! Input arguments: irrep1,irrep2,irrep12,irrep3,irrep4,irrep34,irrep13,irrep24,irrep,
       !                  rhomax12,rhomax34,rhomax1234,rhomax13,rhomax24,rhomax1324
@@ -732,12 +736,12 @@ CONTAINS
       IMPLICIT NONE
       TYPE(su3irrep), INTENT(IN), VALUE :: irrep1, irrep2, irrep12, irrep3, irrep4, irrep34, irrep13, irrep24, irrep
       INTEGER(C_INT), INTENT(IN), VALUE :: rhomax12, rhomax34, rhomax1234, rhomax13, rhomax24, rhomax1324
-      INTEGER(C_INT), INTENT(OUT) :: info
+      INTEGER(C_INT) :: info
       TYPE(C_PTR), INTENT(IN), VALUE :: ninelm_ptr
       REAL(C_DOUBLE), POINTER, DIMENSION(:, :, :, :, :, :) :: ninelm
       CALL C_F_POINTER(ninelm_ptr, ninelm, [rhomax12, rhomax34, rhomax1234, rhomax13, rhomax24, rhomax1324])
       CALL calculate_9_lambda_mu(irrep1, irrep2, irrep12, irrep3, irrep4, irrep34, irrep13, irrep24, irrep, &
                                  rhomax12, rhomax34, rhomax1234, rhomax13, rhomax24, rhomax1324, ninelm, info)
-   END SUBROUTINE calculate_9_lambda_mu_c
+   END FUNCTION calculate_9_lambda_mu_c
 
 END MODULE ndsu3lib_recoupling

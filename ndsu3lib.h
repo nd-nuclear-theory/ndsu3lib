@@ -12,82 +12,40 @@
 #ifndef NDSU3LIB_H_
 #define NDSU3LIB_H_
 
+#include <stdbool.h>
+
+// NDSU3LIB_ALWAYS_INLINE macro for various compilers
+#if defined(__GNUC__) || defined(__clang__) || defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER) || defined(__IBMC__)
+  #define NDSU3LIB_ALWAYS_INLINE inline __attribute__((always_inline))
+#elif defined(_MSC_VER)
+  #define NDSU3LIB_ALWAYS_INLINE __forceinline
+#elif defined(__NVCC__)
+  #define NDSU3LIB_ALWAYS_INLINE __forceinline__ inline
+#elif defined(_CRAYC)
+  #define NDSU3LIB_ALWAYS_INLINE _Pragma("inline") inline
+#else
+  #define NDSU3LIB_ALWAYS_INLINE inline
+#endif
+
+#ifdef __cplusplus
 namespace ndsu3lib
 {
-   typedef struct {
-      int lambda, mu;
-   } SU3Irrep;
-
    extern "C"
    {
-      namespace fortran
-      {
-	 // for internal use, not intended to be called by the user
+#endif
+   typedef struct {
+      int lambda, mu;
+   } su3irrep;
 
-         extern int outer_multiplicity(SU3Irrep irrep1, SU3Irrep irrep2, SU3Irrep irrep3);
-   
-         extern int inner_multiplicity(SU3Irrep irrep, int L);
-
-         extern void initialize_ndsu3lib(bool wso3, bool openmp, int lmpmu);
-
-         extern void finalize_ndsu3lib(bool wso3);
-
-         extern void calculate_coupling_canonical(
-             const SU3Irrep* irrep1, const SU3Irrep* irrep2, const SU3Irrep* irrep3,
-	     const int* epsilon3, const int* Lambda32, const int* dimpq, const int* dimw, const int* rhomax,
-  	     int* numb, double wigner[], int p1a[], int p2a[], int q2a[]
-           );
-
-         extern void calculate_u_coef(
-             SU3Irrep irrep1, SU3Irrep irrep2, SU3Irrep irrep,
-             SU3Irrep irrep3, SU3Irrep irrep12, SU3Irrep irrep23,
-             int rhomaxa, int rhomaxb, int rhomaxc, int rhomaxd,
-             double* rac, int* info
-           );
-
-         extern void calculate_z_coef(
-             SU3Irrep irrep2, SU3Irrep irrep1, SU3Irrep irrep,
-             SU3Irrep irrep3, SU3Irrep irrep12, SU3Irrep irrep13,
-             int rhomaxa, int rhomaxb, int rhomaxc, int rhomaxd,
-             double* Zcoeff, int* info
-           );
-
-         extern void calculate_9_lambda_mu(
-             SU3Irrep irrep1, SU3Irrep irrep2, SU3Irrep irrep12,
-             SU3Irrep irrep3, SU3Irrep irrep4, SU3Irrep irrep34,
-             SU3Irrep irrep13, SU3Irrep irrep24, SU3Irrep irrep,
-             int rhomax12, int rhomax34, int rhomax1234, int rhomax13, int rhomax24, int rhomax1324,
-             double* ninelm, int* info
-           );
-
-         extern void calculate_coupling_su3so3(
-             SU3Irrep irrep1, int L1, SU3Irrep irrep2, int L2, SU3Irrep irrep3, int L3,
-             int kappa1max, int kappa2max, int kappa3max, int rhomax,
-             double* wigner
-           );
-
-      } // namespace fortran
-   }
-
-   inline
-   int OuterMultiplicity(const SU3Irrep& irrep1, const SU3Irrep& irrep2, const SU3Irrep& irrep3)
-   {
+   extern int outer_multiplicity(su3irrep irrep1, su3irrep irrep2, su3irrep irrep3);
       // Multiplicity of SU(3) coupling (lambda1,mu1)x(lambda2,mu2)->(lambda3,mu3)
       // Input arguments: irrep1,irrep2,irrep3
-      return fortran::outer_multiplicity(irrep1, irrep2, irrep3);
-   }
 
-   inline
-   int InnerMultiplicity(const SU3Irrep& irrep, const int& L)
-   {
+   extern int inner_multiplicity(su3irrep irrep, int L);
       // Inner multiplicity of L within SU(3) irrep (lambda,mu)
       // Input arguments: irrep,L
-      return fortran::inner_multiplicity(irrep, L);
-   }
 
-   inline
-   void InitializeNdsu3lib(const bool& wso3, const bool& openmp, const int& lmpmu)
-   {
+   extern void initialize_ndsu3lib(bool wso3, bool openmp, int lmpmu);
       // ndsu3lib initialization subroutine
       // Must be called by the main program before calling
       // ndsu3lib subroutines for SU(3) coupling or recoupling coefficients.
@@ -99,29 +57,21 @@ namespace ndsu3lib
       // calculated.
       // openmp must be .TRUE. if OpenMP is used, otherwise it must be .FALSE.
       // lmpmu should be greater than or equal to the maximal expected value of lambda+mu.
-      fortran::initialize_ndsu3lib(wso3, openmp, lmpmu);
-   }
 
-   inline
-   void FinalizeNdsu3lib(const bool& wso3)
-   {
+   extern void finalize_ndsu3lib(bool wso3);
       // This subroutine should be called by each thread once SU(3) coupling or
       // recoupling coefficients are not going to be calculated anymore to free memory.
       //
       // Input argument: wso3
-      // 
+      //
       // wso3 should be true if initialize_ndsu3lib or initialize_ndsu3lib_thread
       // was called with the first argument being true.
-      fortran::finalize_ndsu3lib(wso3);
-   }
 
-   inline
-   void CalculateCouplingCanonical(
-       const SU3Irrep& irrep1, const SU3Irrep& irrep2, const SU3Irrep& irrep3,
-       const int& epsilon3, const int& Lambda32, const int& dimpq, const int& dimw, const int& rhomax,
-       int& numb, double wigner[], int p1a[], int p2a[], int q2a[]
-     )
-   {
+   extern void calculate_coupling_canonical(
+         su3irrep irrep1, su3irrep irrep2, su3irrep irrep3,
+         int epsilon3, int Lambda32, int dimpq, int dimw, int rhomax,
+         int* numb, double wigner[], int p1a[], int p2a[], int q2a[]
+      );
       // Calculate SU(3)-SU(2)xU(1) reduced coupling coefficients
       // / (lambda1,mu1)    (lambda2,mu2)   ||  (lambda3,mu3)  \
       // \epsilon1,Lambda1 epsilon2,Lambda2 || epsilon3,Lambda3/rho
@@ -145,26 +95,18 @@ namespace ndsu3lib
       //   epsilon1=epsilon3-epsilon2
       //   Lambda1=(mu1+p1-q1)/2
       //   Lambda2=(mu2+p2-q2)/2
-      fortran::calculate_coupling_canonical(
-          &irrep1, &irrep2, &irrep3,
-          &epsilon3, &Lambda32, &dimpq, &dimw, &rhomax,
-          &numb, wigner, p1a, p2a, q2a
-        );
-   }
 
-   inline
-   int CalculateUCoef(
-       const SU3Irrep& irrep1, const SU3Irrep& irrep2, const SU3Irrep& irrep,
-       const SU3Irrep& irrep3, const SU3Irrep& irrep12, const SU3Irrep& irrep23,
-       const int& rhomaxa, const int& rhomaxb, const int& rhomaxc, const int& rhomaxd,
-       double* rac
-     )
-   {
+   extern int calculate_u_coef(
+         su3irrep irrep1, su3irrep irrep2, su3irrep irrep,
+         su3irrep irrep3, su3irrep irrep12, su3irrep irrep23,
+         int rhomaxa, int rhomaxb, int rhomaxc, int rhomaxd,
+         double rac[]
+      );
       // Calculate SU(3) recoupling U coefficients
       // U[(lambda1,mu1)(lambda2,mu2)(lambda,mu)(lambda3,mu3)rhoa,rhob(lambda12,mu12)(lambda23,mu23)rhoc,rhod]
       // for given lambda1,mu1,lambda2,mu2,lambda,mu,lambda3,mu3,lambda12,mu12,lambda23,mu23
       // calling Lapack subroutine dgesv to solve system of linear equations
-      // Returns is 0 iff Lapack subroutine dgesv ran withou errors.
+      // Returns is 0 iff Lapack subroutine dgesv ran without errors.
       //
       // Input arguments: irrep1,irrep2,irrep,irrep3,irrep12,irrep23,rhomaxa,rhomaxb,rhomaxc,rhomaxd
       // Output argument: rac
@@ -175,29 +117,18 @@ namespace ndsu3lib
       // rhomaxd is multiplicity of SU(3) coupling (lambda1,mu1)x(lambda23,mu23)->(lambda,mu),
       // rac(ind), where ind=rhod-1+rhomaxd*(rhoa-1)+rhomaxd*rhomaxa*(rhob-1)+rhomaxd*rhomaxa*rhomaxb*(rhoc-1)
       //   is U coefficient for given rhoa,rhob,rhoc,rhod,
-      int info;
-      fortran::calculate_u_coef(
-          irrep1, irrep2, irrep,
-          irrep3, irrep12, irrep23,
-          rhomaxa, rhomaxb, rhomaxc, rhomaxd,
-          rac, &info
-        );
-      return info;
-   }
 
-   inline
-   int CalculateZCoef(
-       const SU3Irrep& irrep2, const SU3Irrep& irrep1, const SU3Irrep& irrep,
-       const SU3Irrep& irrep3, const SU3Irrep& irrep12, const SU3Irrep& irrep13,
-       const int& rhomaxa, const int& rhomaxb, const int& rhomaxc, const int& rhomaxd,
-       double* Zcoeff
-     )
-   {
+   extern int calculate_z_coef(
+         su3irrep irrep2, su3irrep irrep1, su3irrep irrep,
+         su3irrep irrep3, su3irrep irrep12, su3irrep irrep13,
+         int rhomaxa, int rhomaxb, int rhomaxc, int rhomaxd,
+         double Zcoeff[]
+      );
       // Calculate SU(3) recoupling Z coefficients
       // Z[(lambda2,mu2)(lambda1,mu1)(lambda,mu)(lambda3,mu3)rhoa,rhob(lambda12,mu12)(lambda13,mu13)rhoc,rhod]
       // for given lambda2,mu2,lambda1,mu1,lambda,mu,lambda3,mu3,lambda12,mu12,lambda13,mu13
       // calling Lapack subroutine dgesv to solve system of linear equations
-      // Returns is 0 iff Lapack subroutine dgesv ran withou errors.
+      // Returns is 0 iff Lapack subroutine dgesv ran without errors.
       //
       // Input arguments: irrep2,irrep1,irrep,irrep3,irrep12,irrep13,rhomaxa,rhomaxb,rhomaxc,rhomaxd
       // Output argument: Zcoeff
@@ -208,26 +139,14 @@ namespace ndsu3lib
       // rhomaxd is multiplicity of SU(3) coupling (lambda13,mu13)x(lambda2,mu2)->(lambda,mu),
       // Zcoeff(ind), where ind=rhod-1+rhomaxd*(rhoa-1)+rhomaxd*rhomaxa*(rhob-1)+rhomaxd*rhomaxa*rhomaxb*(rhoc-1)
       //   is Z coefficient for given rhoa,rhob,rhoc,rhod,
-      int info;
-      fortran::calculate_z_coef(
-          irrep2, irrep1, irrep,
-          irrep3, irrep12, irrep13,
-          rhomaxa, rhomaxb, rhomaxc, rhomaxd,
-          Zcoeff, &info
-        );
-      return info;
-   }
 
-   inline
-   int Calculate9LambdaMu(
-       const SU3Irrep& irrep1, const SU3Irrep& irrep2, const SU3Irrep& irrep12,
-       const SU3Irrep& irrep3, const SU3Irrep& irrep4, const SU3Irrep& irrep34,
-       const SU3Irrep& irrep13, const SU3Irrep& irrep24, const SU3Irrep& irrep,
-       const int& rhomax12, const int& rhomax34, const int& rhomax1234,
-       const int& rhomax13, const int& rhomax24, const int& rhomax1324,
-       double* ninelm
-     )
-   {
+   extern int calculate_9_lambda_mu(
+         su3irrep irrep1, su3irrep irrep2, su3irrep irrep12,
+         su3irrep irrep3, su3irrep irrep4, su3irrep irrep34,
+         su3irrep irrep13, su3irrep irrep24, su3irrep irrep,
+         int rhomax12, int rhomax34, int rhomax1234, int rhomax13, int rhomax24, int rhomax1324,
+         double ninelm[]
+      );
       // Calculate 9-(lambda,mu) coefficients
       //
       // | (lambda1,mu1)   (lambda2,mu2)  (lambda12,mu12)  rho12 |
@@ -238,7 +157,7 @@ namespace ndsu3lib
       // for given lambda1,mu1,lambda2,mu2,lambda12,mu12,lambda3,mu3,lambda4,mu4,
       // lambda34,mu34,lambda13,mu13,lambda24,mu24,lambda,mu
       // from U and Z coefficients obtained by calling calculate_u_coef and calculate_z_coef
-      // Returns is 0 iff Lapack subroutine dgesv ran withou errors.
+      // Returns is 0 iff Lapack subroutine dgesv ran without errors.
       //
       // Input arguments: irrep1,irrep2,irrep12,irrep3,irrep4,irrep34,irrep13,irrep24,irrep,
       //                  rhomax12,rhomax34,rhomax1234,rhomax13,rhomax24,rhomax1324
@@ -253,27 +172,12 @@ namespace ndsu3lib
       // ninelm(ind), where ind=rho12+rhomax12*(rho34-1)+rhomax12*rhomax34*(rho1234-1)+rhomax12*rhomax34*rhomax1234*(rho13-1)
       //   +rhomax12*rhomax34*rhomax1234*rhomax13*(rho24-1)+rhomax12*rhomax34*rhomax1234*rhomax13*rhomax24*(rho1324-1)-1,
       //   is 9-(lambda,mu) coefficient for given rho12,rho34,rho1234,rho13,rho24,rho1324,
-      int info;
-      fortran::calculate_9_lambda_mu(
-          irrep1, irrep2, irrep12,
-          irrep3, irrep4, irrep34,
-          irrep13, irrep24, irrep,
-          rhomax12, rhomax34, rhomax1234,
-          rhomax13, rhomax24, rhomax1324,
-          ninelm, &info
-        );
-      return info;
-   }
 
-   inline
-   void CalculateCouplingSU3SO3(
-       const SU3Irrep& irrep1, const int& L1,
-       const SU3Irrep& irrep2, const int& L2,
-       const SU3Irrep& irrep3, const int& L3,
-       const int& kappa1max, const int& kappa2max, const int& kappa3max, const int& rhomax,
-       double* wigner
-     )
-   {
+   extern void calculate_coupling_su3so3(
+         su3irrep irrep1, int L1, su3irrep irrep2, int L2, su3irrep irrep3, int L3,
+         int kappa1max, int kappa2max, int kappa3max, int rhomax,
+         double wigner[]
+      );
       // Calculate SU(3)-SO(3) reduced coupling coefficients
       // /(lambda1,mu1) (lambda2,mu2) || (lambda3,mu3)\
       // \  kappa1,L1     kappa2,L2   ||   kappa3,L3  /rho
@@ -289,13 +193,27 @@ namespace ndsu3lib
       // wigner(ind), where
       //   ind=kappa1-1+kappa1max*(kappa2-1)+kappa1max*kappa2max*(kappa3-1)+kappa1max*kappa2max*kappa3max*(rho-1),
       //   is reduced coupling coefficient for given kappa1,kappa2,kappa3,rho.
-      fortran::calculate_coupling_su3so3(
-          irrep1, L1, irrep2, L2, irrep3, L3,
-          kappa1max, kappa2max, kappa3max, rhomax,
-          wigner
-        );
+
+#ifdef __cplusplus
+}  // extern "C"
+
+   // C++ pass-by-reference wrappers
+
+   NDSU3LIB_ALWAYS_INLINE
+   void calculate_coupling_canonical(
+         const su3irrep& irrep1, const su3irrep& irrep2, const su3irrep& irrep3,
+         const int& epsilon3, const int& Lambda32, const int& dimpq, const int& dimw, const int& rhomax,
+         int& numb, double wigner[], int p1a[], int p2a[], int q2a[]
+      )
+   {
+      calculate_coupling_canonical(
+            irrep1, irrep2, irrep3,
+            epsilon3, Lambda32, dimpq, dimw, rhomax,
+            &numb, wigner, p1a, p2a, q2a
+         );
    }
 
 }  // namespace ndsu3lib
+#endif  // __cplusplus
 
 #endif  // NDSU3LIB_H_

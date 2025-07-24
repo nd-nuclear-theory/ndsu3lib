@@ -480,7 +480,7 @@ CONTAINS
       ! Setting the phase according to Eq.(48) in [1]
       !**********************************************
       phiprhomax = lambda1 + lambda2 - lambda3 + mu1 + mu2 - mu3 + rhomax ! phiprhomax is phi+rhomax
-      i4 = phiprhomax + (lambda1 + Lambda22max - lambda3)/2 
+      i4 = phiprhomax + (lambda1 + Lambda22max - lambda3)/2
       ! i4 is lambda1+lambda2-lambda3+mu1+mu2-mu3+rhomax+(lambda1+2*Lambda2_max-lambda3)/2
       p2 = (noname1 - mu2 + Lambda22max)/2
       q2 = noname1 - p2
@@ -968,21 +968,21 @@ CONTAINS
       !--------------------------------------------------------------------------------------------------------
       !USE ISO_C_BINDING
       IMPLICIT NONE
-      TYPE(su3irrep), INTENT(IN) :: irrep1
+      TYPE(su3irrep), INTENT(IN), VALUE :: irrep1
          !! First SU(3) irrep in SU(3) coupling, i.e., (lambda1,mu1)
-      TYPE(su3irrep), INTENT(IN) :: irrep2
+      TYPE(su3irrep), INTENT(IN), VALUE :: irrep2
          !! Second SU(3) irrep in SU(3) coupling, i.e., (lambda2,mu2)
-      TYPE(su3irrep), INTENT(IN) :: irrep3
+      TYPE(su3irrep), INTENT(IN), VALUE :: irrep3
          !! Resulting SU(3) irrep, i.e., (lambda3,mu3)
-      INTEGER(C_INT), INTENT(IN) :: epsilon3
+      INTEGER(C_INT), INTENT(IN), VALUE :: epsilon3
          !! epsilon3
-      INTEGER(C_INT), INTENT(IN) :: Lambda32
+      INTEGER(C_INT), INTENT(IN), VALUE :: Lambda32
          !! 2*Lambda3
-      INTEGER(C_INT), INTENT(IN) :: dimpq
+      INTEGER(C_INT), INTENT(IN), VALUE :: dimpq
          !! Size of arrays p1a,p2a,q2a, which should be at least (MAX(lambda1,mu1)+1)*(lambda2+1)*(mu2+1)
-      INTEGER(C_INT), INTENT(IN) :: dimw
+      INTEGER(C_INT), INTENT(IN), VALUE :: dimw
          !! Size of array wigner_block, which should be at least rhomax*dimpq
-      INTEGER(C_INT), INTENT(IN) :: rhomax
+      INTEGER(C_INT), INTENT(IN), VALUE :: rhomax
          !! Multiplicity of SU(3) coupling
       INTEGER(C_INT), INTENT(OUT) :: numb
          !! Number of resulting reduced coupling coefficients for given outer multiplicity index
