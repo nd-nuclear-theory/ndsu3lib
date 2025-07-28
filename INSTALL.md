@@ -243,7 +243,8 @@
   #include <ndsu3lib/ndsu3lib.h>
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  The basic compilation commands for a C program `program.c` and a C++ program `program.cpp` are
+  The basic compilation commands for a C program `program.c` or a C++ program
+  `program.cpp` are, respectively:
 
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   % gcc program.c -o program -lndsu3lib -lgfortran -lm
