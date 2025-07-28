@@ -235,17 +235,18 @@
   `ndsu3lib`, and is installed alongside the `ndsu3lib` library file, so you do
   not need to independently specify a location for it.
 
-# 4.2. Linking from a C++ program
+# 4.2. Linking from a C/C++ program
 
-  A C++ code using `ndsu3lib` must contain
+  A C/C++ code using `ndsu3lib` must contain
 
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #include <ndsu3lib/ndsu3lib.h>
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  The basic compilation command for a program `program.cpp` is
+  The basic compilation commands for a C program `program.c` and a C++ program `program.cpp` are
 
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  % gcc program.c -o program -lndsu3lib -lgfortran -lm
   % g++ program.cpp -o program -lndsu3lib -lgfortran
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
