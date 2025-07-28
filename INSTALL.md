@@ -149,12 +149,13 @@
 
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   % ./build/ndsu3lib_example
+  % ./build/ndsu3lib_example_c
   % ./build/ndsu3lib_example_cpp
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  These are the example programs implemented in Fortran and C++, respectively.
+  These are the example programs implemented in Fortran, C, and C++, respectively.
   The output of the Fortran code should match the `example_output.txt` file.
-  The output of the C++ example program should be the same, to within formatting
+  The output of the C/C++ example program should be the same, to within formatting
   differences.
 
   To install the `ndsu3lib` library:

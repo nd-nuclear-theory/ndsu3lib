@@ -4,8 +4,8 @@
 
 A simple program `ndsu3lib_example` demonstrating usage of the library is provided.
 
-C++ wrappers of Fortran subroutines are provided. The C++ functions are in the file `ndsu3lib.h` along with interface documentation.
-A simple program `ndsu3lib_example_cpp` demonstrating usage of the C++ wrappers is provided.
+C/C++ wrappers of Fortran subroutines are provided. The C/C++ functions are in the file `ndsu3lib.h` along with interface documentation.
+Simple programs `ndsu3lib_example_c` and `ndsu3lib_example_cpp` demonstrating usage of the C/C++ wrappers are provided.
 
 For installation instructions see `INSTALL.md`.
 
