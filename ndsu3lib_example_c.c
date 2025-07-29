@@ -1,6 +1,6 @@
 /********************************************************************************************************************
 
- ndsu3lib_example_cpp.cpp
+ ndsu3lib_example_c.c
 //! Simple program tabulating SU(3) reduced coupling and recoupling coefficients to demonstrate usage of C wrappers
 
  Jakub Herko
