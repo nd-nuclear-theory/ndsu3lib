@@ -637,7 +637,7 @@ CONTAINS
          !! racah_ptr(ind), where ind=rhod-1+rhomaxd*(rhoa-1)+rhomaxd*rhomaxa*(rhob-1)+rhomaxd*rhomaxa*rhomaxb*(rhoc-1),
          !! is U coefficient for given rhoa,rhob,rhoc,rhod.
       INTEGER(C_INT) :: info
-         !! Equals 0 iff Lapack subroutine dgesv called by calculate_u_coef ran withou errors.
+         !! Equals 0 iff Lapack subroutine dgesv called by calculate_u_coef ran without errors.
       REAL(C_DOUBLE), POINTER, DIMENSION(:, :) :: rac
       INTEGER :: rhomaxabc
       rhomaxabc = rhomaxa*rhomaxb*rhomaxc
@@ -690,7 +690,7 @@ CONTAINS
       INTEGER(C_INT), INTENT(IN), VALUE :: rhomaxd
          !! Multiplicity of SU(3) coupling 13x2->irrep
       INTEGER(C_INT) :: info
-         !! Equals 0 iff Lapack subroutine dgesv called by calculate_z_coeff ran withou errors.
+         !! Equals 0 iff Lapack subroutine dgesv called by calculate_z_coeff ran without errors.
       TYPE(C_PTR), INTENT(IN), VALUE :: Z_ptr
          !! Array of Z coefficients.
          !! Z_ptr(ind), where ind=rhod-1+rhomaxd*(rhoa-1)+rhomaxd*rhomaxa*(rhob-1)+rhomaxd*rhomaxa*rhomaxb*(rhoc-1),
