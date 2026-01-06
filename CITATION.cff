@@ -1,5 +1,6 @@
 cff-version: 1.2.0
-message: "If you use this software, please cite it as below."
+message: >-
+  If you use this software, please cite it using these metadata.
 authors:
   - family-names: Herko
     given-names: Jakub
@@ -22,3 +23,23 @@ keywords:
 type: software
 repository-code: https://github.com/nd-nuclear-theory/ndsu3lib.git
 license: MIT
+doi: "10.5281/zenodo.16655521"
+references:
+  - authors:
+    - family-names: Herko
+      given-names: Jakub
+      orcid: https://orcid.org/0000-0001-5077-2699
+    - family-names: Caprio
+      given-names: Mark A.
+      orcid: https://orcid.org/0000-0001-5138-3740
+    - family-names: McCoy
+      given-names: Anna E.
+      orcid: https://orcid.org/0000-0002-1033-1474
+    - family-names: Fasano
+      given-names: Patrick J.
+      orcid: https://orcid.org/0000-0003-2457-4976
+    title: "A modern Fortran library for SU(3) coupling and recoupling coefficients"
+    type: article
+    identifiers:
+      - type: other
+        value: "arxiv:2505.08993"
